@@ -31,7 +31,8 @@ export default defineNuxtConfig({
         "Content-Security-Policy": [
           "default-src 'self'",
           "script-src 'self' 'unsafe-inline' https://apis.google.com",
-          "style-src 'self' 'unsafe-inline'",
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+          "font-src 'self' https://fonts.gstatic.com data:",
           "img-src 'self' data: https://*.googleusercontent.com",
           "connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com wss://*.firebaseio.com",
           "frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com",
@@ -64,6 +65,12 @@ export default defineNuxtConfig({
         },
       ],
       link: [
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap",
+        },
         {
           rel: "icon",
           href: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'><rect width='32' height='32' rx='8' fill='%230f172a'/><rect x='6' y='8' width='20' height='18' rx='3' stroke='white' stroke-width='2'/><path d='M19 5v4M13 5v4M6 14h20M11 18h3M11 21h7' stroke='white' stroke-width='2' stroke-linecap='round'/></svg>",
