@@ -27,32 +27,26 @@ const handleLogout = async () => {
 
 <template>
   <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5 sm:px-6 lg:px-8">
+    <div class="flex w-full items-center justify-between px-4 py-2.5 sm:px-6 lg:px-8">
       <!-- Logo & Main Nav -->
       <div class="flex items-center gap-6">
-        <NuxtLink to="/" class="group flex items-center gap-2.5">
-          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white shadow-2xs transition group-hover:bg-slate-800">
-            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="17" rx="3" />
-              <path d="M16 2v4M8 2v4M3 10h18M8 14h3M8 17h6" />
-            </svg>
-          </span>
-          <span class="text-base font-semibold tracking-tight text-slate-900 transition group-hover:text-slate-700">
-            DayForge
+        <NuxtLink to="/" class="group flex items-center">
+          <span class="text-xl font-bold tracking-tight text-slate-900 transition group-hover:text-slate-700">
+            klndr.
           </span>
         </NuxtLink>
 
-        <nav class="hidden sm:flex items-center gap-0.5 rounded-lg border border-slate-200/80 bg-slate-100/70 p-0.5">
+        <nav aria-label="Primary" class="flex items-center gap-1 rounded-lg border border-slate-200/80 bg-slate-100/70 p-1">
           <NuxtLink
             to="/"
-            class="rounded-md px-3 py-1 text-xs font-medium text-slate-600 transition hover:text-slate-900"
+            class="rounded-md px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:text-slate-900"
             active-class="!bg-white !text-slate-900 !font-semibold shadow-2xs"
           >
             Calendar
           </NuxtLink>
           <NuxtLink
             :to="`/day/${today}`"
-            class="rounded-md px-3 py-1 text-xs font-medium text-slate-600 transition hover:text-slate-900"
+            class="rounded-md px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:text-slate-900"
             active-class="!bg-white !text-slate-900 !font-semibold shadow-2xs"
           >
             Today
@@ -62,23 +56,23 @@ const handleLogout = async () => {
 
       <!-- User / Auth Actions -->
       <div class="flex items-center gap-2.5">
-        <div v-if="loading" class="h-7 w-20 animate-pulse rounded-lg bg-slate-200" />
+        <div v-if="loading" class="h-8 w-20 animate-pulse rounded-lg bg-slate-200" />
 
         <template v-else-if="user">
           <NuxtLink
             to="/profile"
-            class="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:border-slate-300"
+            class="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:border-slate-300"
           >
-            <div class="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[10px] font-semibold text-white">
+            <div class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
               {{ initials }}
             </div>
-            <span class="hidden sm:inline max-w-[120px] truncate">{{ displayName }}</span>
+            <span class="hidden sm:inline max-w-[130px] truncate">{{ displayName }}</span>
           </NuxtLink>
 
           <button
             type="button"
             @click="handleLogout"
-            class="rounded-lg border border-slate-200/80 bg-white px-2.5 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+            class="rounded-lg border border-slate-200/80 bg-white px-3 py-1.5 text-sm font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
           >
             Log Out
           </button>
@@ -87,13 +81,13 @@ const handleLogout = async () => {
         <template v-else>
           <NuxtLink
             to="/login"
-            class="rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:text-slate-900"
+            class="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900"
           >
             Log In
           </NuxtLink>
           <NuxtLink
             to="/signup"
-            class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800"
+            class="rounded-lg bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
           >
             Sign Up
           </NuxtLink>

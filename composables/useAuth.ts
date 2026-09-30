@@ -17,24 +17,38 @@ import {
   doc,
   getDoc,
   setDoc,
+  updateDoc,
   serverTimestamp,
+  Timestamp,
   type Firestore,
 } from "firebase/firestore";
 
+/** Shape of `users/{uid}` in Firestore; `firestore.rules` enforces the same limits. */
 export interface UserProfile {
   uid: string;
   email: string | null;
-  displayName: string | null;
+  displayName: string;
   photoURL?: string | null;
   bio?: string;
   phone?: string;
-  timezone?: string;
+  timezone: string;
   location?: string;
-  weekStartsOnMonday?: boolean;
-  defaultTaskDuration?: number;
-  createdAt?: any;
-  updatedAt?: any;
+  weekStartsOnMonday: boolean;
+  defaultTaskDuration: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+/** Fields the signed-in user may edit from the profile page. */
+export type ProfilePatch = Partial<
+  Pick<
+    UserProfile,
+    "displayName" | "bio" | "phone" | "location" | "timezone" | "weekStartsOnMonday" | "defaultTaskDuration"
+  >
+>;
+
+export const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120] as const;
+export const PROFILE_LIMITS = { displayName: 80, bio: 500, phone: 40, location: 100, timezone: 64 } as const;
 
 let firebaseAppInstance: FirebaseApp | null = null;
 let authInstance: Auth | null = null;
@@ -64,20 +78,14 @@ export function getFirebaseServices() {
     appId: String(config.firebaseAppId || ""),
   };
 
-  const isConfigured = Boolean(
-    firebaseConfig.apiKey &&
-    firebaseConfig.apiKey !== "your-api-key" &&
-    firebaseConfig.projectId
-  );
+  const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
 
   if (!isConfigured) {
     return { app: null, auth: null, db: null, isConfigured: false };
   }
 
   try {
-    firebaseAppInstance = getApps().length
-      ? getApp()
-      : initializeApp(firebaseConfig);
+    firebaseAppInstance = getApps().length ? getApp() : initializeApp(firebaseConfig);
     authInstance = getAuth(firebaseAppInstance);
     dbInstance = getFirestore(firebaseAppInstance);
     return {
@@ -92,11 +100,106 @@ export function getFirebaseServices() {
   }
 }
 
+/**
+ * Current user's Firebase ID token for authenticating API calls, or null when
+ * signed out / Firebase is not configured. Waits for the initial auth check.
+ */
+export async function getIdToken(): Promise<string | null> {
+  const { auth } = getFirebaseServices();
+  if (!auth) return null;
+  await auth.authStateReady();
+  return (await auth.currentUser?.getIdToken()) ?? null;
+}
+
+const isoOf = (value: unknown): string | undefined =>
+  value instanceof Timestamp ? value.toDate().toISOString() : undefined;
+
+/** Keep only the known profile fields from a Firestore document. */
+function toProfile(uid: string, data: Record<string, any>): UserProfile {
+  return {
+    uid,
+    email: data.email ?? null,
+    displayName: data.displayName ?? "",
+    photoURL: data.photoURL ?? null,
+    bio: data.bio ?? "",
+    phone: data.phone ?? "",
+    location: data.location ?? "",
+    timezone: data.timezone ?? "UTC",
+    weekStartsOnMonday: data.weekStartsOnMonday !== false,
+    defaultTaskDuration: Number(data.defaultTaskDuration) || 60,
+    createdAt: isoOf(data.createdAt),
+    updatedAt: isoOf(data.updatedAt),
+  };
+}
+
+export function isValidTimeZone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat(undefined, { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Validate and normalise a profile edit; throws a user-readable Error. */
+function cleanPatch(patch: ProfilePatch): Record<string, string | number | boolean> {
+  const out: Record<string, string | number | boolean> = {};
+
+  if (patch.displayName !== undefined) {
+    const name = patch.displayName.trim();
+    if (!name) throw new Error("Display name can't be empty.");
+    if (name.length > PROFILE_LIMITS.displayName) throw new Error(`Display name must be ${PROFILE_LIMITS.displayName} characters or fewer.`);
+    out.displayName = name;
+  }
+  if (patch.bio !== undefined) {
+    const bio = patch.bio.trim();
+    if (bio.length > PROFILE_LIMITS.bio) throw new Error(`Bio must be ${PROFILE_LIMITS.bio} characters or fewer.`);
+    out.bio = bio;
+  }
+  if (patch.phone !== undefined) {
+    const phone = patch.phone.trim();
+    if (phone.length > PROFILE_LIMITS.phone || !/^[0-9+()\-.\s]*$/.test(phone)) {
+      throw new Error("Phone number can only contain digits, spaces and + ( ) - .");
+    }
+    out.phone = phone;
+  }
+  if (patch.location !== undefined) {
+    const location = patch.location.trim();
+    if (location.length > PROFILE_LIMITS.location) throw new Error(`Location must be ${PROFILE_LIMITS.location} characters or fewer.`);
+    out.location = location;
+  }
+  if (patch.timezone !== undefined) {
+    const tz = patch.timezone.trim();
+    if (!tz || tz.length > PROFILE_LIMITS.timezone || !isValidTimeZone(tz)) {
+      throw new Error("Timezone isn't recognised. Use a name like Europe/Nicosia or UTC.");
+    }
+    out.timezone = tz;
+  }
+  if (patch.weekStartsOnMonday !== undefined) out.weekStartsOnMonday = Boolean(patch.weekStartsOnMonday);
+  if (patch.defaultTaskDuration !== undefined) {
+    const minutes = Number(patch.defaultTaskDuration);
+    if (!(DURATION_OPTIONS as readonly number[]).includes(minutes)) throw new Error("Choose one of the listed block durations.");
+    out.defaultTaskDuration = minutes;
+  }
+  return out;
+}
+
+// Profile loads already in flight, so the auth listener and a sign-in/sign-up
+// flow never race to create the same document.
+const profileLoads = new Map<string, Promise<UserProfile | null>>();
+// Name typed on the sign-up form, used when the profile document is first created.
+let pendingSignUpName: string | null = null;
+
 export function useAuth() {
   const user = useState<User | null>("auth_user", () => null);
   const profile = useState<UserProfile | null>("auth_profile", () => null);
+  const profileError = useState<string | null>("auth_profile_error", () => null);
   const loading = useState<boolean>("auth_loading", () => true);
-  const isConfigured = useState<boolean>("auth_is_configured", () => false);
+  // Derived from runtime config so server and client render the same thing.
+  const isConfigured = useState<boolean>("auth_is_configured", () => {
+    const config = useRuntimeConfig().public;
+    return Boolean(config.firebaseApiKey && config.firebaseProjectId);
+  });
 
   const initAuth = () => {
     if (!import.meta.client) return;
@@ -112,166 +215,117 @@ export function useAuth() {
     onAuthStateChanged(services.auth, async (firebaseUser) => {
       user.value = firebaseUser;
       if (firebaseUser) {
-        await loadProfile(firebaseUser.uid);
+        await loadProfile(firebaseUser);
       } else {
         profile.value = null;
+        profileError.value = null;
       }
       loading.value = false;
     });
   };
 
-  const loadProfile = async (uid: string) => {
-    // 1. Try local storage cache first for instant load
-    let cachedProfile: UserProfile | null = null;
-    if (typeof window !== "undefined") {
+  /** Read `users/{uid}`, creating it on first sign-in. */
+  const loadProfile = (firebaseUser: User): Promise<UserProfile | null> => {
+    const existing = profileLoads.get(firebaseUser.uid);
+    if (existing) return existing;
+
+    const run = (async () => {
+      const { db } = getFirebaseServices();
+      if (!db) return null;
+      const ref = doc(db, "users", firebaseUser.uid);
+
       try {
-        const stored = localStorage.getItem(`dayforge_profile_${uid}`);
-        if (stored) cachedProfile = JSON.parse(stored);
-      } catch (e) {
-        /* ignore */
+        let snap = await getDoc(ref);
+        if (!snap.exists()) {
+          const email = firebaseUser.email;
+          const displayName = (
+            pendingSignUpName || firebaseUser.displayName || email?.split("@")[0] || "User"
+          ).slice(0, PROFILE_LIMITS.displayName);
+          await setDoc(ref, {
+            uid: firebaseUser.uid,
+            email: email ?? null,
+            displayName,
+            photoURL: firebaseUser.photoURL ?? null,
+            bio: "",
+            phone: "",
+            location: "",
+            timezone: (Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC").slice(0, PROFILE_LIMITS.timezone),
+            weekStartsOnMonday: true,
+            defaultTaskDuration: 60,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+          snap = await getDoc(ref);
+        }
+        const loaded = snap.exists() ? toProfile(firebaseUser.uid, snap.data()) : null;
+        profile.value = loaded;
+        profileError.value = null;
+        return loaded;
+      } catch (err) {
+        console.error("Could not load profile:", err);
+        profile.value = null;
+        profileError.value = "We couldn't load your profile. Check your connection and try again.";
+        return null;
       }
-    }
+    })().finally(() => profileLoads.delete(firebaseUser.uid));
 
-    if (cachedProfile) {
-      profile.value = cachedProfile;
-    }
-
-    const { db } = getFirebaseServices();
-    if (!db) return cachedProfile;
-
-    try {
-      const docRef = doc(db, "dayforge_profiles", uid);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const cloudProfile = docSnap.data() as UserProfile;
-        profile.value = cloudProfile;
-        if (typeof window !== "undefined") {
-          localStorage.setItem(`dayforge_profile_${uid}`, JSON.stringify(cloudProfile));
-        }
-        return cloudProfile;
-      } else if (user.value) {
-        // Create initial profile if missing
-        const initialProfile: UserProfile = {
-          uid: user.value.uid,
-          email: user.value.email,
-          displayName: user.value.displayName || cachedProfile?.displayName || user.value.email?.split("@")[0] || "User",
-          photoURL: user.value.photoURL || null,
-          bio: cachedProfile?.bio || "",
-          phone: cachedProfile?.phone || "",
-          timezone: cachedProfile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-          location: cachedProfile?.location || "",
-          weekStartsOnMonday: cachedProfile?.weekStartsOnMonday ?? true,
-          defaultTaskDuration: cachedProfile?.defaultTaskDuration ?? 60,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        try {
-          await setDoc(docRef, { ...initialProfile, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-        } catch (e) {
-          // If firestore rules deny write, profile still persists locally
-          console.warn("Firestore write skipped (local cache active):", e);
-        }
-        profile.value = initialProfile;
-        if (typeof window !== "undefined") {
-          localStorage.setItem(`dayforge_profile_${uid}`, JSON.stringify(initialProfile));
-        }
-        return initialProfile;
-      }
-    } catch (err) {
-      console.warn("Could not fetch user profile from Firestore (using local data):", err);
-    }
-    return cachedProfile;
+    profileLoads.set(firebaseUser.uid, run);
+    return run;
   };
 
-  const updateProfileData = async (patch: Partial<UserProfile>) => {
-    if (!user.value) throw new Error("You must be logged in to update profile");
+  /** Save edits to the signed-in user's profile. Throws if validation or the write fails. */
+  const updateProfileData = async (patch: ProfilePatch) => {
     const { db, auth } = getFirebaseServices();
+    const current = auth?.currentUser;
+    if (!db || !current) throw new Error("You must be signed in to update your profile.");
 
-    const uid = user.value.uid;
+    const changes = cleanPatch(patch);
+    if (Object.keys(changes).length === 0) return profile.value;
 
-    if (patch.displayName && auth?.currentUser) {
-      try {
-        await updateAuthProfile(auth.currentUser, {
-          displayName: patch.displayName,
-        });
-      } catch (e) {
-        console.warn("Could not update auth profile displayName:", e);
-      }
+    // The document is created on sign-in; make sure it exists before updating.
+    if (!profile.value) await loadProfile(current);
+
+    try {
+      await updateDoc(doc(db, "users", current.uid), { ...changes, updatedAt: serverTimestamp() });
+    } catch (err: any) {
+      console.error("Profile save failed:", err);
+      throw new Error(
+        err?.code === "permission-denied"
+          ? "Your changes were rejected. Check the values and try again."
+          : "Couldn't save your profile. Check your connection and try again.",
+      );
     }
 
-    const updatedData: UserProfile = {
-      ...(profile.value || {
-        uid,
-        email: user.value.email,
-        displayName: patch.displayName || "",
-      }),
-      ...patch,
-      uid,
-      email: user.value.email,
-      updatedAt: new Date().toISOString(),
-    };
-
-    // Update in-memory and local storage immediately
-    profile.value = updatedData;
-    if (typeof window !== "undefined") {
-      localStorage.setItem(`dayforge_profile_${uid}`, JSON.stringify(updatedData));
-    }
-
-    // Sync to Firestore if available
-    if (db) {
+    if (typeof changes.displayName === "string" && current.displayName !== changes.displayName) {
       try {
-        const docRef = doc(db, "dayforge_profiles", uid);
-        await setDoc(docRef, { ...updatedData, updatedAt: serverTimestamp() }, { merge: true });
+        await updateAuthProfile(current, { displayName: changes.displayName });
       } catch (err) {
-        console.warn("Firestore sync skipped (profile safely stored locally):", err);
+        console.warn("Could not update auth display name:", err);
       }
     }
+
+    const snap = await getDoc(doc(db, "users", current.uid));
+    if (snap.exists()) profile.value = toProfile(current.uid, snap.data());
+    return profile.value;
   };
 
   const signUp = async (email: string, pass: string, name: string) => {
-    const { auth, db } = getFirebaseServices();
+    const { auth } = getFirebaseServices();
     if (!auth) throw new Error("Firebase Auth is not initialized. Please check credentials in .env.");
 
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    if (name && cred.user) {
-      await updateAuthProfile(cred.user, { displayName: name });
-    }
-
-    const initialProfile: UserProfile = {
-      uid: cred.user.uid,
-      email: cred.user.email,
-      displayName: name || email.split("@")[0],
-      photoURL: null,
-      bio: "",
-      phone: "",
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-      location: "",
-      weekStartsOnMonday: true,
-      defaultTaskDuration: 60,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    if (typeof window !== "undefined") {
-      localStorage.setItem(`dayforge_profile_${cred.user.uid}`, JSON.stringify(initialProfile));
-    }
-
-    if (db) {
-      try {
-        await setDoc(doc(db, "dayforge_profiles", cred.user.uid), {
-          ...initialProfile,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      } catch (e) {
-        console.warn("Firestore profile write skipped:", e);
+    // Set first: the auth listener creates the profile document the moment the account exists.
+    pendingSignUpName = name.trim() || null;
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      if (pendingSignUpName) {
+        await updateAuthProfile(cred.user, { displayName: pendingSignUpName }).catch(() => {});
       }
+      await loadProfile(cred.user);
+      user.value = cred.user;
+      return cred.user;
+    } finally {
+      pendingSignUpName = null;
     }
-
-    profile.value = initialProfile;
-    user.value = cred.user;
-    return cred.user;
   };
 
   const login = async (email: string, pass: string) => {
@@ -280,21 +334,17 @@ export function useAuth() {
 
     const cred = await signInWithEmailAndPassword(auth, email, pass);
     user.value = cred.user;
-    await loadProfile(cred.user.uid);
+    await loadProfile(cred.user);
     return cred.user;
   };
 
   const loginWithGoogle = async () => {
-    const { auth, db } = getFirebaseServices();
+    const { auth } = getFirebaseServices();
     if (!auth) throw new Error("Firebase Auth is not initialized. Please configure Firebase credentials.");
 
-    const provider = new GoogleAuthProvider();
-    const cred = await signInWithPopup(auth, provider);
+    const cred = await signInWithPopup(auth, new GoogleAuthProvider());
     user.value = cred.user;
-
-    if (db && cred.user) {
-      await loadProfile(cred.user.uid);
-    }
+    await loadProfile(cred.user);
     return cred.user;
   };
 
@@ -311,11 +361,13 @@ export function useAuth() {
     }
     user.value = null;
     profile.value = null;
+    profileError.value = null;
   };
 
   return {
     user,
     profile,
+    profileError,
     loading,
     isConfigured,
     initAuth,

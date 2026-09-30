@@ -4,6 +4,7 @@ import { COLOR_KEYS, PALETTE, paletteOf } from "~/lib/colors";
 import { api } from "~/lib/api";
 import {
   DURATION_CHOICES,
+  formatDuration,
   formatTime,
   fromTimeInput,
   timeInputValue,
@@ -26,7 +27,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "saved", task: ScheduledTask): void;
-  (e: "deleted", id: number): void;
+  (e: "deleted", id: string): void;
 }>();
 
 const EMOJI_CHOICES = [
@@ -43,7 +44,7 @@ const start = ref("09:00");
 const duration = ref(60);
 const notes = ref("");
 const completed = ref(false);
-const templateId = ref<number | null>(null);
+const templateId = ref<string | null>(null);
 const busy = ref(false);
 const error = ref<string | null>(null);
 
@@ -54,14 +55,9 @@ const durationOptions = computed(() => {
   return [...new Set([...DURATION_CHOICES, duration.value])].sort((a, b) => a - b);
 });
 
-const subtitle = computed(() => {
-  const timeStr = formatTime(fromTimeInput(start.value));
-  const dur = duration.value;
-  const durStr = dur >= 60
-    ? `${Math.floor(dur / 60)}h${dur % 60 ? ` ${dur % 60}m` : ""}`
-    : `${dur}m`;
-  return `${timeStr} · ${durStr}`;
-});
+const subtitle = computed(
+  () => `${formatTime(fromTimeInput(start.value))} · ${formatDuration(duration.value)}`,
+);
 
 watch(
   () => props.request,
@@ -98,7 +94,7 @@ watch(
 );
 
 const applyTemplate = (idStr: string) => {
-  const nextId = idStr ? Number.parseInt(idStr, 10) : null;
+  const nextId = idStr || null;
   templateId.value = nextId;
   const template = props.templates.find((item) => item.id === nextId);
   if (!template) return;
@@ -227,7 +223,7 @@ const remove = async () => {
             class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-2xs focus:border-slate-900 focus:outline-hidden"
           >
             <option v-for="val in durationOptions" :key="val" :value="val">
-              {{ val >= 60 ? `${Math.floor(val / 60)}h${val % 60 ? ` ${val % 60}m` : ''}` : `${val}m` }}
+              {{ formatDuration(val) }}
             </option>
           </select>
         </label>

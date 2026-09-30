@@ -8,9 +8,9 @@ import {
   formatDuration,
   formatTime,
   isSameMonth,
+  longDate,
   monthMatrix,
   monthTitle,
-  monthRange,
   parseISODate,
   todayISO,
   WEEKDAY_LABELS,
@@ -22,8 +22,7 @@ const props = defineProps<{
 }>();
 
 const today = todayISO();
-const cells = computed(() => monthMatrix(props.month));
-const range = computed(() => monthRange(props.month));
+const MAX_VISIBLE = 3;
 
 const byDay = computed(() => {
   const map = new Map<string, ScheduledTask[]>();
@@ -37,6 +36,24 @@ const byDay = computed(() => {
   }
   return map;
 });
+
+const days = computed(() =>
+  monthMatrix(props.month).map((iso) => {
+    const date = parseISODate(iso);
+    const tasks = byDay.value.get(iso) ?? [];
+    return {
+      iso,
+      dayNumber: date.getDate(),
+      inMonth: isSameMonth(iso, props.month),
+      isToday: iso === today,
+      isWeekend: date.getDay() === 0 || date.getDay() === 6,
+      visible: tasks.slice(0, MAX_VISIBLE),
+      hidden: Math.max(0, tasks.length - MAX_VISIBLE),
+      total: tasks.length ? formatDuration(tasks.reduce((sum, t) => sum + t.durationMinutes, 0)) : "",
+      label: `${longDate(iso)}, ${tasks.length} ${tasks.length === 1 ? "block" : "blocks"}`,
+    };
+  }),
+);
 
 const upcoming = computed(() => {
   const end = addDaysISO(today, 14);
@@ -65,25 +82,25 @@ const toneOf = (color: string) => paletteOf(color);
         <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
           {{ monthTitle(month) }}
         </h1>
-        <div class="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-          <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 font-medium text-slate-700 shadow-2xs">
-            <span class="h-1.5 w-1.5 rounded-full bg-slate-900" />
-            <span class="font-mono">{{ monthStats.blocks }}</span> blocks
+        <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+          <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-white px-2.5 py-1 font-medium text-slate-700 shadow-2xs">
+            <span class="h-2 w-2 rounded-full bg-slate-900" />
+            <span class="font-mono font-semibold">{{ monthStats.blocks }}</span> blocks
           </span>
-          <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 font-medium text-slate-700 shadow-2xs">
-            <span class="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-            <span class="font-mono">{{ monthStats.hours }}h</span> planned
+          <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-white px-2.5 py-1 font-medium text-slate-700 shadow-2xs">
+            <span class="h-2 w-2 rounded-full bg-indigo-500" />
+            <span class="font-mono font-semibold">{{ monthStats.hours }}h</span> planned
           </span>
-          <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 font-medium text-slate-700 shadow-2xs">
-            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            <span class="font-mono">{{ monthStats.done }}</span> completed
+          <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-white px-2.5 py-1 font-medium text-slate-700 shadow-2xs">
+            <span class="h-2 w-2 rounded-full bg-emerald-500" />
+            <span class="font-mono font-semibold">{{ monthStats.done }}</span> completed
           </span>
         </div>
       </div>
       <div class="flex items-center gap-2">
         <NuxtLink
           :to="`/?m=${addMonths(month, -1).slice(0, 7)}`"
-          class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+          class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
           aria-label="Previous month"
         >
           <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
@@ -92,13 +109,13 @@ const toneOf = (color: string) => paletteOf(color);
         </NuxtLink>
         <NuxtLink
           :to="`/?m=${today.slice(0, 7)}`"
-          class="rounded-lg border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50"
+          class="rounded-lg border border-slate-200/80 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50"
         >
           Today
         </NuxtLink>
         <NuxtLink
           :to="`/?m=${addMonths(month, 1).slice(0, 7)}`"
-          class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+          class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
           aria-label="Next month"
         >
           <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
@@ -107,7 +124,7 @@ const toneOf = (color: string) => paletteOf(color);
         </NuxtLink>
         <NuxtLink
           :to="`/day/${today}`"
-          class="rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-medium text-white shadow-2xs transition hover:bg-slate-800"
+          class="rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-semibold text-white shadow-2xs transition hover:bg-slate-800"
         >
           Open today
         </NuxtLink>
@@ -121,59 +138,59 @@ const toneOf = (color: string) => paletteOf(color);
           <div
             v-for="label in WEEKDAY_LABELS"
             :key="label"
-            class="py-2.5 text-center font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-400"
+            class="py-3 text-center font-mono text-xs font-bold uppercase tracking-wider text-slate-400"
           >
             {{ label }}
           </div>
         </div>
         <div class="grid grid-cols-7">
           <NuxtLink
-            v-for="iso in cells"
-            :key="iso"
-            :to="`/day/${iso}`"
+            v-for="day in days"
+            :key="day.iso"
+            :to="`/day/${day.iso}`"
+            :aria-label="day.label"
             :class="[
-              'group relative flex h-24 flex-col gap-1 border-b border-r border-slate-100 p-1.5 transition sm:h-28 hover:bg-slate-50/80',
-              isSameMonth(iso, month) ? 'bg-white' : 'bg-slate-50/40 opacity-70',
-              (parseISODate(iso).getDay() === 0 || parseISODate(iso).getDay() === 6) && isSameMonth(iso, month) ? 'bg-slate-50/30' : ''
+              'group relative flex min-h-[6.5rem] flex-col gap-1 border-b border-r border-slate-100 p-2 transition hover:bg-slate-50/80 sm:min-h-[7.5rem]',
+              !day.inMonth ? 'bg-slate-50/40 opacity-70' : day.isWeekend ? 'bg-slate-50/30' : 'bg-white',
             ]"
           >
             <span class="flex items-center justify-between">
               <span
                 :class="[
-                  'flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold tabular-nums transition',
-                  iso === today
+                  'flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold tabular-nums transition',
+                  day.isToday
                     ? 'bg-slate-900 text-white shadow-xs'
-                    : isSameMonth(iso, month)
+                    : day.inMonth
                       ? 'text-slate-700 group-hover:text-slate-900'
-                      : 'text-slate-400'
+                      : 'text-slate-400',
                 ]"
               >
-                {{ parseISODate(iso).getDate() }}
+                {{ day.dayNumber }}
               </span>
-              <span v-if="(byDay.get(iso) ?? []).length > 0" class="font-mono text-[10px] font-medium text-slate-400 tabular-nums">
-                {{ formatDuration((byDay.get(iso) ?? []).reduce((sum, task) => sum + task.durationMinutes, 0)) }}
+              <span v-if="day.total" class="font-mono text-xs font-semibold text-slate-400 tabular-nums">
+                {{ day.total }}
               </span>
             </span>
 
-            <span class="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden pt-0.5">
+            <span class="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden pt-1">
               <span
-                v-for="task in (byDay.get(iso) ?? []).slice(0, 3)"
+                v-for="task in day.visible"
                 :key="task.id"
                 :class="[
-                  'flex items-center gap-1.5 truncate rounded-md border px-1.5 py-[2px] text-[10px] font-medium tabular-nums shadow-2xs transition',
+                  'flex items-center gap-1.5 truncate rounded-md border px-2 py-0.5 text-xs font-semibold tabular-nums shadow-2xs transition',
                   toneOf(task.color).chip,
-                  task.completed ? 'line-through opacity-50' : ''
+                  task.completed ? 'line-through text-slate-600 opacity-80' : '',
                 ]"
               >
-                <span :class="['h-1.5 w-1.5 shrink-0 rounded-full', toneOf(task.color).dot]" />
-                <span class="font-mono text-[10px] opacity-75">{{ formatTime(task.startMinutes) }}</span>
+                <span :class="['h-2 w-2 shrink-0 rounded-full', toneOf(task.color).dot]" />
+                <span class="hidden font-mono text-xs opacity-75 sm:inline">{{ formatTime(task.startMinutes) }}</span>
                 <span class="truncate">{{ task.title }}</span>
               </span>
               <span
-                v-if="(byDay.get(iso) ?? []).length > 3"
-                class="self-start rounded bg-slate-100/90 px-1 py-0.2 font-mono text-[10px] font-medium text-slate-500 tabular-nums"
+                v-if="day.hidden"
+                class="self-start rounded bg-slate-100/90 px-1.5 py-0.5 font-mono text-xs font-semibold text-slate-500 tabular-nums"
               >
-                +{{ (byDay.get(iso) ?? []).length - 3 }} more
+                +{{ day.hidden }} more
               </span>
             </span>
           </NuxtLink>
@@ -184,28 +201,28 @@ const toneOf = (color: string) => paletteOf(color);
       <aside class="space-y-4">
         <section class="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs">
           <div class="flex items-center justify-between">
-            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-900">Upcoming</h2>
-            <span class="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-medium text-slate-600">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900">Upcoming</h2>
+            <span class="rounded-full bg-slate-100 px-2.5 py-0.5 font-mono text-xs font-medium text-slate-600">
               Next 14 days
             </span>
           </div>
-          <p v-if="upcoming.length === 0" class="mt-4 text-xs text-slate-400">
+          <p v-if="upcoming.length === 0" class="mt-4 text-sm text-slate-400">
             Nothing scheduled yet. Open a date and drop activities onto the timeline.
           </p>
           <ul v-else class="mt-3 space-y-1.5">
             <li v-for="task in upcoming" :key="task.id">
               <NuxtLink
                 :to="`/day/${task.day}`"
-                class="group flex items-start gap-2.5 rounded-lg border border-slate-100 bg-white p-2 transition hover:border-slate-300 hover:bg-slate-50 shadow-2xs hover:shadow-xs"
+                class="group flex items-start gap-2.5 rounded-lg border border-slate-100 bg-white p-2.5 transition hover:border-slate-300 hover:bg-slate-50 shadow-2xs hover:shadow-xs"
               >
                 <span
                   :class="['mt-1.5 h-2 w-2 shrink-0 rounded-full', toneOf(task.color).dot]"
                 />
                 <span class="min-w-0 flex-1">
-                  <span class="block truncate text-xs font-medium text-slate-800 group-hover:text-slate-900">
+                  <span class="block truncate text-sm font-semibold text-slate-800 group-hover:text-slate-900">
                     {{ task.emoji }} {{ task.title }}
                   </span>
-                  <span class="block font-mono text-[10px] text-slate-500 tabular-nums">
+                  <span class="block font-mono text-xs text-slate-500 tabular-nums">
                     {{
                       parseISODate(task.day).toLocaleDateString("en-US", {
                         weekday: "short",
@@ -222,19 +239,19 @@ const toneOf = (color: string) => paletteOf(color);
         </section>
 
         <section class="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs">
-          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-900">Tips</h2>
-          <ul class="mt-2.5 space-y-2 text-xs text-slate-600">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900">Tips</h2>
+          <ul class="mt-3 space-y-2 text-sm text-slate-600">
             <li class="flex items-start gap-2">
-              <span class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400" />
+              <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
               <span>Click any date cell to plan that day's schedule</span>
             </li>
             <li class="flex items-start gap-2">
-              <span class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400" />
+              <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
               <span>Drag activities directly onto the timeline grid</span>
             </li>
             <li class="flex items-start gap-2">
               <span class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400" />
-              <span>Hover any block to delete it with the ✕ button</span>
+              <span>Click a block to edit it, or hover it to remove it</span>
             </li>
           </ul>
         </section>

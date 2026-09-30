@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
-import type { UserProfile } from "~/composables/useAuth";
+import { PROFILE_LIMITS, type UserProfile } from "~/composables/useAuth";
 
 useHead({
   title: "My Profile · DayForge",
 });
 
-const { user, profile, loading, isConfigured, updateProfileData, logout, resetPassword } = useAuth();
+const { user, profile, profileError, loading, updateProfileData, loadProfile, logout, resetPassword } = useAuth();
 const router = useRouter();
 
 const form = ref<Partial<UserProfile>>({
@@ -178,13 +178,27 @@ const handleLogout = async () => {
 
       <!-- Alerts -->
       <div
+        v-if="profileError"
+        class="flex items-center justify-between gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 p-3 text-xs font-medium text-rose-800"
+      >
+        <span>{{ profileError }}</span>
+        <button
+          type="button"
+          class="rounded-md border border-rose-200 bg-white px-2 py-1 text-rose-800 transition hover:bg-rose-50"
+          @click="user && loadProfile(user)"
+        >
+          Retry
+        </button>
+      </div>
+
+      <div
         v-if="saveSuccess"
         class="flex items-center gap-2.5 rounded-lg border border-emerald-200/80 bg-emerald-50/80 p-3 text-xs font-medium text-emerald-800"
       >
         <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M5 10l3 3 7-7" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-        <span>Profile saved successfully to cloud storage</span>
+        <span>Profile saved</span>
       </div>
 
       <div
@@ -226,6 +240,8 @@ const handleLogout = async () => {
                 id="displayName"
                 v-model="form.displayName"
                 type="text"
+                required
+                :maxlength="PROFILE_LIMITS.displayName"
                 placeholder="Your full name"
                 class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:border-slate-900 focus:outline-hidden"
               />
@@ -252,6 +268,7 @@ const handleLogout = async () => {
                 id="phone"
                 v-model="form.phone"
                 type="tel"
+                :maxlength="PROFILE_LIMITS.phone"
                 placeholder="+1 (555) 000-0000"
                 class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:border-slate-900 focus:outline-hidden"
               />
@@ -265,6 +282,7 @@ const handleLogout = async () => {
                 id="location"
                 v-model="form.location"
                 type="text"
+                :maxlength="PROFILE_LIMITS.location"
                 placeholder="City, Country"
                 class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:border-slate-900 focus:outline-hidden"
               />
@@ -278,6 +296,7 @@ const handleLogout = async () => {
                 id="bio"
                 v-model="form.bio"
                 rows="3"
+                :maxlength="PROFILE_LIMITS.bio"
                 placeholder="Tell us a little about your scheduling goals..."
                 class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:border-slate-900 focus:outline-hidden"
               />
@@ -298,6 +317,7 @@ const handleLogout = async () => {
                 id="timezone"
                 v-model="form.timezone"
                 type="text"
+                :maxlength="PROFILE_LIMITS.timezone"
                 placeholder="e.g. America/New_York or UTC"
                 class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-2xs focus:border-slate-900 focus:outline-hidden"
               />
@@ -344,7 +364,7 @@ const handleLogout = async () => {
 
             <button
               type="submit"
-              :disabled="isSaving"
+              :disabled="isSaving || !profile"
               class="rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white shadow-2xs transition hover:bg-slate-800 disabled:opacity-50"
             >
               <span v-if="isSaving">Saving...</span>

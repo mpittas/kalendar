@@ -1,4 +1,2 @@
-export default defineEventHandler(async () => {
-  const ok = await dbService.isHealthy();
-  return { ok };
-});
+// Liveness only: unauthenticated, so it deliberately reports nothing about the database.
+export default defineEventHandler(() => ({ ok: true }));

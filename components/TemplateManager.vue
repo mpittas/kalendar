@@ -13,7 +13,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "saved", template: ActivityTemplate): void;
-  (e: "deleted", id: number): void;
+  (e: "deleted", id: string): void;
 }>();
 
 const EMOJI_CHOICES = [
@@ -40,7 +40,7 @@ const emptyDraft = (): Draft => ({
 });
 
 const draft = ref<Draft>(emptyDraft());
-const editingId = ref<number | null>(null);
+const editingId = ref<string | null>(null);
 const editDraft = ref<Draft>(emptyDraft());
 const busy = ref(false);
 const error = ref<string | null>(null);
@@ -102,7 +102,7 @@ const saveEdit = async () => {
   }
 };
 
-const remove = async (id: number) => {
+const remove = async (id: string) => {
   busy.value = true;
   try {
     await api.deleteTemplate(id);

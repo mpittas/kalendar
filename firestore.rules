@@ -1,0 +1,221 @@
+rules_version = '2';
+
+// ===============================================================
+// klndr / DayForge data model (everything lives under the owner's uid)
+//
+//   users/{uid}                     profile
+//     uid, email            immutable, must match the signed-in identity
+//     displayName, bio, phone, location, timezone,
+//     weekStartsOnMonday, defaultTaskDuration, photoURL
+//     createdAt (immutable), updatedAt (server time on every write)
+//
+//   users/{uid}/meta/seed           one-time marker: starter data created
+//   users/{uid}/templates/{id}      activity templates
+//   users/{uid}/tasks/{id}          scheduled tasks
+//
+// Default deny: anything not matched below is unreadable and unwritable.
+// The same rules protect both the web SDK and the Nuxt server, which
+// calls Firestore with the caller's own ID token (no admin credentials).
+// ===============================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function str(v, minLen, maxLen) {
+      return v is string && v.size() >= minLen && v.size() <= maxLen;
+    }
+
+    function optStr(v, maxLen) {
+      return v == null || (v is string && v.size() <= maxLen);
+    }
+
+    function intIn(v, lo, hi) {
+      return v is int && v >= lo && v <= hi;
+    }
+
+    // A single path segment: no slashes, bounded length.
+    function validDocId(v) {
+      return v is string && v.size() >= 1 && v.size() <= 64 && !v.matches('.*/.*');
+    }
+
+    function isColor(v) {
+      return v in ['indigo', 'emerald', 'amber', 'rose', 'sky', 'violet',
+                   'teal', 'orange', 'pink', 'lime', 'cyan', 'slate'];
+    }
+
+    // Fields a client may change after creation.
+    function onlyChanges(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    // ---------- profile ----------
+    function validProfile(d) {
+      return d.keys().hasOnly([
+          'uid', 'email', 'displayName', 'photoURL', 'bio', 'phone', 'location',
+          'timezone', 'weekStartsOnMonday', 'defaultTaskDuration',
+          'createdAt', 'updatedAt'
+        ])
+        && d.keys().hasAll(['uid', 'displayName', 'timezone', 'weekStartsOnMonday',
+                            'defaultTaskDuration', 'createdAt', 'updatedAt'])
+        && d.uid == request.auth.uid
+        && (d.get('email', null) == request.auth.token.get('email', null))
+        && str(d.displayName, 1, 80)
+        && optStr(d.get('photoURL', null), 2048)
+        && optStr(d.get('bio', null), 500)
+        && optStr(d.get('phone', null), 40)
+        && optStr(d.get('location', null), 100)
+        && str(d.timezone, 1, 64)
+        && d.weekStartsOnMonday is bool
+        && d.defaultTaskDuration in [15, 30, 45, 60, 90, 120]
+        && d.updatedAt == request.time;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && validProfile(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isOwner(uid)
+        && validProfile(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && onlyChanges(['displayName', 'photoURL', 'bio', 'phone', 'location',
+                        'timezone', 'weekStartsOnMonday', 'defaultTaskDuration',
+                        'updatedAt']);
+      allow delete: if false;
+
+      // ---------- one-time starter-data marker ----------
+      match /meta/seed {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['seededAt'])
+          && request.resource.data.seededAt == request.time;
+        allow update, delete: if false;
+      }
+
+      // ---------- activity templates ----------
+      function validTemplate(d) {
+        return d.keys().hasOnly([
+            'name', 'emoji', 'color', 'category', 'defaultDuration',
+            'notes', 'archived', 'createdAt'
+          ])
+          && d.keys().hasAll(['name', 'emoji', 'color', 'category',
+                              'defaultDuration', 'archived', 'createdAt'])
+          && str(d.name, 1, 80)
+          && str(d.emoji, 1, 32)
+          && isColor(d.color)
+          && str(d.category, 1, 40)
+          && intIn(d.defaultDuration, 15, 1440)
+          && optStr(d.get('notes', null), 500)
+          && d.archived is bool;
+      }
+
+      match /templates/{templateId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && validTemplate(request.resource.data)
+          && request.resource.data.createdAt == request.time;
+        allow update: if isOwner(uid)
+          && validTemplate(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(uid);
+      }
+
+      // ---------- scheduled tasks ----------
+      function validTask(d) {
+        return d.keys().hasOnly([
+            'templateId', 'title', 'emoji', 'color', 'category', 'day',
+            'startMinutes', 'durationMinutes', 'notes', 'completed',
+            'createdAt', 'updatedAt'
+          ])
+          && d.keys().hasAll(['title', 'emoji', 'color', 'category', 'day',
+                              'startMinutes', 'durationMinutes', 'completed',
+                              'createdAt', 'updatedAt'])
+          && str(d.title, 1, 120)
+          && str(d.emoji, 1, 32)
+          && isColor(d.color)
+          && str(d.category, 1, 40)
+          && d.day is string
+          && d.day.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+          && intIn(d.startMinutes, 0, 1425)
+          && intIn(d.durationMinutes, 15, 1440)
+          && optStr(d.get('notes', null), 500)
+          && d.completed is bool
+          && d.updatedAt == request.time
+          && (d.get('templateId', null) == null || validDocId(d.templateId));
+      }
+
+      // A task may only point at one of the owner's own templates.
+      function ownsTemplate(templateId) {
+        return templateId == null
+          || exists(/databases/$(database)/documents/users/$(uid)/templates/$(templateId));
+      }
+
+      match /tasks/{taskId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && validTask(request.resource.data)
+          && ownsTemplate(request.resource.data.get('templateId', null))
+          && request.resource.data.createdAt == request.time;
+        // The template is re-checked only when the link changes, so tasks
+        // whose template was later deleted stay editable.
+        allow update: if isOwner(uid)
+          && validTask(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt
+          && (request.resource.data.get('templateId', null) == resource.data.get('templateId', null)
+              || ownsTemplate(request.resource.data.get('templateId', null)));
+        allow delete: if isOwner(uid);
+      }
+
+      // ---------- checklist items ----------
+      function validChecklistItem(d) {
+        return d.keys().hasOnly(['title', 'emoji', 'order', 'archived', 'createdAt'])
+          && d.keys().hasAll(['title', 'emoji', 'order', 'archived', 'createdAt'])
+          && str(d.title, 1, 120)
+          && str(d.emoji, 1, 32)
+          && d.order is int
+          && d.archived is bool;
+      }
+
+      match /checklist_items/{itemId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && validChecklistItem(request.resource.data)
+          && request.resource.data.createdAt == request.time;
+        allow update: if isOwner(uid)
+          && validChecklistItem(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(uid);
+      }
+
+      // ---------- checklist days ----------
+      function validChecklistDay(d) {
+        return d.keys().hasOnly(['day', 'completedItemIds', 'updatedAt'])
+          && d.keys().hasAll(['day', 'completedItemIds', 'updatedAt'])
+          && d.day is string
+          && d.day.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+          && d.completedItemIds is list
+          && d.updatedAt == request.time;
+      }
+
+      match /checklist_days/{dayId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && validChecklistDay(request.resource.data);
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    // Everything else is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

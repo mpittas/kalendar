@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
 @layer base {
+  html {
+    font-size: 16.5px;
+  }
+
   html,
   body {
     height: 100%;
@@ -38,15 +42,5 @@
   }
   ::-webkit-scrollbar-track {
     background: transparent;
-  }
-}
-
-@layer utilities {
-  .tabular-nums {
-    font-variant-numeric: tabular-nums;
-  }
-
-  .dragging-none * {
-    user-select: none;
   }
 }

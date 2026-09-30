@@ -7,12 +7,12 @@ export default defineEventHandler(async (event) => {
   const to = query.to as string | undefined;
 
   if (day && isValidISODate(day)) {
-    const tasks = await dbService.listTasksForDay(day);
+    const tasks = await storeOf(event).listTasksForDay(day);
     return { tasks };
   }
 
   if (from && to && isValidISODate(from) && isValidISODate(to)) {
-    const tasks = await dbService.listTasksBetween(from, to);
+    const tasks = await storeOf(event).listTasksBetween(from, to);
     return { tasks };
   }
 

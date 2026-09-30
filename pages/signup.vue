@@ -21,7 +21,7 @@ const getFriendlyErrorMessage = (err: any) => {
     return "An account with this email already exists. Please log in instead.";
   }
   if (code.includes("weak-password")) {
-    return "Password is too weak. Please use at least 6 characters.";
+    return "Password is too weak. Please use at least 8 characters.";
   }
   if (code.includes("invalid-email")) {
     return "Please enter a valid email address.";
@@ -37,8 +37,8 @@ const handleSignUp = async () => {
     return;
   }
 
-  if (password.value.length < 6) {
-    error.value = "Password must be at least 6 characters long.";
+  if (password.value.length < 8) {
+    error.value = "Password must be at least 8 characters long.";
     return;
   }
 
@@ -145,7 +145,7 @@ const handleGoogleSignUp = async () => {
 
         <div>
           <label for="password" class="block text-xs font-medium text-slate-700">
-            Password (min 6 characters)
+            Password (min 8 characters)
           </label>
           <input
             id="password"

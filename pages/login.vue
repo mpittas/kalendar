@@ -42,7 +42,7 @@ const handleLogin = async () => {
   isSubmitting.value = true;
   try {
     await login(email.value.trim(), password.value);
-    const redirect = (route.query.redirect as string) || "/";
+    const redirect = safeRedirect(route.query.redirect);
     router.push(redirect);
   } catch (err: any) {
     error.value = getFriendlyErrorMessage(err);
@@ -56,7 +56,7 @@ const handleGoogleLogin = async () => {
   isSubmitting.value = true;
   try {
     await loginWithGoogle();
-    const redirect = (route.query.redirect as string) || "/";
+    const redirect = safeRedirect(route.query.redirect);
     router.push(redirect);
   } catch (err: any) {
     error.value = getFriendlyErrorMessage(err);

@@ -1,9 +1,15 @@
-import type { ActivityTemplate, ScheduledTask } from "~/lib/types";
+import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist } from "~/lib/types";
+import { getIdToken } from "~/composables/useAuth";
 
 async function request<T>(url: string, init: RequestInit): Promise<T> {
+  const token = await getIdToken();
   const response = await fetch(url, {
     ...init,
-    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init.headers ?? {}),
+    },
   });
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
@@ -28,7 +34,7 @@ export type TaskDraft = {
   durationMinutes: number;
   notes?: string | null;
   completed?: boolean;
-  templateId?: number | null;
+  templateId?: string | null;
 };
 
 export type TaskPatch = Partial<Omit<TaskDraft, "day">> & { day?: string };
@@ -59,14 +65,14 @@ export const api = {
     });
     return data.task;
   },
-  async updateTask(id: number, patch: TaskPatch): Promise<ScheduledTask> {
+  async updateTask(id: string, patch: TaskPatch): Promise<ScheduledTask> {
     const data = await request<{ task: ScheduledTask }>(`/api/tasks/${id}`, {
       method: "PATCH",
       body: JSON.stringify(patch),
     });
     return data.task;
   },
-  async deleteTask(id: number): Promise<void> {
+  async deleteTask(id: string): Promise<void> {
     await request<{ ok: true }>(`/api/tasks/${id}`, { method: "DELETE" });
   },
   async createTemplate(
@@ -79,7 +85,7 @@ export const api = {
     return data.template;
   },
   async updateTemplate(
-    id: number,
+    id: string,
     patch: Partial<Omit<ActivityTemplate, "id" | "archived">> & { archived?: boolean },
   ): Promise<ActivityTemplate> {
     const data = await request<{ template: ActivityTemplate }>(
@@ -88,7 +94,46 @@ export const api = {
     );
     return data.template;
   },
-  async deleteTemplate(id: number): Promise<void> {
+  async deleteTemplate(id: string): Promise<void> {
     await request<{ ok: true }>(`/api/templates/${id}`, { method: "DELETE" });
+  },
+  async getChecklistItems(): Promise<ChecklistItem[]> {
+    const data = await request<{ items: ChecklistItem[] }>("/api/checklist/items", {
+      method: "GET",
+    });
+    return data.items;
+  },
+  async createChecklistItem(draft: { title: string; emoji: string; order?: number }): Promise<ChecklistItem> {
+    const data = await request<{ item: ChecklistItem }>("/api/checklist/items", {
+      method: "POST",
+      body: JSON.stringify(draft),
+    });
+    return data.item;
+  },
+  async updateChecklistItem(
+    id: string,
+    patch: Partial<Omit<ChecklistItem, "id">>,
+  ): Promise<ChecklistItem> {
+    const data = await request<{ item: ChecklistItem }>(`/api/checklist/items/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    return data.item;
+  },
+  async deleteChecklistItem(id: string): Promise<void> {
+    await request<{ ok: true }>(`/api/checklist/items/${id}`, { method: "DELETE" });
+  },
+  async getDayChecklist(day: string): Promise<DayChecklist> {
+    const data = await request<{ dayChecklist: DayChecklist }>(`/api/checklist/day?day=${day}`, {
+      method: "GET",
+    });
+    return data.dayChecklist;
+  },
+  async toggleChecklistItem(day: string, itemId: string, completed: boolean): Promise<DayChecklist> {
+    const data = await request<{ dayChecklist: DayChecklist }>("/api/checklist/toggle", {
+      method: "POST",
+      body: JSON.stringify({ day, itemId, completed }),
+    });
+    return data.dayChecklist;
   },
 };

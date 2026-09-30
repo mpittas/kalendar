@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { isValidISODate, monthRange, todayISO } from "~/lib/time";
+import { api } from "~/lib/api";
 import type { ScheduledTask } from "~/lib/types";
 
 const route = useRoute();
@@ -16,17 +17,15 @@ const month = computed(() => {
 
 const range = computed(() => monthRange(month.value));
 
-const { data } = await useFetch<{ tasks: ScheduledTask[] }>(
-  () => `/api/tasks?from=${range.value.from}&to=${range.value.to}`,
-  {
-    watch: [month],
-  },
+// Client-only: API calls need the signed-in user's token, which SSR doesn't have.
+const { data: tasks } = await useAsyncData<ScheduledTask[]>(
+  "month-tasks",
+  () => api.getTasksBetween(range.value.from, range.value.to),
+  { server: false, watch: [month], default: () => [] },
 );
 
-const tasks = computed(() => data.value?.tasks ?? []);
-
 useHead({
-  title: "DayForge · Daily Task Scheduler",
+  title: "klndr. · Daily Task Scheduler",
 });
 </script>
 

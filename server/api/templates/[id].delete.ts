@@ -1,10 +1,5 @@
 export default defineEventHandler(async (event) => {
-  const idParam = getRouterParam(event, "id");
-  const id = Number.parseInt(idParam ?? "", 10);
-  if (Number.isNaN(id)) {
-    throw createError({ statusCode: 400, statusMessage: "Invalid id" });
-  }
-  const ok = await dbService.deleteTemplate(id);
+  const ok = await storeOf(event).deleteTemplate(parseId(event));
   if (!ok) {
     throw createError({ statusCode: 404, statusMessage: "Not found" });
   }

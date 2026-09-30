@@ -18,6 +18,34 @@ export default defineNuxtConfig({
       firebaseAppId: process.env.NUXT_PUBLIC_FIREBASE_APP_ID || process.env.FIREBASE_APP_ID || "",
     },
   },
+  routeRules: {
+    "/**": {
+      headers: {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+        "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+        // Nuxt inlines its hydration payload, hence 'unsafe-inline' for scripts. Everything
+        // else is limited to this origin plus what Firebase Auth / Firestore need.
+        "Content-Security-Policy": [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-inline' https://apis.google.com",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' data: https://*.googleusercontent.com",
+          "connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com wss://*.firebaseio.com",
+          "frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com",
+          "object-src 'none'",
+          "base-uri 'self'",
+          "form-action 'self'",
+          "frame-ancestors 'none'",
+        ].join("; "),
+        // Keep the Google sign-in popup working while isolating the app.
+        "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+      },
+    },
+    "/api/**": { headers: { "Cache-Control": "no-store" } },
+  },
   nitro: {
     esbuild: {
       options: {
@@ -27,7 +55,7 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: "DayForge · Daily Task Scheduler",
+      title: "klndr. · Daily Task Scheduler",
       meta: [
         {
           name: "description",

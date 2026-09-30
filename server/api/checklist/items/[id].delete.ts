@@ -1,5 +1,6 @@
 export default defineEventHandler(async (event) => {
-  const ok = await storeOf(event).deleteTask(parseId(event));
+  const id = parseId(event);
+  const ok = await storeOf(event).deleteChecklistItem(id);
   if (!ok) {
     throw createError({ statusCode: 404, statusMessage: "Not found" });
   }
