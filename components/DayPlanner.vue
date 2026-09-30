@@ -723,19 +723,33 @@ const toneOf = (color: string) => paletteOf(color);
 
       <!-- Interactive Quick Daily Checklist Bar -->
       <div
-        v-if="checklistItems.length > 0"
         class="border-b border-slate-200/70 bg-slate-50/60 px-3 py-2 sm:px-5 sm:py-2.5 transition"
       >
         <div class="mx-auto flex max-w-4xl items-center justify-between gap-2.5">
           <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-600 shrink-0">
             <span>Routines</span>
-            <span class="rounded-full bg-slate-200/80 px-1.5 py-0.2 sm:px-2 sm:py-0.5 font-mono text-[10px] sm:text-[11px] font-semibold text-slate-700">
+            <span
+              v-if="checklistItems.length > 0"
+              class="rounded-full bg-slate-200/80 px-1.5 py-0.2 sm:px-2 sm:py-0.5 font-mono text-[10px] sm:text-[11px] font-semibold text-slate-700"
+            >
               {{ checklistStats.done }}/{{ checklistStats.total }}
             </span>
           </div>
 
+          <!-- Empty state when no items yet -->
+          <div v-if="checklistItems.length === 0" class="flex flex-1 items-center justify-between gap-2">
+            <span class="text-xs text-slate-500">Track daily micro-habits (pills, protein shake, shower, water)</span>
+            <button
+              type="button"
+              @click="openChecklistManager"
+              class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white shadow-2xs transition hover:bg-slate-800 cursor-pointer"
+            >
+              + Add routine
+            </button>
+          </div>
+
           <!-- Horizontal habit chips -->
-          <div class="flex flex-1 items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
+          <div v-else class="flex flex-1 items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
             <button
               v-for="item in checklistItems"
               :key="item.id"

@@ -232,6 +232,11 @@ const removeItem = async (item: ChecklistItem) => {
             <!-- Emoji dropdown -->
             <div
               v-if="showEmojiPicker"
+              class="fixed inset-0 z-30"
+              @click="showEmojiPicker = false"
+            />
+            <div
+              v-if="showEmojiPicker"
               class="absolute bottom-11 left-0 z-40 grid w-48 grid-cols-6 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
             >
               <button
