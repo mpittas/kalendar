@@ -629,72 +629,110 @@ const toneOf = (color: string) => paletteOf(color);
 
     <!-- Timeline section -->
     <section class="flex min-h-0 flex-1 flex-col bg-background">
-      <header class="border-b border-border bg-background px-3 py-2.5 sm:px-5 sm:py-3">
-        <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-          <div class="flex items-center gap-1.5 sm:gap-2">
-            <NuxtLink
-              :to="`/day/${addDaysISO(day, -1)}`"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground"
-              aria-label="Previous day"
-            >
-              <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12.5 15l-5-5 5-5" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </NuxtLink>
-            <NuxtLink
-              v-if="!isToday"
-              :to="`/day/${today}`"
-              class="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-xs font-medium text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground"
-            >
-              Today
-            </NuxtLink>
-            <NuxtLink
-              :to="`/day/${addDaysISO(day, 1)}`"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground"
-              aria-label="Next day"
-            >
-              <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M7.5 15l5-5-5-5" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </NuxtLink>
-            <div class="ml-1">
-              <h1 class="text-sm font-semibold text-foreground leading-tight sm:text-base tracking-tight">
-                <span class="sm:hidden">{{ mediumDate(day) }}</span>
-                <span class="hidden sm:inline">{{ longDate(day) }}</span>
-              </h1>
-              <p class="text-[11px] text-muted-foreground tabular-nums sm:text-xs">
+      <!-- Single, compact, beautiful pinned header -->
+      <header class="border-b border-border bg-background/95 backdrop-blur px-3 py-2 sm:px-5">
+        <div class="flex flex-wrap items-center justify-between gap-2.5">
+          <!-- Left: Compact navigation button group & date info -->
+          <div class="flex items-center gap-2">
+            <div class="inline-flex h-8 items-center rounded-lg border border-border bg-card p-0.5 shadow-2xs">
+              <NuxtLink
+                :to="`/day/${addDaysISO(day, -1)}`"
+                class="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                aria-label="Previous day"
+              >
+                <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12.5 15l-5-5 5-5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </NuxtLink>
+              <NuxtLink
+                v-if="!isToday"
+                :to="`/day/${today}`"
+                class="flex h-7 items-center px-2.5 rounded-md text-xs font-medium text-foreground hover:bg-muted transition"
+              >
+                Today
+              </NuxtLink>
+              <NuxtLink
+                :to="`/day/${addDaysISO(day, 1)}`"
+                class="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                aria-label="Next day"
+              >
+                <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M7.5 15l5-5-5-5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </NuxtLink>
+              <div class="relative flex h-7 w-7 items-center justify-center" title="Choose specific date">
+                <input
+                  type="date"
+                  :value="day"
+                  @change="(e) => navigateTo(`/day/${(e.target as HTMLInputElement).value}`)"
+                  class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                  aria-label="Choose specific date"
+                />
+                <button
+                  type="button"
+                  class="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer"
+                  title="Choose date"
+                  aria-label="Choose date"
+                >
+                  <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="14" height="13" rx="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M3 8h14M7 2v4M13 2v4" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="ml-1 sm:ml-2">
+              <div class="flex items-center gap-2">
+                <h1 class="text-sm sm:text-base font-semibold text-foreground tracking-tight leading-tight">
+                  <span class="sm:hidden">{{ mediumDate(day) }}</span>
+                  <span class="hidden sm:inline">{{ longDate(day) }}</span>
+                </h1>
+                <span
+                  v-if="isToday"
+                  class="hidden sm:inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary leading-none"
+                >
+                  Today
+                </span>
+              </div>
+              <p class="text-[11px] text-muted-foreground font-mono tabular-nums leading-none mt-0.5">
                 {{ formatDuration(stats.scheduled) }} planned · {{ stats.done }} of {{ stats.count }} completed
               </p>
             </div>
           </div>
 
+          <!-- Right: Routines, Categories & Actions (all h-8 height) -->
           <div class="flex items-center gap-1.5 sm:gap-2">
             <button
               v-if="checklistItems.length > 0"
               type="button"
-              @click="activeSidebarTab = 'checklist'"
-              class="hidden lg:inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium shadow-xs transition cursor-pointer hover:bg-accent"
+              @click="openChecklistManager"
+              class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium shadow-2xs transition hover:bg-muted cursor-pointer"
               :class="checklistStats.total > 0 && checklistStats.done === checklistStats.total
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                ? 'border-emerald-300 bg-emerald-50/50 text-emerald-800'
                 : 'text-foreground'"
-              title="Open Daily Checklist in sidebar"
+              title="Open Daily Checklist"
             >
-              <span class="text-emerald-600 font-bold">✓</span>
-              <span>Checklist</span>
-              <span class="text-muted-foreground">·</span>
-              <span class="font-mono font-semibold">{{ checklistStats.done }}/{{ checklistStats.total }}</span>
+              <svg class="h-3.5 w-3.5 text-emerald-600 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span class="hidden sm:inline">Routines</span>
+              <span class="rounded-full bg-muted px-1.5 py-0.2 font-mono text-[10px] font-semibold text-muted-foreground">
+                {{ checklistStats.done }}/{{ checklistStats.total }}
+              </span>
             </button>
 
             <span
               v-for="[category, minutes] in stats.categories.slice(0, 3)"
               :key="category"
-              class="hidden lg:inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground tabular-nums"
+              class="hidden xl:inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground tabular-nums shadow-2xs"
             >
               <span class="h-1.5 w-1.5 rounded-full" :class="toneOf(categoryColor(category)).dot" />
               <span>{{ category }}</span>
-              <span class="opacity-50">·</span>
+              <span class="opacity-40">·</span>
               <span class="font-mono text-foreground font-semibold">{{ formatDuration(minutes) }}</span>
             </span>
+
             <button
               type="button"
               @click="editor = {
@@ -703,9 +741,13 @@ const toneOf = (color: string) => paletteOf(color);
                 startMinutes: snapMinutes(nowMinutes(), 30),
                 template: null,
               }"
-              class="inline-flex h-8 sm:h-9 items-center justify-center rounded-md bg-primary px-3 sm:px-4 text-xs sm:text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 active:scale-95 cursor-pointer"
+              class="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 sm:px-3.5 text-xs sm:text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 active:scale-95 cursor-pointer"
             >
-              + <span class="hidden sm:inline">Time block</span><span class="sm:hidden">Block</span>
+              <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 4v12M4 10h12" stroke-linecap="round" />
+              </svg>
+              <span class="hidden sm:inline">Time block</span>
+              <span class="sm:hidden">Block</span>
             </button>
           </div>
         </div>
@@ -714,76 +756,55 @@ const toneOf = (color: string) => paletteOf(color);
         </p>
       </header>
 
-      <!-- Interactive Quick Daily Checklist Bar -->
       <div
-        class="border-b border-border bg-muted/25 px-3 py-2 sm:px-5 sm:py-2 transition"
+        ref="scrollRef"
+        class="relative min-h-0 flex-1 overflow-y-auto bg-background scroll-pt-6"
       >
-        <div class="mx-auto flex max-w-4xl items-center justify-between gap-2.5">
-          <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground shrink-0">
-            <span>Routines</span>
-            <span
-              v-if="checklistItems.length > 0"
-              class="rounded-full bg-muted-foreground/15 px-1.5 py-0.2 sm:px-2 sm:py-0.5 font-mono text-[10px] sm:text-[11px] font-semibold text-foreground"
-            >
-              {{ checklistStats.done }}/{{ checklistStats.total }}
+        <!-- Scrollable Habits shelf: only visible if items exist, scrolls with timeline, NEVER pinned -->
+        <div v-if="checklistItems.length > 0" class="mx-auto max-w-4xl px-3 sm:px-6 pt-3 pb-2 border-b border-border/40">
+          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground shrink-0 flex items-center gap-1">
+              <svg class="h-3 w-3 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              Routines
             </span>
-          </div>
-
-          <!-- Empty state when no items yet -->
-          <div v-if="checklistItems.length === 0" class="flex flex-1 items-center justify-between gap-2">
-            <span class="text-xs text-muted-foreground">Track daily micro-habits (pills, protein shake, shower, water)</span>
-            <button
-              type="button"
-              @click="openChecklistManager"
-              class="inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 cursor-pointer"
-            >
-              + Add routine
-            </button>
-          </div>
-
-          <!-- Horizontal habit chips -->
-          <div v-else class="flex flex-1 items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
-            <button
-              v-for="item in checklistItems"
-              :key="item.id"
-              type="button"
-              @click="toggleChecklistItem(item.id, !completedChecklistIds.includes(item.id))"
-              class="group inline-flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-md border px-2 py-1 sm:px-2.5 sm:py-1 text-xs font-medium shadow-2xs transition cursor-pointer"
-              :class="completedChecklistIds.includes(item.id)
-                ? 'border-border/60 bg-muted/40 text-muted-foreground line-through'
-                : 'border-border bg-card text-foreground hover:bg-accent hover:border-foreground/20'"
-            >
-              <span
-                class="flex h-3.5 w-3.5 sm:h-4 sm:w-4 items-center justify-center rounded-xs border transition text-[9px]"
+            <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              <button
+                v-for="item in checklistItems"
+                :key="item.id"
+                type="button"
+                @click="toggleChecklistItem(item.id, !completedChecklistIds.includes(item.id))"
+                class="group inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium shadow-2xs transition cursor-pointer"
                 :class="completedChecklistIds.includes(item.id)
-                  ? 'border-emerald-600 bg-emerald-600 text-white font-bold'
-                  : 'border-input bg-background group-hover:border-foreground/50 text-transparent'"
+                  ? 'border-border/60 bg-muted/50 text-muted-foreground line-through opacity-70'
+                  : 'border-border bg-card text-foreground hover:bg-accent hover:border-foreground/30'"
               >
-                ✓
-              </span>
-              <span>{{ item.emoji }}</span>
-              <span class="truncate max-w-[10rem] sm:max-w-[14rem]">{{ item.title }}</span>
-            </button>
-
+                <span
+                  class="flex h-3.5 w-3.5 items-center justify-center rounded-full border transition text-[9px]"
+                  :class="completedChecklistIds.includes(item.id)
+                    ? 'border-emerald-600 bg-emerald-600 text-white font-bold'
+                    : 'border-muted-foreground/40 group-hover:border-foreground text-transparent'"
+                >
+                  ✓
+                </span>
+                <span>{{ item.emoji }}</span>
+                <span class="truncate max-w-[12rem]">{{ item.title }}</span>
+              </button>
+            </div>
             <button
               type="button"
               @click="openChecklistManager"
-              class="inline-flex shrink-0 items-center gap-1 rounded-md border border-dashed border-input bg-background px-2 py-1 sm:px-2.5 sm:py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer"
-              title="Add or customize daily habits"
+              class="inline-flex shrink-0 items-center gap-1 rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-muted-foreground hover:border-foreground/30 hover:text-foreground transition cursor-pointer"
+              title="Manage habits"
             >
-              <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
+              <svg viewBox="0 0 20 20" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M10 4v12M4 10h12" stroke-linecap="round" />
               </svg>
               <span>Manage</span>
             </button>
           </div>
         </div>
-      </div>
-
-      <div
-        ref="scrollRef"
-        class="relative min-h-0 flex-1 overflow-y-auto bg-background scroll-pt-6"
-      >
         <div class="mx-auto flex max-w-4xl pt-4 pb-28 sm:pt-6 sm:pb-12">
           <!-- Hour gutter -->
           <div class="relative w-14 sm:w-16 shrink-0 select-none border-r border-border bg-background pr-1.5 sm:pr-2.5">
