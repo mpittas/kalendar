@@ -77,30 +77,30 @@ const toneOf = (color: string) => paletteOf(color);
 
 <template>
   <div class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-    <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <header class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 class="text-xl font-bold tracking-tight text-slate-900 sm:text-3xl">
           {{ monthTitle(month) }}
         </h1>
-        <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-          <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-white px-2.5 py-1 font-medium text-slate-700 shadow-2xs">
-            <span class="h-2 w-2 rounded-full bg-slate-900" />
+        <div class="mt-2 flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-500">
+          <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 sm:px-2.5 sm:py-1 font-medium text-slate-700 shadow-2xs">
+            <span class="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-slate-900" />
             <span class="font-mono font-semibold">{{ monthStats.blocks }}</span> blocks
           </span>
-          <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-white px-2.5 py-1 font-medium text-slate-700 shadow-2xs">
-            <span class="h-2 w-2 rounded-full bg-indigo-500" />
+          <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 sm:px-2.5 sm:py-1 font-medium text-slate-700 shadow-2xs">
+            <span class="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-indigo-500" />
             <span class="font-mono font-semibold">{{ monthStats.hours }}h</span> planned
           </span>
-          <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-white px-2.5 py-1 font-medium text-slate-700 shadow-2xs">
-            <span class="h-2 w-2 rounded-full bg-emerald-500" />
+          <span class="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 sm:px-2.5 sm:py-1 font-medium text-slate-700 shadow-2xs">
+            <span class="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500" />
             <span class="font-mono font-semibold">{{ monthStats.done }}</span> completed
           </span>
         </div>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 sm:gap-2">
         <NuxtLink
           :to="`/?m=${addMonths(month, -1).slice(0, 7)}`"
-          class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+          class="flex h-8.5 w-8.5 sm:h-9 sm:w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
           aria-label="Previous month"
         >
           <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
@@ -109,13 +109,13 @@ const toneOf = (color: string) => paletteOf(color);
         </NuxtLink>
         <NuxtLink
           :to="`/?m=${today.slice(0, 7)}`"
-          class="rounded-lg border border-slate-200/80 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50"
+          class="rounded-lg border border-slate-200/80 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50"
         >
           Today
         </NuxtLink>
         <NuxtLink
           :to="`/?m=${addMonths(month, 1).slice(0, 7)}`"
-          class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+          class="flex h-8.5 w-8.5 sm:h-9 sm:w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
           aria-label="Next month"
         >
           <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
@@ -124,7 +124,7 @@ const toneOf = (color: string) => paletteOf(color);
         </NuxtLink>
         <NuxtLink
           :to="`/day/${today}`"
-          class="rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-semibold text-white shadow-2xs transition hover:bg-slate-800"
+          class="rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-2xs transition hover:bg-slate-800"
         >
           Open today
         </NuxtLink>
@@ -138,7 +138,7 @@ const toneOf = (color: string) => paletteOf(color);
           <div
             v-for="label in WEEKDAY_LABELS"
             :key="label"
-            class="py-3 text-center font-mono text-xs font-bold uppercase tracking-wider text-slate-400"
+            class="py-2 text-center font-mono text-[11px] font-bold uppercase tracking-wider text-slate-400 sm:py-3 sm:text-xs"
           >
             {{ label }}
           </div>
@@ -150,14 +150,14 @@ const toneOf = (color: string) => paletteOf(color);
             :to="`/day/${day.iso}`"
             :aria-label="day.label"
             :class="[
-              'group relative flex min-h-[6.5rem] flex-col gap-1 border-b border-r border-slate-100 p-2 transition hover:bg-slate-50/80 sm:min-h-[7.5rem]',
+              'group relative flex min-h-[4.5rem] flex-col gap-0.5 border-b border-r border-slate-100 p-1 transition hover:bg-slate-50/80 active:bg-slate-100 sm:min-h-[7.5rem] sm:gap-1 sm:p-2',
               !day.inMonth ? 'bg-slate-50/40 opacity-70' : day.isWeekend ? 'bg-slate-50/30' : 'bg-white',
             ]"
           >
             <span class="flex items-center justify-between">
               <span
                 :class="[
-                  'flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold tabular-nums transition',
+                  'flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold tabular-nums transition sm:h-7 sm:w-7 sm:text-sm',
                   day.isToday
                     ? 'bg-slate-900 text-white shadow-xs'
                     : day.inMonth
@@ -167,12 +167,25 @@ const toneOf = (color: string) => paletteOf(color);
               >
                 {{ day.dayNumber }}
               </span>
-              <span v-if="day.total" class="font-mono text-xs font-semibold text-slate-400 tabular-nums">
+              <span v-if="day.total" class="hidden font-mono text-xs font-semibold text-slate-400 tabular-nums sm:inline">
                 {{ day.total }}
               </span>
             </span>
 
-            <span class="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden pt-1">
+            <!-- Mobile task indicators: clean colored dots -->
+            <div class="flex flex-wrap items-center gap-1 pt-0.5 sm:hidden">
+              <span
+                v-for="task in day.visible"
+                :key="task.id"
+                :class="['h-1.5 w-1.5 rounded-full', toneOf(task.color).dot]"
+              />
+              <span v-if="day.hidden" class="font-mono text-[9px] font-bold text-slate-400 leading-none">
+                +{{ day.hidden }}
+              </span>
+            </div>
+
+            <!-- Desktop task chips: full cards with time and title -->
+            <span class="hidden min-h-0 flex-1 flex-col gap-1 overflow-hidden pt-1 sm:flex">
               <span
                 v-for="task in day.visible"
                 :key="task.id"
@@ -183,7 +196,7 @@ const toneOf = (color: string) => paletteOf(color);
                 ]"
               >
                 <span :class="['h-2 w-2 shrink-0 rounded-full', toneOf(task.color).dot]" />
-                <span class="hidden font-mono text-xs opacity-75 sm:inline">{{ formatTime(task.startMinutes) }}</span>
+                <span class="font-mono text-xs opacity-75">{{ formatTime(task.startMinutes) }}</span>
                 <span class="truncate">{{ task.title }}</span>
               </span>
               <span

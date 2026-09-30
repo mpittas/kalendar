@@ -11,6 +11,7 @@ import {
   gutterLabel,
   HOUR_OPTIONS,
   longDate,
+  mediumDate,
   nowMinutes,
   parseISODate,
   snapMinutes,
@@ -31,6 +32,7 @@ const templates = ref<ActivityTemplate[]>([...props.initialTemplates]);
 const checklistItems = ref<ChecklistItem[]>([...(props.initialChecklistItems ?? [])]);
 const completedChecklistIds = ref<string[]>([...(props.initialDayChecklist?.completedItemIds ?? [])]);
 const activeSidebarTab = ref<"activities" | "checklist">("activities");
+const mobileSheet = ref<"checklist" | "activities" | null>(null);
 const editor = ref<EditorRequest | null>(null);
 const managerOpen = ref(false);
 const preview = ref<{ start: number; duration: number; color: string; label: string } | null>(null);
@@ -461,13 +463,28 @@ const onChecklistDeleted = (id: string) => {
   notify("Removed checklist item");
 };
 
+const openActivityFromMobile = (template: ActivityTemplate) => {
+  mobileSheet.value = null;
+  editor.value = {
+    mode: "create",
+    day: props.day,
+    startMinutes: snapMinutes(nowMinutes(), 30),
+    template,
+  };
+};
+
+const openChecklistManager = () => {
+  activeSidebarTab.value = "checklist";
+  mobileSheet.value = "checklist";
+};
+
 const toneOf = (color: string) => paletteOf(color);
 </script>
 
 <template>
   <div class="flex h-[calc(100dvh-57px)] flex-col bg-slate-100 lg:flex-row">
-    <!-- Activity palette and daily checklist sidebar -->
-    <aside class="flex max-h-[42vh] w-full shrink-0 flex-col border-b border-slate-200 bg-white lg:max-h-none lg:w-80 lg:border-b-0 lg:border-r">
+    <!-- Desktop Activity palette and daily checklist sidebar (hidden on mobile, replaced by bottom bar and sheets) -->
+    <aside class="hidden lg:flex lg:w-80 lg:shrink-0 lg:flex-col lg:border-r border-slate-200 bg-white">
       <!-- Tabs switcher -->
       <div class="flex items-center justify-between gap-2 border-b border-slate-200/80 px-3 pb-2 pt-3">
         <div class="flex items-center gap-1 rounded-lg bg-slate-100 p-0.5">
@@ -619,12 +636,12 @@ const toneOf = (color: string) => paletteOf(color);
 
     <!-- Timeline section -->
     <section class="flex min-h-0 flex-1 flex-col bg-white">
-      <header class="border-b border-slate-200/80 bg-white px-5 py-3.5">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-2">
+      <header class="border-b border-slate-200/80 bg-white px-3 py-2.5 sm:px-5 sm:py-3.5">
+        <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+          <div class="flex items-center gap-1.5 sm:gap-2">
             <NuxtLink
               :to="`/day/${addDaysISO(day, -1)}`"
-              class="flex h-8.5 w-8.5 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+              class="flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
               aria-label="Previous day"
             >
               <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
@@ -634,35 +651,36 @@ const toneOf = (color: string) => paletteOf(color);
             <NuxtLink
               v-if="!isToday"
               :to="`/day/${today}`"
-              class="rounded-lg border border-slate-200/80 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50"
+              class="rounded-lg border border-slate-200/80 bg-white px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50"
             >
               Today
             </NuxtLink>
             <NuxtLink
               :to="`/day/${addDaysISO(day, 1)}`"
-              class="flex h-8.5 w-8.5 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+              class="flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
               aria-label="Next day"
             >
               <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M7.5 15l5-5-5-5" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </NuxtLink>
-            <div class="ml-1 min-w-[12rem]">
-              <h1 class="text-base font-bold text-slate-900 sm:text-lg">
-                {{ longDate(day) }}
+            <div class="ml-1">
+              <h1 class="text-sm font-bold text-slate-900 leading-tight sm:text-lg">
+                <span class="sm:hidden">{{ mediumDate(day) }}</span>
+                <span class="hidden sm:inline">{{ longDate(day) }}</span>
               </h1>
-              <p class="text-xs text-slate-500 tabular-nums sm:text-sm">
+              <p class="text-[11px] text-slate-500 tabular-nums sm:text-sm">
                 {{ formatDuration(stats.scheduled) }} planned · {{ stats.done }} of {{ stats.count }} completed
               </p>
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-1.5 sm:gap-2">
             <button
               v-if="checklistItems.length > 0"
               type="button"
               @click="activeSidebarTab = 'checklist'"
-              class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold shadow-2xs transition cursor-pointer"
+              class="hidden lg:inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold shadow-2xs transition cursor-pointer"
               :class="checklistStats.total > 0 && checklistStats.done === checklistStats.total
                 ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
                 : 'border-slate-200/80 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900'"
@@ -677,7 +695,7 @@ const toneOf = (color: string) => paletteOf(color);
             <span
               v-for="[category, minutes] in stats.categories.slice(0, 3)"
               :key="category"
-              class="inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-slate-50/80 px-2.5 py-1 text-xs font-medium text-slate-600 tabular-nums shadow-2xs"
+              class="hidden lg:inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-slate-50/80 px-2.5 py-1 text-xs font-medium text-slate-600 tabular-nums shadow-2xs"
             >
               <span class="h-1.5 w-1.5 rounded-full" :class="toneOf(categoryColor(category)).dot" />
               <span>{{ category }}</span>
@@ -692,13 +710,13 @@ const toneOf = (color: string) => paletteOf(color);
                 startMinutes: snapMinutes(nowMinutes(), 30),
                 template: null,
               }"
-              class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-2xs transition hover:bg-slate-800"
+              class="rounded-lg bg-slate-900 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-2xs transition hover:bg-slate-800 active:scale-95"
             >
-              + Time block
+              + <span class="hidden sm:inline">Time block</span><span class="sm:hidden">Block</span>
             </button>
           </div>
         </div>
-        <p v-if="flash" role="status" aria-live="polite" class="mt-2.5 rounded-lg border border-emerald-200/80 bg-emerald-50/80 px-3.5 py-1.5 text-sm font-medium text-emerald-800">
+        <p v-if="flash" role="status" aria-live="polite" class="mt-2 rounded-lg border border-emerald-200/80 bg-emerald-50/80 px-3 py-1 text-xs sm:text-sm font-medium text-emerald-800">
           {{ flash }}
         </p>
       </header>
@@ -706,30 +724,30 @@ const toneOf = (color: string) => paletteOf(color);
       <!-- Interactive Quick Daily Checklist Bar -->
       <div
         v-if="checklistItems.length > 0"
-        class="border-b border-slate-200/70 bg-slate-50/60 px-5 py-2.5 transition"
+        class="border-b border-slate-200/70 bg-slate-50/60 px-3 py-2 sm:px-5 sm:py-2.5 transition"
       >
-        <div class="mx-auto flex max-w-4xl items-center justify-between gap-3">
-          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600 shrink-0">
-            <span>Daily Checklist</span>
-            <span class="rounded-full bg-slate-200/80 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-700">
+        <div class="mx-auto flex max-w-4xl items-center justify-between gap-2.5">
+          <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-600 shrink-0">
+            <span>Routines</span>
+            <span class="rounded-full bg-slate-200/80 px-1.5 py-0.2 sm:px-2 sm:py-0.5 font-mono text-[10px] sm:text-[11px] font-semibold text-slate-700">
               {{ checklistStats.done }}/{{ checklistStats.total }}
             </span>
           </div>
 
           <!-- Horizontal habit chips -->
-          <div class="flex flex-1 items-center gap-2 overflow-x-auto py-0.5">
+          <div class="flex flex-1 items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
             <button
               v-for="item in checklistItems"
               :key="item.id"
               type="button"
               @click="toggleChecklistItem(item.id, !completedChecklistIds.includes(item.id))"
-              class="group inline-flex shrink-0 items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs font-medium shadow-2xs transition cursor-pointer"
+              class="group inline-flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-lg border px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs font-medium shadow-2xs transition cursor-pointer"
               :class="completedChecklistIds.includes(item.id)
                 ? 'border-emerald-200 bg-emerald-50/80 text-slate-500 line-through'
                 : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50'"
             >
               <span
-                class="flex h-4.5 w-4.5 items-center justify-center rounded border transition text-[10px]"
+                class="flex h-4 w-4 sm:h-4.5 sm:w-4.5 items-center justify-center rounded border transition text-[10px]"
                 :class="completedChecklistIds.includes(item.id)
                   ? 'border-emerald-600 bg-emerald-600 text-white font-bold'
                   : 'border-slate-300 bg-white group-hover:border-slate-400 text-transparent'"
@@ -737,13 +755,13 @@ const toneOf = (color: string) => paletteOf(color);
                 ✓
               </span>
               <span>{{ item.emoji }}</span>
-              <span class="truncate max-w-[14rem]">{{ item.title }}</span>
+              <span class="truncate max-w-[10rem] sm:max-w-[14rem]">{{ item.title }}</span>
             </button>
 
             <button
               type="button"
-              @click="activeSidebarTab = 'checklist'"
-              class="inline-flex shrink-0 items-center gap-1 rounded-lg border border-dashed border-slate-300 bg-white/70 px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:border-slate-400 hover:text-slate-800 cursor-pointer"
+              @click="openChecklistManager"
+              class="inline-flex shrink-0 items-center gap-1 rounded-lg border border-dashed border-slate-300 bg-white/70 px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs font-medium text-slate-500 hover:border-slate-400 hover:text-slate-800 cursor-pointer"
               title="Add or customize daily habits"
             >
               <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
@@ -759,9 +777,9 @@ const toneOf = (color: string) => paletteOf(color);
         ref="scrollRef"
         class="relative min-h-0 flex-1 overflow-y-auto bg-white scroll-pt-6"
       >
-        <div class="mx-auto flex max-w-4xl pt-6 pb-12">
+        <div class="mx-auto flex max-w-4xl pt-4 pb-28 sm:pt-6 sm:pb-12">
           <!-- Hour gutter -->
-          <div class="relative w-18 shrink-0 select-none border-r border-slate-200 bg-white pr-2.5">
+          <div class="relative w-14 sm:w-18 shrink-0 select-none border-r border-slate-200 bg-white pr-1.5 sm:pr-2.5">
             <div
               v-for="minute in HOUR_OPTIONS"
               :key="minute"
@@ -770,7 +788,7 @@ const toneOf = (color: string) => paletteOf(color);
             >
               <span
                 v-if="gutterLabel(minute)"
-                class="absolute -top-2.5 right-2 text-xs font-mono font-medium text-slate-400 tracking-tight"
+                class="absolute -top-2.5 right-1.5 sm:right-2 text-[11px] sm:text-xs font-mono font-medium text-slate-400 tracking-tight"
               >
                 {{ gutterLabel(minute) }}
               </span>
@@ -779,7 +797,7 @@ const toneOf = (color: string) => paletteOf(color);
             <!-- Amie live time pill in gutter -->
             <div
               v-if="nowMinute !== null"
-              class="pointer-events-none absolute right-1 z-30 -translate-y-1/2 rounded-full bg-rose-500 px-2 py-0.5 font-mono text-xs font-bold text-white shadow-xs"
+              class="pointer-events-none absolute right-0.5 sm:right-1 z-30 -translate-y-1/2 rounded-full bg-rose-500 px-1.5 sm:px-2 py-0.5 font-mono text-[10px] sm:text-xs font-bold text-white shadow-xs"
               :style="{ top: `${(nowMinute / SLOT_MINUTES) * SLOT_HEIGHT}px` }"
             >
               {{ formatTime(nowMinute) }}
@@ -990,7 +1008,7 @@ const toneOf = (color: string) => paletteOf(color);
         </div>
       </div>
 
-      <footer class="flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-2.5 text-xs text-slate-500">
+      <footer class="hidden lg:flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-2.5 text-xs text-slate-500">
         <span>
           Drag an activity into the grid · drag blocks to move · pull the bottom edge to
           resize · click a slot for details
@@ -1003,6 +1021,57 @@ const toneOf = (color: string) => paletteOf(color);
           Refresh
         </button>
       </footer>
+
+      <!-- Mobile Bottom Navigation Bar (iOS / Android thumb friendly) -->
+      <nav aria-label="Mobile navigation" class="lg:hidden fixed bottom-0 inset-x-0 z-30 flex items-center justify-around border-t border-slate-200/90 bg-white/95 px-4 py-2 backdrop-blur-md shadow-lg">
+        <button
+          type="button"
+          @click="mobileSheet = 'activities'"
+          class="flex flex-col items-center gap-1 text-slate-600 hover:text-slate-900 transition active:scale-95 cursor-pointer"
+        >
+          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+            <svg viewBox="0 0 20 20" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6h12M4 10h12M4 14h8" stroke-linecap="round" />
+            </svg>
+          </div>
+          <span class="text-[11px] font-semibold">Activities</span>
+        </button>
+
+        <button
+          type="button"
+          @click="editor = {
+            mode: 'create',
+            day,
+            startMinutes: snapMinutes(nowMinutes(), 30),
+            template: null,
+          }"
+          class="flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-md transition active:scale-95 hover:bg-slate-800 cursor-pointer"
+        >
+          <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M10 4v12M4 10h12" stroke-linecap="round" />
+          </svg>
+          <span>Schedule</span>
+        </button>
+
+        <button
+          type="button"
+          @click="mobileSheet = 'checklist'"
+          class="relative flex flex-col items-center gap-1 text-slate-600 hover:text-slate-900 transition active:scale-95 cursor-pointer"
+        >
+          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+            <svg viewBox="0 0 20 20" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 10l3 3 7-7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <span class="text-[11px] font-semibold">Checklist</span>
+          <span
+            v-if="checklistStats.total > 0"
+            class="absolute -top-1 right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 font-mono text-[9px] font-bold text-white shadow-xs"
+          >
+            {{ checklistStats.done }}/{{ checklistStats.total }}
+          </span>
+        </button>
+      </nav>
     </section>
 
     <!-- Modals -->
@@ -1021,5 +1090,86 @@ const toneOf = (color: string) => paletteOf(color);
       @saved="onTemplateSaved"
       @deleted="(id) => { templates = templates.filter((item) => item.id !== id) }"
     />
+
+    <!-- Mobile Activities Bottom Sheet -->
+    <Modal
+      :open="mobileSheet === 'activities'"
+      title="Add Activity"
+      @close="mobileSheet = null"
+    >
+      <div class="space-y-4">
+        <p class="text-xs text-slate-500">Tap an activity to schedule it on today's timeline.</p>
+        <div class="relative">
+          <input
+            v-model="templateSearch"
+            type="search"
+            placeholder="Search activities..."
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 pl-9 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-hidden"
+          />
+          <svg viewBox="0 0 20 20" class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8.5 14a5.5 5.5 0 100-11 5.5 5.5 0 000 11zM13 13l4 4" stroke-linecap="round" />
+          </svg>
+        </div>
+
+        <div class="max-h-[50vh] overflow-y-auto space-y-1.5 pr-0.5">
+          <button
+            v-for="template in filteredTemplates"
+            :key="template.id"
+            type="button"
+            @click="openActivityFromMobile(template)"
+            class="group flex w-full items-center justify-between rounded-xl border border-slate-200/90 bg-white p-2.5 text-left shadow-2xs transition hover:border-slate-300 hover:bg-slate-50 active:scale-[0.99] cursor-pointer"
+          >
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base shadow-2xs" :class="toneOf(template.color).dot">
+                {{ template.emoji }}
+              </span>
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-slate-900">{{ template.name }}</p>
+                <p class="text-xs text-slate-500">{{ template.category }} · {{ formatDuration(template.defaultDuration) }}</p>
+              </div>
+            </div>
+            <span class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 group-hover:bg-slate-900 group-hover:text-white transition">
+              Add +
+            </span>
+          </button>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <button
+            type="button"
+            @click="mobileSheet = null; managerOpen = true"
+            class="text-xs font-semibold text-slate-600 hover:text-slate-900 underline cursor-pointer"
+          >
+            Manage custom activities
+          </button>
+          <button
+            type="button"
+            @click="mobileSheet = null"
+            class="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </Modal>
+
+    <!-- Mobile Checklist Bottom Sheet -->
+    <Modal
+      :open="mobileSheet === 'checklist'"
+      title="Daily Habits & Checklist"
+      @close="mobileSheet = null"
+    >
+      <div class="max-h-[60vh] overflow-y-auto">
+        <DailyChecklist
+          :day="day"
+          :items="checklistItems"
+          :completed-ids="completedChecklistIds"
+          @toggle="toggleChecklistItem"
+          @created="onChecklistCreated"
+          @updated="onChecklistUpdated"
+          @deleted="onChecklistDeleted"
+        />
+      </div>
+    </Modal>
   </div>
 </template>

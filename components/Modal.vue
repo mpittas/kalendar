@@ -58,10 +58,11 @@ onUnmounted(() => {
       role="dialog"
       aria-modal="true"
       :class="[
-        'relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-xl sm:rounded-xl border border-slate-200/80 bg-white shadow-xl',
+        'relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl sm:rounded-2xl border border-slate-200/80 bg-white shadow-xl',
         wide ? 'sm:max-w-2xl' : 'sm:max-w-md'
       ]"
     >
+      <div class="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-slate-300 sm:hidden" />
       <header class="flex items-start justify-between gap-4 border-b border-slate-200/80 px-5 py-3.5">
         <div>
           <h2 class="text-sm font-semibold text-slate-900">{{ title }}</h2>
