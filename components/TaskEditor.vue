@@ -165,25 +165,25 @@ const remove = async () => {
   >
     <div class="space-y-4">
       <label class="block">
-        <span class="text-xs font-medium text-slate-700">
+        <span class="text-xs font-medium text-foreground">
           Activity Name
         </span>
         <input
           v-model="title"
           autofocus
           placeholder="e.g. Deep focus, Team sync, Workout"
-          class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-2xs focus:border-slate-900 focus:outline-hidden"
+          class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
       </label>
 
       <label v-if="!isEdit && templates.length > 0" class="block">
-        <span class="text-xs font-medium text-slate-700">
+        <span class="text-xs font-medium text-foreground">
           Start from an activity
         </span>
         <select
           :value="templateId ?? ''"
           @change="applyTemplate(($event.target as HTMLSelectElement).value)"
-          class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-2xs focus:border-slate-900 focus:outline-hidden"
+          class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <option value="">Custom…</option>
           <option v-for="tpl in templates" :key="tpl.id" :value="tpl.id">
@@ -194,33 +194,33 @@ const remove = async () => {
 
       <div class="grid grid-cols-2 gap-3">
         <label class="block">
-          <span class="text-xs font-medium text-slate-700">
+          <span class="text-xs font-medium text-foreground">
             Date
           </span>
           <input
             v-model="day"
             type="date"
-            class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-2xs focus:border-slate-900 focus:outline-hidden"
+            class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </label>
         <label class="block">
-          <span class="text-xs font-medium text-slate-700">
+          <span class="text-xs font-medium text-foreground">
             Start Time
           </span>
           <input
             v-model="start"
             type="time"
             step="900"
-            class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-2xs focus:border-slate-900 focus:outline-hidden"
+            class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </label>
         <label class="block">
-          <span class="text-xs font-medium text-slate-700">
+          <span class="text-xs font-medium text-foreground">
             Duration
           </span>
           <select
             v-model.number="duration"
-            class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-2xs focus:border-slate-900 focus:outline-hidden"
+            class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option v-for="val in durationOptions" :key="val" :value="val">
               {{ formatDuration(val) }}
@@ -228,18 +228,18 @@ const remove = async () => {
           </select>
         </label>
         <label class="block">
-          <span class="text-xs font-medium text-slate-700">
+          <span class="text-xs font-medium text-foreground">
             Category
           </span>
           <input
             v-model="category"
-            class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-2xs focus:border-slate-900 focus:outline-hidden"
+            class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </label>
       </div>
 
       <div>
-        <span class="text-xs font-medium text-slate-700">
+        <span class="text-xs font-medium text-foreground">
           Color
         </span>
         <div class="mt-1.5 flex flex-wrap gap-2">
@@ -250,16 +250,16 @@ const remove = async () => {
             :title="PALETTE[key].label"
             @click="color = key"
             :class="[
-              'h-6 w-6 rounded-full transition shadow-2xs',
+              'h-6 w-6 rounded-full transition shadow-xs cursor-pointer',
               PALETTE[key].swatch,
-              color === key ? 'ring-2 ring-slate-900 ring-offset-2' : 'opacity-70 hover:opacity-100'
+              color === key ? 'ring-2 ring-primary ring-offset-2 scale-110' : 'opacity-70 hover:opacity-100 hover:scale-105'
             ]"
           />
         </div>
       </div>
 
       <div>
-        <span class="text-xs font-medium text-slate-700">
+        <span class="text-xs font-medium text-foreground">
           Icon
         </span>
         <div class="mt-1.5 flex flex-wrap gap-1.5">
@@ -269,8 +269,8 @@ const remove = async () => {
             type="button"
             @click="emoji = choice"
             :class="[
-              'flex h-7 w-7 items-center justify-center rounded-lg text-sm transition shadow-2xs',
-              emoji === choice ? `${tone.chip} ring-1 ring-slate-900/30` : 'border border-slate-200/80 bg-white hover:bg-slate-50'
+              'flex h-8 w-8 items-center justify-center rounded-md text-sm transition shadow-2xs cursor-pointer',
+              emoji === choice ? 'bg-primary text-primary-foreground ring-2 ring-ring shadow-xs' : 'border border-input bg-background hover:bg-accent'
             ]"
           >
             {{ choice }}
@@ -279,37 +279,37 @@ const remove = async () => {
       </div>
 
       <label class="block">
-        <span class="text-xs font-medium text-slate-700">
+        <span class="text-xs font-medium text-foreground">
           Notes
         </span>
         <textarea
           v-model="notes"
           rows="2"
           placeholder="Any details, reminders, or goals…"
-          class="mt-1 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-2xs focus:border-slate-900 focus:outline-hidden"
+          class="mt-1.5 flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
       </label>
 
-      <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+      <label class="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
         <input
           v-model="completed"
           type="checkbox"
-          class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+          class="h-4 w-4 rounded-xs border-input accent-primary"
         />
         <span>Mark as completed</span>
       </label>
 
-      <p v-if="error" class="rounded-lg border border-rose-200/80 bg-rose-50/80 p-2.5 text-xs text-rose-800">
+      <p v-if="error" class="rounded-md border border-destructive/20 bg-destructive/10 p-2.5 text-xs text-destructive">
         {{ error }}
       </p>
 
-      <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-100">
+      <div class="flex items-center justify-between gap-3 pt-3 border-t border-border">
         <button
           v-if="isEdit"
           type="button"
           :disabled="busy"
           @click="remove"
-          class="rounded-lg border border-rose-200/80 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 shadow-2xs transition hover:bg-rose-50 disabled:opacity-50"
+          class="inline-flex items-center justify-center rounded-md border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive shadow-xs hover:bg-destructive hover:text-destructive-foreground transition-colors disabled:opacity-50 cursor-pointer"
         >
           Delete block
         </button>
@@ -318,7 +318,7 @@ const remove = async () => {
           <button
             type="button"
             @click="emit('close')"
-            class="rounded-lg border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+            class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3.5 py-1.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -326,7 +326,7 @@ const remove = async () => {
             type="button"
             :disabled="busy"
             @click="submit"
-            class="rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-medium text-white shadow-2xs transition hover:bg-slate-800 disabled:opacity-50"
+            class="inline-flex items-center justify-center rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer"
           >
             {{ busy ? "Saving…" : isEdit ? "Save changes" : "Add to schedule" }}
           </button>

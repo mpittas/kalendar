@@ -119,25 +119,25 @@ const removeItem = async (item: ChecklistItem) => {
 </script>
 
 <template>
-  <div class="flex h-full flex-col">
+  <div class="flex h-full flex-col bg-background">
     <!-- Progress banner -->
-    <div class="px-4 pt-3 pb-3 border-b border-slate-100">
-      <div class="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 shadow-2xs">
+    <div class="px-4 pt-3 pb-3 border-b border-border">
+      <div class="rounded-xl border border-border bg-card p-3 shadow-xs">
         <div class="flex items-center justify-between text-xs">
-          <span class="font-bold text-slate-700 uppercase tracking-wider">Today's Progress</span>
-          <span class="font-mono font-bold text-slate-900 tabular-nums">
+          <span class="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">Today's Progress</span>
+          <span class="font-mono font-semibold text-foreground tabular-nums">
             {{ completedCount }} / {{ totalCount }}
-            <span class="text-slate-400 font-normal">({{ percentage }}%)</span>
+            <span class="text-muted-foreground font-normal">({{ percentage }}%)</span>
           </span>
         </div>
-        <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200/80">
+        <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
           <div
             class="h-full rounded-full transition-all duration-300"
-            :class="allDone ? 'bg-emerald-500' : 'bg-slate-900'"
+            :class="allDone ? 'bg-emerald-500' : 'bg-primary'"
             :style="{ width: `${percentage}%` }"
           />
         </div>
-        <p v-if="allDone" class="mt-2 text-center text-xs font-semibold text-emerald-700 animate-fade-in">
+        <p v-if="allDone" class="mt-2 text-center text-xs font-medium text-emerald-700 dark:text-emerald-400">
           🎉 All habits completed for today!
         </p>
       </div>
@@ -145,34 +145,34 @@ const removeItem = async (item: ChecklistItem) => {
 
     <!-- Items list -->
     <div class="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
-      <p v-if="items.length === 0" class="py-10 text-center text-sm text-slate-400">
+      <p v-if="items.length === 0" class="py-10 text-center text-sm text-muted-foreground">
         No checklist items yet.<br />Add small habits below (e.g. pills, protein shake, shower).
       </p>
 
       <div
         v-for="item in items"
         :key="item.id"
-        class="group relative flex items-center gap-2.5 rounded-xl border border-transparent p-2 transition hover:border-slate-200 hover:bg-slate-50/80"
-        :class="{ 'opacity-65': isCompleted(item.id) }"
+        class="group relative flex items-center gap-2.5 rounded-lg border border-transparent p-2 transition hover:border-border hover:bg-accent/40"
+        :class="{ 'opacity-60': isCompleted(item.id) }"
       >
-        <!-- Toggle button -->
+        <!-- Toggle checkbox -->
         <button
           type="button"
           @click="toggle(item.id)"
-          class="flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-lg border transition shadow-2xs cursor-pointer"
+          class="flex h-5 w-5 shrink-0 items-center justify-center rounded-xs border transition shadow-2xs cursor-pointer"
           :class="isCompleted(item.id)
             ? 'border-emerald-600 bg-emerald-600 text-white'
-            : 'border-slate-300 bg-white hover:border-slate-500 text-transparent'"
+            : 'border-input bg-background hover:border-foreground/50 text-transparent'"
           :aria-label="isCompleted(item.id) ? `Mark ${item.title} as pending` : `Mark ${item.title} as completed`"
         >
-          <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5">
+          <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M5 10l3.5 3.5L15 6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
 
         <!-- Emoji -->
         <span
-          class="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-lg bg-white border border-slate-200/90 text-base shadow-2xs select-none"
+          class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/60 text-sm shadow-2xs select-none"
         >
           {{ item.emoji }}
         </span>
@@ -182,8 +182,8 @@ const removeItem = async (item: ChecklistItem) => {
           @click="toggle(item.id)"
           class="min-w-0 flex-1 cursor-pointer select-none text-sm transition"
           :class="isCompleted(item.id)
-            ? 'text-slate-400 line-through'
-            : 'font-medium text-slate-800 hover:text-slate-900'"
+            ? 'text-muted-foreground line-through'
+            : 'font-medium text-foreground hover:text-foreground/90'"
         >
           {{ item.title }}
         </span>
@@ -193,7 +193,7 @@ const removeItem = async (item: ChecklistItem) => {
           <button
             type="button"
             @click="startEdit(item)"
-            class="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+            class="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer"
             title="Edit item"
           >
             <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
@@ -203,7 +203,7 @@ const removeItem = async (item: ChecklistItem) => {
           <button
             type="button"
             @click="removeItem(item)"
-            class="rounded p-1 text-slate-400 hover:bg-rose-100 hover:text-rose-600"
+            class="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer"
             title="Delete item"
           >
             <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
@@ -215,7 +215,7 @@ const removeItem = async (item: ChecklistItem) => {
     </div>
 
     <!-- Quick add footer -->
-    <div class="border-t border-slate-200/80 bg-white p-3 space-y-2.5">
+    <div class="border-t border-border bg-card p-3 space-y-2">
       <form @submit.prevent="submitNew" class="space-y-2">
         <div class="flex items-center gap-1.5">
           <!-- Emoji picker button -->
@@ -223,7 +223,7 @@ const removeItem = async (item: ChecklistItem) => {
             <button
               type="button"
               @click="showEmojiPicker = !showEmojiPicker"
-              class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-base shadow-2xs hover:bg-slate-100"
+              class="flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-base shadow-xs hover:bg-accent cursor-pointer"
               title="Pick emoji"
             >
               {{ newEmoji }}
@@ -237,14 +237,14 @@ const removeItem = async (item: ChecklistItem) => {
             />
             <div
               v-if="showEmojiPicker"
-              class="absolute bottom-11 left-0 z-40 grid w-48 grid-cols-6 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+              class="absolute bottom-11 left-0 z-40 grid w-48 grid-cols-6 gap-1 rounded-xl border border-border bg-popover p-2 shadow-lg"
             >
               <button
                 v-for="e in HABIT_EMOJIS"
                 :key="e"
                 type="button"
                 @click="newEmoji = e; showEmojiPicker = false"
-                class="flex h-7 w-7 items-center justify-center rounded text-base hover:bg-slate-100"
+                class="flex h-7 w-7 items-center justify-center rounded-md text-base hover:bg-accent cursor-pointer"
               >
                 {{ e }}
               </button>
@@ -257,14 +257,14 @@ const removeItem = async (item: ChecklistItem) => {
             type="text"
             placeholder="Add habit (e.g. pills, shake)…"
             maxlength="100"
-            class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-hidden"
+            class="min-w-0 flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
 
           <!-- Submit -->
           <button
             type="submit"
             :disabled="!newTitle.trim() || adding"
-            class="flex h-9 items-center justify-center rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white shadow-2xs transition hover:bg-slate-800 disabled:opacity-40"
+            class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 disabled:opacity-40 cursor-pointer"
           >
             {{ adding ? "..." : "Add" }}
           </button>
@@ -275,26 +275,26 @@ const removeItem = async (item: ChecklistItem) => {
     <!-- Edit modal -->
     <div
       v-if="editingItem"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
       @click.self="cancelEdit"
     >
-      <div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
-        <h3 class="text-base font-bold text-slate-900">Edit Checklist Item</h3>
-        <p class="mt-1 text-xs text-slate-500">
+      <div class="w-full max-w-sm rounded-xl border border-border bg-background p-5 shadow-lg">
+        <h3 class="text-base font-semibold leading-none tracking-tight text-foreground">Edit Checklist Item</h3>
+        <p class="mt-1.5 text-xs text-muted-foreground">
           Changes will apply across all days.
         </p>
 
         <form @submit.prevent="saveEdit" class="mt-4 space-y-4">
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500">Emoji</label>
+            <label class="block text-xs font-medium text-foreground">Emoji</label>
             <div class="mt-1.5 flex flex-wrap gap-1.5">
               <button
                 v-for="e in HABIT_EMOJIS"
                 :key="e"
                 type="button"
                 @click="editEmoji = e"
-                class="flex h-8 w-8 items-center justify-center rounded-lg border text-lg transition"
-                :class="editEmoji === e ? 'border-slate-900 bg-slate-100 shadow-2xs' : 'border-slate-200 bg-white hover:bg-slate-50'"
+                class="flex h-8 w-8 items-center justify-center rounded-md border text-base transition cursor-pointer"
+                :class="editEmoji === e ? 'border-primary bg-primary text-primary-foreground shadow-xs' : 'border-input bg-background hover:bg-accent'"
               >
                 {{ e }}
               </button>
@@ -302,28 +302,28 @@ const removeItem = async (item: ChecklistItem) => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500">Title</label>
+            <label class="block text-xs font-medium text-foreground">Title</label>
             <input
               v-model="editTitle"
               type="text"
               required
               maxlength="100"
-              class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-900 focus:outline-hidden"
+              class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
           </div>
 
-          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-border">
             <button
               type="button"
               @click="cancelEdit"
-              class="rounded-lg border border-slate-200 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               :disabled="!editTitle.trim() || saving"
-              class="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-slate-800 disabled:opacity-40"
+              class="inline-flex items-center justify-center rounded-md bg-primary px-3.5 py-1.5 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-40 cursor-pointer"
             >
               {{ saving ? "Saving…" : "Save changes" }}
             </button>

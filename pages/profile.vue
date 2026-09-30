@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { PROFILE_LIMITS, type UserProfile } from "~/composables/useAuth";
 
 useHead({
-  title: "My Profile · DayForge",
+  title: "Profile · klndr.",
 });
 
 const { user, profile, profileError, loading, updateProfileData, loadProfile, logout, resetPassword } = useAuth();
@@ -107,34 +107,34 @@ const handleLogout = async () => {
   <div class="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
     <!-- Loading state -->
     <div v-if="loading" class="space-y-4">
-      <div class="h-24 w-full animate-pulse rounded-2xl bg-slate-200" />
-      <div class="h-64 w-full animate-pulse rounded-2xl bg-slate-200" />
+      <div class="h-24 w-full animate-pulse rounded-xl bg-muted" />
+      <div class="h-64 w-full animate-pulse rounded-xl bg-muted" />
     </div>
 
     <!-- Not authenticated state -->
     <div
       v-else-if="!user"
-      class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm"
+      class="rounded-xl border border-border bg-card p-8 text-center shadow-xs"
     >
-      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-2xl">
+      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-xl">
         🔒
       </div>
-      <h2 class="mt-4 text-2xl font-bold tracking-tight text-slate-900">
+      <h2 class="mt-4 text-xl font-bold tracking-tight text-foreground">
         Sign in to view your profile
       </h2>
-      <p class="mt-2 text-sm text-slate-500 max-w-md mx-auto">
+      <p class="mt-2 text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
         Your user profile and personal preferences are stored securely in your Firebase backend. Please sign in or create an account to view and edit this information.
       </p>
       <div class="mt-6 flex justify-center gap-3">
         <NuxtLink
           to="/login?redirect=/profile"
-          class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+          class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition"
         >
           Sign In
         </NuxtLink>
         <NuxtLink
           to="/signup"
-          class="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+          class="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground shadow-2xs hover:bg-accent transition"
         >
           Create Account
         </NuxtLink>
@@ -144,22 +144,22 @@ const handleLogout = async () => {
     <!-- Authenticated Profile View & Editor -->
     <div v-else class="space-y-6">
       <!-- Header Banner / Card -->
-      <div class="overflow-hidden rounded-xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+      <div class="overflow-hidden rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div class="flex items-center gap-4">
-            <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-900 text-lg font-bold text-white shadow-2xs">
+            <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground text-lg font-bold shadow-xs">
               {{ initials }}
             </div>
             <div>
-              <h1 class="text-xl font-bold tracking-tight text-slate-900">
+              <h1 class="text-xl font-bold tracking-tight text-foreground">
                 {{ form.displayName || 'Your Profile' }}
               </h1>
-              <p class="text-xs text-slate-500">{{ user.email }}</p>
-              <div class="mt-1 flex items-center gap-2">
-                <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+              <p class="text-xs sm:text-sm text-muted-foreground">{{ user.email }}</p>
+              <div class="mt-1.5 flex items-center gap-2">
+                <span class="inline-flex items-center rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                   Firebase Connected
                 </span>
-                <span class="text-[11px] text-slate-400 font-mono">UID: {{ user.uid.slice(0, 12) }}...</span>
+                <span class="text-[11px] text-muted-foreground font-mono">UID: {{ user.uid.slice(0, 12) }}...</span>
               </div>
             </div>
           </div>
@@ -168,7 +168,7 @@ const handleLogout = async () => {
             <button
               type="button"
               @click="handleLogout"
-              class="rounded-lg border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+              class="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground shadow-2xs transition hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
             >
               Log Out
             </button>
@@ -179,12 +179,12 @@ const handleLogout = async () => {
       <!-- Alerts -->
       <div
         v-if="profileError"
-        class="flex items-center justify-between gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 p-3 text-xs font-medium text-rose-800"
+        class="flex items-center justify-between gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 p-3 text-xs sm:text-sm font-medium text-rose-800"
       >
         <span>{{ profileError }}</span>
         <button
           type="button"
-          class="rounded-md border border-rose-200 bg-white px-2 py-1 text-rose-800 transition hover:bg-rose-50"
+          class="rounded-md border border-rose-300 bg-white px-2 py-1 text-xs text-rose-800 transition hover:bg-rose-50"
           @click="user && loadProfile(user)"
         >
           Retry
@@ -193,17 +193,17 @@ const handleLogout = async () => {
 
       <div
         v-if="saveSuccess"
-        class="flex items-center gap-2.5 rounded-lg border border-emerald-200/80 bg-emerald-50/80 p-3 text-xs font-medium text-emerald-800"
+        class="flex items-center gap-2.5 rounded-lg border border-emerald-200/80 bg-emerald-50/80 p-3 text-xs sm:text-sm font-medium text-emerald-800"
       >
         <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M5 10l3 3 7-7" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-        <span>Profile saved</span>
+        <span>Profile saved successfully.</span>
       </div>
 
       <div
         v-if="saveError"
-        class="flex items-center gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 p-3 text-xs font-medium text-rose-800"
+        class="flex items-center gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 p-3 text-xs sm:text-sm font-medium text-rose-800"
       >
         <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="10" cy="10" r="7" />
@@ -214,9 +214,9 @@ const handleLogout = async () => {
 
       <div
         v-if="resetEmailSent"
-        class="flex items-center gap-2.5 rounded-lg border border-slate-200/80 bg-slate-50/80 p-3 text-xs font-medium text-slate-800"
+        class="flex items-center gap-2.5 rounded-lg border border-border bg-muted/40 p-3 text-xs sm:text-sm font-medium text-foreground"
       >
-        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-slate-600" fill="none" stroke="currentColor" stroke-width="2">
+        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="5" width="14" height="10" rx="2" />
           <path d="M3 7l7 4 7-4" stroke-linecap="round" />
         </svg>
@@ -224,16 +224,16 @@ const handleLogout = async () => {
       </div>
 
       <!-- Main Profile Form -->
-      <div class="rounded-xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+      <div class="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs">
         <form @submit.prevent="handleSave" class="space-y-6">
-          <div class="border-b border-slate-100 pb-3">
-            <h2 class="text-sm font-semibold text-slate-900">Personal Information</h2>
-            <p class="text-xs text-slate-500">Update your details and contact information.</p>
+          <div class="border-b border-border pb-3">
+            <h2 class="text-sm sm:text-base font-semibold text-foreground">Personal Information</h2>
+            <p class="text-xs sm:text-sm text-muted-foreground">Update your details and contact information.</p>
           </div>
 
           <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <label for="displayName" class="block text-xs font-medium text-slate-700">
+            <div class="space-y-1.5">
+              <label for="displayName" class="block text-xs sm:text-sm font-medium text-foreground">
                 Display Name
               </label>
               <input
@@ -243,12 +243,12 @@ const handleLogout = async () => {
                 required
                 :maxlength="PROFILE_LIMITS.displayName"
                 placeholder="Your full name"
-                class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:border-slate-900 focus:outline-hidden"
+                class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none"
               />
             </div>
 
-            <div>
-              <label for="email" class="block text-xs font-medium text-slate-700">
+            <div class="space-y-1.5">
+              <label for="email" class="block text-xs sm:text-sm font-medium text-foreground">
                 Account Email
               </label>
               <input
@@ -256,12 +256,12 @@ const handleLogout = async () => {
                 :value="user.email"
                 disabled
                 type="email"
-                class="mt-1 block w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500 cursor-not-allowed"
+                class="h-9 w-full rounded-md border border-input bg-muted/50 px-3 py-1 text-sm text-muted-foreground shadow-2xs cursor-not-allowed"
               />
             </div>
 
-            <div>
-              <label for="phone" class="block text-xs font-medium text-slate-700">
+            <div class="space-y-1.5">
+              <label for="phone" class="block text-xs sm:text-sm font-medium text-foreground">
                 Phone Number
               </label>
               <input
@@ -270,12 +270,12 @@ const handleLogout = async () => {
                 type="tel"
                 :maxlength="PROFILE_LIMITS.phone"
                 placeholder="+1 (555) 000-0000"
-                class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:border-slate-900 focus:outline-hidden"
+                class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none"
               />
             </div>
 
-            <div>
-              <label for="location" class="block text-xs font-medium text-slate-700">
+            <div class="space-y-1.5">
+              <label for="location" class="block text-xs sm:text-sm font-medium text-foreground">
                 Location
               </label>
               <input
@@ -284,12 +284,12 @@ const handleLogout = async () => {
                 type="text"
                 :maxlength="PROFILE_LIMITS.location"
                 placeholder="City, Country"
-                class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:border-slate-900 focus:outline-hidden"
+                class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none"
               />
             </div>
 
-            <div class="sm:col-span-2">
-              <label for="bio" class="block text-xs font-medium text-slate-700">
+            <div class="space-y-1.5 sm:col-span-2">
+              <label for="bio" class="block text-xs sm:text-sm font-medium text-foreground">
                 Bio / Notes
               </label>
               <textarea
@@ -298,19 +298,19 @@ const handleLogout = async () => {
                 rows="3"
                 :maxlength="PROFILE_LIMITS.bio"
                 placeholder="Tell us a little about your scheduling goals..."
-                class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:border-slate-900 focus:outline-hidden"
+                class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none"
               />
             </div>
           </div>
 
-          <div class="border-b border-slate-100 pt-3 pb-3">
-            <h2 class="text-sm font-semibold text-slate-900">Preferences & Schedule</h2>
-            <p class="text-xs text-slate-500">Configure default planning options.</p>
+          <div class="border-b border-border pt-3 pb-3">
+            <h2 class="text-sm sm:text-base font-semibold text-foreground">Preferences & Schedule</h2>
+            <p class="text-xs sm:text-sm text-muted-foreground">Configure default planning options.</p>
           </div>
 
           <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <label for="timezone" class="block text-xs font-medium text-slate-700">
+            <div class="space-y-1.5">
+              <label for="timezone" class="block text-xs sm:text-sm font-medium text-foreground">
                 Timezone
               </label>
               <input
@@ -319,18 +319,18 @@ const handleLogout = async () => {
                 type="text"
                 :maxlength="PROFILE_LIMITS.timezone"
                 placeholder="e.g. America/New_York or UTC"
-                class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-2xs focus:border-slate-900 focus:outline-hidden"
+                class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors focus-visible:border-foreground focus-visible:outline-none"
               />
             </div>
 
-            <div>
-              <label for="defaultDuration" class="block text-xs font-medium text-slate-700">
+            <div class="space-y-1.5">
+              <label for="defaultDuration" class="block text-xs sm:text-sm font-medium text-foreground">
                 Default Block Duration
               </label>
               <select
                 id="defaultDuration"
                 v-model="form.defaultTaskDuration"
-                class="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-2xs focus:border-slate-900 focus:outline-hidden"
+                class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors focus-visible:border-foreground focus-visible:outline-none"
               >
                 <option :value="15">15 minutes</option>
                 <option :value="30">30 minutes</option>
@@ -346,18 +346,18 @@ const handleLogout = async () => {
                 <input
                   type="checkbox"
                   v-model="form.weekStartsOnMonday"
-                  class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                  class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
                 />
-                <span class="text-xs font-medium text-slate-700">Week starts on Monday</span>
+                <span class="text-xs sm:text-sm font-medium text-foreground">Week starts on Monday</span>
               </label>
             </div>
           </div>
 
-          <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+          <div class="flex items-center justify-between pt-4 border-t border-border">
             <button
               type="button"
               @click="handleSendResetEmail"
-              class="text-xs font-medium text-slate-600 transition hover:text-slate-900"
+              class="text-xs sm:text-sm font-medium text-muted-foreground transition hover:text-foreground underline-offset-4 hover:underline"
             >
               Reset password via email
             </button>
@@ -365,7 +365,7 @@ const handleLogout = async () => {
             <button
               type="submit"
               :disabled="isSaving || !profile"
-              class="rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white shadow-2xs transition hover:bg-slate-800 disabled:opacity-50"
+              class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-xs sm:text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:opacity-50"
             >
               <span v-if="isSaving">Saving...</span>
               <span v-else>Save Changes</span>

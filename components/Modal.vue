@@ -47,7 +47,7 @@ onUnmounted(() => {
 <template>
   <div
     v-if="open"
-    class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+    class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-xs sm:items-center sm:p-6"
   >
     <div
       aria-hidden="true"
@@ -58,19 +58,19 @@ onUnmounted(() => {
       role="dialog"
       aria-modal="true"
       :class="[
-        'relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl sm:rounded-2xl border border-slate-200/80 bg-white shadow-xl',
+        'relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl sm:rounded-xl border border-border bg-background shadow-lg',
         wide ? 'sm:max-w-2xl' : 'sm:max-w-md'
       ]"
     >
-      <div class="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-slate-300 sm:hidden" />
-      <header class="flex items-start justify-between gap-4 border-b border-slate-200/80 px-5 py-3.5">
+      <div class="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/30 sm:hidden" />
+      <header class="flex items-start justify-between gap-4 border-b border-border px-6 py-4 bg-background">
         <div>
-          <h2 class="text-sm font-semibold text-slate-900">{{ title }}</h2>
-          <p v-if="subtitle" class="mt-0.5 text-xs text-slate-500 tabular-nums">{{ subtitle }}</p>
+          <h2 class="text-base font-semibold leading-none tracking-tight text-foreground">{{ title }}</h2>
+          <p v-if="subtitle" class="mt-1.5 text-xs text-muted-foreground tabular-nums">{{ subtitle }}</p>
         </div>
         <button
           type="button"
-          class="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+          class="rounded-md p-1.5 text-muted-foreground transition hover:bg-accent hover:text-accent-foreground cursor-pointer"
           aria-label="Close"
           @click="emit('close')"
         >
@@ -79,7 +79,7 @@ onUnmounted(() => {
           </svg>
         </button>
       </header>
-      <div class="overflow-y-auto px-5 py-4">
+      <div class="overflow-y-auto px-6 py-5">
         <slot />
       </div>
     </div>

@@ -482,20 +482,20 @@ const toneOf = (color: string) => paletteOf(color);
 </script>
 
 <template>
-  <div class="flex h-[calc(100dvh-57px)] flex-col bg-slate-100 lg:flex-row">
+  <div class="flex h-[calc(100dvh-56px)] flex-col bg-background lg:flex-row overflow-hidden">
     <!-- Desktop Activity palette and daily checklist sidebar (hidden on mobile, replaced by bottom bar and sheets) -->
-    <aside class="hidden lg:flex lg:w-80 lg:shrink-0 lg:flex-col lg:border-r border-slate-200 bg-white">
-      <!-- Tabs switcher -->
-      <div class="flex items-center justify-between gap-2 border-b border-slate-200/80 px-3 pb-2 pt-3">
-        <div class="flex items-center gap-1 rounded-lg bg-slate-100 p-0.5">
+    <aside class="hidden lg:flex lg:w-80 lg:shrink-0 lg:flex-col lg:border-r border-border bg-card">
+      <!-- Tabs switcher (shadcn style) -->
+      <div class="flex items-center justify-between gap-2 border-b border-border px-3 pb-2.5 pt-3 bg-card">
+        <div class="inline-flex h-9 w-full items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground">
           <button
             type="button"
             @click="activeSidebarTab = 'activities'"
-            class="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition cursor-pointer"
-            :class="activeSidebarTab === 'activities' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+            class="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all cursor-pointer"
+            :class="activeSidebarTab === 'activities' ? 'bg-background text-foreground shadow-xs font-semibold' : 'hover:text-foreground'"
           >
             <span>Activities</span>
-            <span class="rounded-full bg-slate-200/70 px-1.5 py-0.2 font-mono text-[11px] font-medium text-slate-700">
+            <span class="rounded-full bg-muted-foreground/15 px-1.5 py-0.2 font-mono text-[10px]">
               {{ filteredTemplates.length }}
             </span>
           </button>
@@ -503,27 +503,20 @@ const toneOf = (color: string) => paletteOf(color);
           <button
             type="button"
             @click="activeSidebarTab = 'checklist'"
-            class="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition cursor-pointer"
-            :class="activeSidebarTab === 'checklist' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'"
+            class="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all cursor-pointer"
+            :class="activeSidebarTab === 'checklist' ? 'bg-background text-foreground shadow-xs font-semibold' : 'hover:text-foreground'"
           >
             <span>Checklist</span>
             <span
-              class="rounded-full px-1.5 py-0.2 font-mono text-[11px] font-bold transition"
+              class="rounded-full px-1.5 py-0.2 font-mono text-[10px] font-bold"
               :class="checklistStats.total > 0 && checklistStats.done === checklistStats.total
-                ? 'bg-emerald-100 text-emerald-800'
-                : 'bg-slate-200/70 text-slate-700'"
+                ? 'bg-emerald-500/15 text-emerald-700'
+                : 'bg-muted-foreground/15 text-foreground'"
             >
               {{ checklistStats.done }}/{{ checklistStats.total }}
             </span>
           </button>
         </div>
-
-        <NuxtLink
-          to="/"
-          class="rounded-lg border border-slate-200/80 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
-        >
-          Calendar
-        </NuxtLink>
       </div>
 
       <!-- Checklist tab content -->
@@ -542,7 +535,7 @@ const toneOf = (color: string) => paletteOf(color);
       <template v-else>
         <div class="px-3.5 pb-2.5 pt-2">
           <div class="relative">
-            <svg class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="9" cy="9" r="6" />
               <path d="M13.5 13.5L18 18" stroke-linecap="round" />
             </svg>
@@ -550,22 +543,22 @@ const toneOf = (color: string) => paletteOf(color);
               v-model="templateSearch"
               type="text"
               placeholder="Search activities…"
-              class="w-full rounded-lg border border-slate-200/80 bg-slate-50/70 py-2 pl-9 pr-3 text-sm text-slate-800 placeholder-slate-400 transition focus:border-slate-900 focus:bg-white focus:outline-hidden"
+              class="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-xs shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
           </div>
         </div>
 
         <div class="flex-1 space-y-4 overflow-y-auto px-4 pb-3">
-          <p v-if="groupedTemplates.length === 0" class="py-8 text-center text-sm text-slate-400">
+          <p v-if="groupedTemplates.length === 0" class="py-8 text-center text-sm text-muted-foreground">
             No activities found
           </p>
 
           <div v-for="[category, items] in groupedTemplates" :key="category">
             <div class="mb-1.5 flex items-center justify-between">
-              <p class="text-xs font-bold uppercase tracking-wider text-slate-400">
+              <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {{ category }}
               </p>
-              <span class="text-xs font-mono text-slate-400">{{ items.length }}</span>
+              <span class="text-xs font-mono text-muted-foreground">{{ items.length }}</span>
             </div>
             <ul class="space-y-1.5">
               <li
@@ -591,7 +584,7 @@ const toneOf = (color: string) => paletteOf(color);
                 }"
                 :title="`${template.name} · ${formatDuration(template.defaultDuration)}`"
                 :class="[
-                  'group relative flex cursor-grab items-center gap-3 rounded-lg border px-3 py-2 text-left shadow-2xs transition hover:shadow-xs active:cursor-grabbing',
+                  'group relative flex cursor-grab items-center gap-2.5 rounded-lg border px-3 py-2 text-left shadow-2xs transition hover:shadow-xs active:cursor-grabbing',
                   toneOf(template.color).block
                 ]"
               >
@@ -599,7 +592,7 @@ const toneOf = (color: string) => paletteOf(color);
                   class="absolute inset-y-1.5 left-1 w-0.5 rounded-full"
                   :class="toneOf(template.color).accent"
                 />
-                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-white/80 text-base leading-none pl-0.5 shadow-2xs">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/80 text-base leading-none shadow-2xs">
                   {{ template.emoji }}
                 </span>
                 <span class="min-w-0 flex-1">
@@ -610,7 +603,7 @@ const toneOf = (color: string) => paletteOf(color);
                     {{ formatDuration(template.defaultDuration) }}
                   </span>
                 </span>
-                <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 opacity-30 transition group-hover:opacity-75" fill="currentColor" aria-hidden="true">
+                <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 opacity-25 transition group-hover:opacity-75 text-foreground" fill="currentColor" aria-hidden="true">
                   <circle cx="7" cy="5" r="1.4" /><circle cx="13" cy="5" r="1.4" />
                   <circle cx="7" cy="10" r="1.4" /><circle cx="13" cy="10" r="1.4" />
                   <circle cx="7" cy="15" r="1.4" /><circle cx="13" cy="15" r="1.4" />
@@ -619,13 +612,13 @@ const toneOf = (color: string) => paletteOf(color);
             </ul>
           </div>
         </div>
-        <div class="border-t border-slate-200/80 p-3">
+        <div class="border-t border-border p-3">
           <button
             type="button"
             @click="managerOpen = true"
-            class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200/80 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+            class="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-input bg-background px-3.5 py-2 text-xs font-medium text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground cursor-pointer"
           >
-            <svg viewBox="0 0 20 20" class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 20 20" class="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M10 4v12M4 10h12" stroke-linecap="round" />
             </svg>
             <span>Customize activities</span>
@@ -635,13 +628,13 @@ const toneOf = (color: string) => paletteOf(color);
     </aside>
 
     <!-- Timeline section -->
-    <section class="flex min-h-0 flex-1 flex-col bg-white">
-      <header class="border-b border-slate-200/80 bg-white px-3 py-2.5 sm:px-5 sm:py-3.5">
+    <section class="flex min-h-0 flex-1 flex-col bg-background">
+      <header class="border-b border-border bg-background px-3 py-2.5 sm:px-5 sm:py-3">
         <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div class="flex items-center gap-1.5 sm:gap-2">
             <NuxtLink
               :to="`/day/${addDaysISO(day, -1)}`"
-              class="flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground"
               aria-label="Previous day"
             >
               <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
@@ -651,13 +644,13 @@ const toneOf = (color: string) => paletteOf(color);
             <NuxtLink
               v-if="!isToday"
               :to="`/day/${today}`"
-              class="rounded-lg border border-slate-200/80 bg-white px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium text-slate-700 shadow-2xs transition hover:bg-slate-50"
+              class="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-xs font-medium text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground"
             >
               Today
             </NuxtLink>
             <NuxtLink
               :to="`/day/${addDaysISO(day, 1)}`"
-              class="flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground"
               aria-label="Next day"
             >
               <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
@@ -665,11 +658,11 @@ const toneOf = (color: string) => paletteOf(color);
               </svg>
             </NuxtLink>
             <div class="ml-1">
-              <h1 class="text-sm font-bold text-slate-900 leading-tight sm:text-lg">
+              <h1 class="text-sm font-semibold text-foreground leading-tight sm:text-base tracking-tight">
                 <span class="sm:hidden">{{ mediumDate(day) }}</span>
                 <span class="hidden sm:inline">{{ longDate(day) }}</span>
               </h1>
-              <p class="text-[11px] text-slate-500 tabular-nums sm:text-sm">
+              <p class="text-[11px] text-muted-foreground tabular-nums sm:text-xs">
                 {{ formatDuration(stats.scheduled) }} planned · {{ stats.done }} of {{ stats.count }} completed
               </p>
             </div>
@@ -680,27 +673,27 @@ const toneOf = (color: string) => paletteOf(color);
               v-if="checklistItems.length > 0"
               type="button"
               @click="activeSidebarTab = 'checklist'"
-              class="hidden lg:inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold shadow-2xs transition cursor-pointer"
+              class="hidden lg:inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium shadow-xs transition cursor-pointer hover:bg-accent"
               :class="checklistStats.total > 0 && checklistStats.done === checklistStats.total
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                : 'border-slate-200/80 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900'"
+                ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                : 'text-foreground'"
               title="Open Daily Checklist in sidebar"
             >
               <span class="text-emerald-600 font-bold">✓</span>
               <span>Checklist</span>
-              <span class="text-slate-400">·</span>
-              <span class="font-mono font-bold">{{ checklistStats.done }}/{{ checklistStats.total }}</span>
+              <span class="text-muted-foreground">·</span>
+              <span class="font-mono font-semibold">{{ checklistStats.done }}/{{ checklistStats.total }}</span>
             </button>
 
             <span
               v-for="[category, minutes] in stats.categories.slice(0, 3)"
               :key="category"
-              class="hidden lg:inline-flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-slate-50/80 px-2.5 py-1 text-xs font-medium text-slate-600 tabular-nums shadow-2xs"
+              class="hidden lg:inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground tabular-nums"
             >
               <span class="h-1.5 w-1.5 rounded-full" :class="toneOf(categoryColor(category)).dot" />
               <span>{{ category }}</span>
-              <span class="text-slate-400">·</span>
-              <span class="font-mono text-slate-600 font-semibold">{{ formatDuration(minutes) }}</span>
+              <span class="opacity-50">·</span>
+              <span class="font-mono text-foreground font-semibold">{{ formatDuration(minutes) }}</span>
             </span>
             <button
               type="button"
@@ -710,27 +703,27 @@ const toneOf = (color: string) => paletteOf(color);
                 startMinutes: snapMinutes(nowMinutes(), 30),
                 template: null,
               }"
-              class="rounded-lg bg-slate-900 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-2xs transition hover:bg-slate-800 active:scale-95"
+              class="inline-flex h-8 sm:h-9 items-center justify-center rounded-md bg-primary px-3 sm:px-4 text-xs sm:text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 active:scale-95 cursor-pointer"
             >
               + <span class="hidden sm:inline">Time block</span><span class="sm:hidden">Block</span>
             </button>
           </div>
         </div>
-        <p v-if="flash" role="status" aria-live="polite" class="mt-2 rounded-lg border border-emerald-200/80 bg-emerald-50/80 px-3 py-1 text-xs sm:text-sm font-medium text-emerald-800">
+        <p v-if="flash" role="status" aria-live="polite" class="mt-2 rounded-md border border-emerald-300/80 bg-emerald-50/80 px-3 py-1 text-xs font-medium text-emerald-800">
           {{ flash }}
         </p>
       </header>
 
       <!-- Interactive Quick Daily Checklist Bar -->
       <div
-        class="border-b border-slate-200/70 bg-slate-50/60 px-3 py-2 sm:px-5 sm:py-2.5 transition"
+        class="border-b border-border bg-muted/25 px-3 py-2 sm:px-5 sm:py-2 transition"
       >
         <div class="mx-auto flex max-w-4xl items-center justify-between gap-2.5">
-          <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-600 shrink-0">
+          <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground shrink-0">
             <span>Routines</span>
             <span
               v-if="checklistItems.length > 0"
-              class="rounded-full bg-slate-200/80 px-1.5 py-0.2 sm:px-2 sm:py-0.5 font-mono text-[10px] sm:text-[11px] font-semibold text-slate-700"
+              class="rounded-full bg-muted-foreground/15 px-1.5 py-0.2 sm:px-2 sm:py-0.5 font-mono text-[10px] sm:text-[11px] font-semibold text-foreground"
             >
               {{ checklistStats.done }}/{{ checklistStats.total }}
             </span>
@@ -738,11 +731,11 @@ const toneOf = (color: string) => paletteOf(color);
 
           <!-- Empty state when no items yet -->
           <div v-if="checklistItems.length === 0" class="flex flex-1 items-center justify-between gap-2">
-            <span class="text-xs text-slate-500">Track daily micro-habits (pills, protein shake, shower, water)</span>
+            <span class="text-xs text-muted-foreground">Track daily micro-habits (pills, protein shake, shower, water)</span>
             <button
               type="button"
               @click="openChecklistManager"
-              class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white shadow-2xs transition hover:bg-slate-800 cursor-pointer"
+              class="inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 cursor-pointer"
             >
               + Add routine
             </button>
@@ -755,16 +748,16 @@ const toneOf = (color: string) => paletteOf(color);
               :key="item.id"
               type="button"
               @click="toggleChecklistItem(item.id, !completedChecklistIds.includes(item.id))"
-              class="group inline-flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-lg border px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs font-medium shadow-2xs transition cursor-pointer"
+              class="group inline-flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-md border px-2 py-1 sm:px-2.5 sm:py-1 text-xs font-medium shadow-2xs transition cursor-pointer"
               :class="completedChecklistIds.includes(item.id)
-                ? 'border-emerald-200 bg-emerald-50/80 text-slate-500 line-through'
-                : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50'"
+                ? 'border-border/60 bg-muted/40 text-muted-foreground line-through'
+                : 'border-border bg-card text-foreground hover:bg-accent hover:border-foreground/20'"
             >
               <span
-                class="flex h-4 w-4 sm:h-4.5 sm:w-4.5 items-center justify-center rounded border transition text-[10px]"
+                class="flex h-3.5 w-3.5 sm:h-4 sm:w-4 items-center justify-center rounded-xs border transition text-[9px]"
                 :class="completedChecklistIds.includes(item.id)
                   ? 'border-emerald-600 bg-emerald-600 text-white font-bold'
-                  : 'border-slate-300 bg-white group-hover:border-slate-400 text-transparent'"
+                  : 'border-input bg-background group-hover:border-foreground/50 text-transparent'"
               >
                 ✓
               </span>
@@ -775,7 +768,7 @@ const toneOf = (color: string) => paletteOf(color);
             <button
               type="button"
               @click="openChecklistManager"
-              class="inline-flex shrink-0 items-center gap-1 rounded-lg border border-dashed border-slate-300 bg-white/70 px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs font-medium text-slate-500 hover:border-slate-400 hover:text-slate-800 cursor-pointer"
+              class="inline-flex shrink-0 items-center gap-1 rounded-md border border-dashed border-input bg-background px-2 py-1 sm:px-2.5 sm:py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer"
               title="Add or customize daily habits"
             >
               <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
@@ -789,11 +782,11 @@ const toneOf = (color: string) => paletteOf(color);
 
       <div
         ref="scrollRef"
-        class="relative min-h-0 flex-1 overflow-y-auto bg-white scroll-pt-6"
+        class="relative min-h-0 flex-1 overflow-y-auto bg-background scroll-pt-6"
       >
         <div class="mx-auto flex max-w-4xl pt-4 pb-28 sm:pt-6 sm:pb-12">
           <!-- Hour gutter -->
-          <div class="relative w-14 sm:w-18 shrink-0 select-none border-r border-slate-200 bg-white pr-1.5 sm:pr-2.5">
+          <div class="relative w-14 sm:w-16 shrink-0 select-none border-r border-border bg-background pr-1.5 sm:pr-2.5">
             <div
               v-for="minute in HOUR_OPTIONS"
               :key="minute"
@@ -802,7 +795,7 @@ const toneOf = (color: string) => paletteOf(color);
             >
               <span
                 v-if="gutterLabel(minute)"
-                class="absolute -top-2.5 right-1.5 sm:right-2 text-[11px] sm:text-xs font-mono font-medium text-slate-400 tracking-tight"
+                class="absolute -top-2.5 right-1.5 sm:right-2 text-[11px] sm:text-xs font-mono font-medium text-muted-foreground tracking-tight"
               >
                 {{ gutterLabel(minute) }}
               </span>
@@ -838,7 +831,7 @@ const toneOf = (color: string) => paletteOf(color);
               };
             }"
             :style="{ height: `${GRID_HEIGHT}px` }"
-            class="relative flex-1 bg-white border-t border-slate-200/90"
+            class="relative flex-1 bg-background border-t border-border"
           >
             <div
               v-for="minute in HOUR_OPTIONS"
@@ -846,7 +839,7 @@ const toneOf = (color: string) => paletteOf(color);
               :style="{ height: `${SLOT_HEIGHT}px` }"
               :class="[
                 'border-b',
-                (minute + 30) % 60 === 0 ? 'border-slate-200/90' : 'border-dashed border-slate-100'
+                (minute + 30) % 60 === 0 ? 'border-border/70' : 'border-dashed border-border/30'
               ]"
             />
 
@@ -884,7 +877,7 @@ const toneOf = (color: string) => paletteOf(color);
                 width: '96%',
               }"
             >
-              <span class="rounded-full bg-white/95 px-3 py-1 font-mono text-xs font-semibold text-slate-800 shadow-2xs">
+              <span class="rounded-full bg-background px-3 py-1 font-mono text-xs font-semibold text-foreground shadow-2xs border border-border">
                 {{ preview.label }} · {{ formatTime(preview.start) }}
               </span>
             </div>
@@ -932,10 +925,10 @@ const toneOf = (color: string) => paletteOf(color);
                 task.completed ? toneOf(task.color).blockDone : toneOf(task.color).block
               ]"
             >
-              <!-- Amie 2px vertical accent line -->
+              <!-- Amie vertical accent line -->
               <span
                 class="absolute inset-y-1.5 left-1 w-0.5 rounded-full transition-opacity"
-                :class="[toneOf(task.color).accent, task.completed ? 'opacity-50' : 'opacity-100']"
+                :class="[toneOf(task.color).accent, task.completed ? 'opacity-40' : 'opacity-100']"
               />
 
               <div class="flex items-start gap-2 pl-1.5">
@@ -944,10 +937,10 @@ const toneOf = (color: string) => paletteOf(color);
                   :aria-label="task.completed ? 'Mark as not done' : 'Mark as done'"
                   @click.stop="toggleComplete(task)"
                   :class="[
-                    'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
+                    'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-xs border transition-colors cursor-pointer',
                     task.completed
                       ? 'border-emerald-600 bg-emerald-600 text-white shadow-2xs'
-                      : 'border-slate-400/60 bg-white/90 text-transparent hover:border-slate-700 hover:bg-white'
+                      : 'border-input bg-background text-transparent hover:border-foreground/60'
                   ]"
                 >
                   <svg viewBox="0 0 16 16" class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -956,8 +949,8 @@ const toneOf = (color: string) => paletteOf(color);
                 </button>
                 <p
                   :class="[
-                    'min-w-0 flex-1 truncate text-sm font-semibold leading-tight',
-                    task.completed ? 'line-through text-slate-600 font-medium' : ''
+                    'min-w-0 flex-1 truncate text-sm font-semibold leading-tight text-foreground',
+                    task.completed ? 'line-through text-muted-foreground font-normal' : ''
                   ]"
                 >
                   {{ task.emoji }} {{ task.title }}
@@ -970,7 +963,7 @@ const toneOf = (color: string) => paletteOf(color);
                   @click.stop="deleteTask(task.id)"
                   @pointerdown.stop
                   @mousedown.stop
-                  class="mt-0.5 flex h-4.5 w-4.5 shrink-0 cursor-pointer items-center justify-center rounded text-current opacity-0 transition hover:bg-black/10 hover:text-rose-600 group-hover:opacity-75 hover:opacity-100 focus-visible:opacity-100"
+                  class="mt-0.5 flex h-4.5 w-4.5 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-75 hover:opacity-100 focus-visible:opacity-100"
                 >
                   <svg
                     viewBox="0 0 20 20"
@@ -987,17 +980,17 @@ const toneOf = (color: string) => paletteOf(color);
               <!-- Time display for non-compact tasks -->
               <p
                 v-if="((task.durationMinutes / SLOT_MINUTES) * SLOT_HEIGHT - 4) >= SLOT_HEIGHT * 1.5"
-                class="mt-0.5 pl-6 text-xs font-mono leading-4 opacity-90 tabular-nums font-medium"
+                class="mt-0.5 pl-6 text-xs font-mono leading-4 opacity-85 tabular-nums font-medium text-foreground"
               >
                 {{ formatTime(task.startMinutes) }} – {{ formatTime(task.startMinutes + task.durationMinutes) }}
-                <span class="opacity-60">·</span>
+                <span class="opacity-50">·</span>
                 {{ formatDuration(task.durationMinutes) }}
               </p>
 
               <!-- Notes snippet for non-compact tasks -->
               <p
                 v-if="((task.durationMinutes / SLOT_MINUTES) * SLOT_HEIGHT - 4) >= SLOT_HEIGHT * 2.2 && task.notes"
-                class="mt-0.5 line-clamp-1 pl-6 text-xs leading-4 opacity-80"
+                class="mt-0.5 line-clamp-1 pl-6 text-xs leading-4 opacity-75 text-foreground"
               >
                 {{ task.notes }}
               </p>
@@ -1007,13 +1000,13 @@ const toneOf = (color: string) => paletteOf(color);
                 @pointerdown="(event) => startResize(task, event)"
                 class="absolute inset-x-0 bottom-0 flex h-2 cursor-ns-resize items-center justify-center"
               >
-                <span class="h-0.5 w-6 rounded-full bg-slate-900/25 opacity-0 transition group-hover:opacity-100" />
+                <span class="h-0.5 w-6 rounded-full bg-foreground/20 opacity-0 transition group-hover:opacity-100" />
               </div>
 
               <!-- Active resizing duration badge -->
               <span
                 v-if="resizing === task.id"
-                class="absolute right-1.5 top-1.5 rounded bg-slate-900/85 px-2 py-0.5 font-mono text-xs font-semibold text-white shadow-2xs"
+                class="absolute right-1.5 top-1.5 rounded-md bg-primary px-2 py-0.5 font-mono text-xs font-semibold text-primary-foreground shadow-xs"
               >
                 {{ formatDuration(task.durationMinutes) }}
               </span>
@@ -1022,7 +1015,7 @@ const toneOf = (color: string) => paletteOf(color);
         </div>
       </div>
 
-      <footer class="hidden lg:flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-2.5 text-xs text-slate-500">
+      <footer class="hidden lg:flex items-center justify-between gap-3 border-t border-border bg-card px-5 py-2.5 text-xs text-muted-foreground">
         <span>
           Drag an activity into the grid · drag blocks to move · pull the bottom edge to
           resize · click a slot for details
@@ -1030,25 +1023,25 @@ const toneOf = (color: string) => paletteOf(color);
         <button
           type="button"
           @click="refreshDay"
-          class="shrink-0 rounded-lg px-2 py-1 font-semibold text-slate-600 transition hover:bg-slate-100"
+          class="shrink-0 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium text-foreground shadow-xs hover:bg-accent cursor-pointer"
         >
           Refresh
         </button>
       </footer>
 
       <!-- Mobile Bottom Navigation Bar (iOS / Android thumb friendly) -->
-      <nav aria-label="Mobile navigation" class="lg:hidden fixed bottom-0 inset-x-0 z-30 flex items-center justify-around border-t border-slate-200/90 bg-white/95 px-4 py-2 backdrop-blur-md shadow-lg">
+      <nav aria-label="Mobile navigation" class="lg:hidden fixed bottom-0 inset-x-0 z-30 flex items-center justify-around border-t border-border bg-background/95 px-4 py-2 backdrop-blur-md shadow-lg">
         <button
           type="button"
           @click="mobileSheet = 'activities'"
-          class="flex flex-col items-center gap-1 text-slate-600 hover:text-slate-900 transition active:scale-95 cursor-pointer"
+          class="flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground transition active:scale-95 cursor-pointer"
         >
-          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground">
             <svg viewBox="0 0 20 20" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 6h12M4 10h12M4 14h8" stroke-linecap="round" />
             </svg>
           </div>
-          <span class="text-[11px] font-semibold">Activities</span>
+          <span class="text-[11px] font-medium">Activities</span>
         </button>
 
         <button
@@ -1059,7 +1052,7 @@ const toneOf = (color: string) => paletteOf(color);
             startMinutes: snapMinutes(nowMinutes(), 30),
             template: null,
           }"
-          class="flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-md transition active:scale-95 hover:bg-slate-800 cursor-pointer"
+          class="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition active:scale-95 hover:bg-primary/90 cursor-pointer"
         >
           <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M10 4v12M4 10h12" stroke-linecap="round" />
@@ -1070,14 +1063,14 @@ const toneOf = (color: string) => paletteOf(color);
         <button
           type="button"
           @click="mobileSheet = 'checklist'"
-          class="relative flex flex-col items-center gap-1 text-slate-600 hover:text-slate-900 transition active:scale-95 cursor-pointer"
+          class="relative flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground transition active:scale-95 cursor-pointer"
         >
-          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground">
             <svg viewBox="0 0 20 20" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M5 10l3 3 7-7" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
-          <span class="text-[11px] font-semibold">Checklist</span>
+          <span class="text-[11px] font-medium">Checklist</span>
           <span
             v-if="checklistStats.total > 0"
             class="absolute -top-1 right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 font-mono text-[9px] font-bold text-white shadow-xs"
@@ -1112,15 +1105,15 @@ const toneOf = (color: string) => paletteOf(color);
       @close="mobileSheet = null"
     >
       <div class="space-y-4">
-        <p class="text-xs text-slate-500">Tap an activity to schedule it on today's timeline.</p>
+        <p class="text-xs text-muted-foreground">Tap an activity to schedule it on today's timeline.</p>
         <div class="relative">
           <input
             v-model="templateSearch"
             type="search"
             placeholder="Search activities..."
-            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 pl-9 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-hidden"
+            class="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
-          <svg viewBox="0 0 20 20" class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 20 20" class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M8.5 14a5.5 5.5 0 100-11 5.5 5.5 0 000 11zM13 13l4 4" stroke-linecap="round" />
           </svg>
         </div>
@@ -1131,35 +1124,35 @@ const toneOf = (color: string) => paletteOf(color);
             :key="template.id"
             type="button"
             @click="openActivityFromMobile(template)"
-            class="group flex w-full items-center justify-between rounded-xl border border-slate-200/90 bg-white p-2.5 text-left shadow-2xs transition hover:border-slate-300 hover:bg-slate-50 active:scale-[0.99] cursor-pointer"
+            class="group flex w-full items-center justify-between rounded-lg border border-border bg-card p-2.5 text-left shadow-2xs transition hover:border-foreground/20 hover:bg-accent/50 active:scale-[0.99] cursor-pointer"
           >
             <div class="flex items-center gap-2.5 min-w-0">
-              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base shadow-2xs" :class="toneOf(template.color).dot">
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-base shadow-2xs" :class="toneOf(template.color).dot">
                 {{ template.emoji }}
               </span>
               <div class="min-w-0">
-                <p class="truncate text-sm font-semibold text-slate-900">{{ template.name }}</p>
-                <p class="text-xs text-slate-500">{{ template.category }} · {{ formatDuration(template.defaultDuration) }}</p>
+                <p class="truncate text-sm font-semibold text-foreground">{{ template.name }}</p>
+                <p class="text-xs text-muted-foreground">{{ template.category }} · {{ formatDuration(template.defaultDuration) }}</p>
               </div>
             </div>
-            <span class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 group-hover:bg-slate-900 group-hover:text-white transition">
+            <span class="rounded-md bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground group-hover:bg-primary group-hover:text-primary-foreground transition">
               Add +
             </span>
           </button>
         </div>
 
-        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+        <div class="pt-3 border-t border-border flex items-center justify-between">
           <button
             type="button"
             @click="mobileSheet = null; managerOpen = true"
-            class="text-xs font-semibold text-slate-600 hover:text-slate-900 underline cursor-pointer"
+            class="text-xs font-semibold text-muted-foreground hover:text-foreground underline cursor-pointer"
           >
             Manage custom activities
           </button>
           <button
             type="button"
             @click="mobileSheet = null"
-            class="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 cursor-pointer"
+            class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent cursor-pointer"
           >
             Close
           </button>

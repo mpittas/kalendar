@@ -14,6 +14,21 @@ export const MONTH_LABELS = [
   "December",
 ];
 
+export const MONTH_SHORT_LABELS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
 /** Format a Date as a local `YYYY-MM-DD` string. */
 export function toISODate(date: Date): string {
   const y = date.getFullYear();
@@ -22,10 +37,13 @@ export function toISODate(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-/** Parse a `YYYY-MM-DD` string into a local Date at midnight. */
+/** Parse a `YYYY-MM-DD` or `YYYY-MM` string into a local Date at midnight. */
 export function parseISODate(iso: string): Date {
-  const [y, m, d] = iso.split("-").map((part) => Number.parseInt(part, 10));
-  if ([y, m, d].some((n) => Number.isNaN(n))) {
+  const parts = iso.split("-").map((part) => Number.parseInt(part, 10));
+  const y = parts[0];
+  const m = parts[1];
+  const d = parts[2] !== undefined && !Number.isNaN(parts[2]) ? parts[2] : 1;
+  if (Number.isNaN(y) || Number.isNaN(m)) {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   }
@@ -40,6 +58,24 @@ export function todayISO(): string {
   return toISODate(new Date());
 }
 
+export function getYear(iso: string): number {
+  return parseISODate(iso).getFullYear();
+}
+
+export function getMonthIndex(iso: string): number {
+  return parseISODate(iso).getMonth();
+}
+
+export function generateYearOptions(centerYear: number, span = 10): number[] {
+  const start = centerYear - span;
+  const end = centerYear + span;
+  const years: number[] = [];
+  for (let y = start; y <= end; y++) {
+    years.push(y);
+  }
+  return years;
+}
+
 export function addDaysISO(iso: string, days: number): string {
   const date = parseISODate(iso);
   date.setDate(date.getDate() + days);
@@ -51,6 +87,24 @@ export function addMonths(iso: string, months: number): string {
   date.setDate(1);
   date.setMonth(date.getMonth() + months);
   return toISODate(date);
+}
+
+export function addYears(iso: string, years: number): string {
+  const date = parseISODate(iso);
+  const day = date.getDate();
+  date.setDate(1);
+  date.setFullYear(date.getFullYear() + years);
+  const maxDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  date.setDate(Math.min(day, maxDay));
+  return toISODate(date);
+}
+
+export function setYearMonth(iso: string, year: number, monthIndex: number): string {
+  const date = parseISODate(iso);
+  const day = date.getDate();
+  const maxDay = new Date(year, monthIndex + 1, 0).getDate();
+  const safeDay = Math.min(day, maxDay);
+  return toISODate(new Date(year, monthIndex, safeDay));
 }
 
 /** 6x7 grid of ISO dates covering the month that `iso` belongs to. */
