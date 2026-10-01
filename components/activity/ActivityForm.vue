@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from "vue";
-import { PALETTE } from "~/lib/colors";
+import { paletteOf } from "~/lib/colors";
 import { DURATION_CHOICES, formatDuration } from "~/lib/time";
 import type { ActivityTemplate } from "~/lib/types";
 import ColorSwatches from "~/components/category/ColorSwatches.vue";
@@ -62,10 +62,10 @@ onMounted(async () => {
     <!-- Live preview: looks like the block will on the timeline -->
     <div
       class="flex items-center gap-3 rounded-xl border px-3.5 py-3 transition-colors"
-      :class="PALETTE[draft.color as keyof typeof PALETTE]?.chip ?? PALETTE.indigo.chip"
+      :class="paletteOf(draft.color).chip"
       aria-hidden="true"
     >
-      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl" :class="PALETTE[draft.color as keyof typeof PALETTE]?.icon ?? PALETTE.indigo.icon">
+      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl" :class="paletteOf(draft.color).icon">
         {{ draft.emoji || "📌" }}
       </span>
       <div class="min-w-0 flex-1">

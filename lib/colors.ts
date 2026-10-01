@@ -172,8 +172,26 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
   },
 };
 
-export const COLOR_KEYS = Object.keys(PALETTE) as ColorKey[];
+/** Every key a stored color may hold. Older data can still use the ones left out of the picker. */
+export const ACCEPTED_COLOR_KEYS = Object.keys(PALETTE) as ColorKey[];
+
+/** The colors offered when choosing one: one per hue, so no two options look alike. */
+export const COLOR_KEYS: ColorKey[] = ["indigo", "emerald", "amber", "rose", "violet", "orange", "pink", "slate"];
+
+/** Colors dropped from the picker, shown as the option that replaced them (sky/cyan were a second blue, teal/lime a second green). */
+const REPLACED_COLORS: Partial<Record<ColorKey, ColorKey>> = {
+  sky: "indigo",
+  cyan: "indigo",
+  teal: "emerald",
+  lime: "emerald",
+};
+
+export function canonicalColor(color: string): ColorKey {
+  const key = color as ColorKey;
+  if (!(key in PALETTE)) return "indigo";
+  return REPLACED_COLORS[key] ?? key;
+}
 
 export function paletteOf(color: string): PaletteEntry {
-  return PALETTE[(color as ColorKey) in PALETTE ? (color as ColorKey) : "indigo"];
+  return PALETTE[canonicalColor(color)];
 }

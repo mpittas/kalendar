@@ -1,5 +1,5 @@
 import { api } from "~/lib/api";
-import { COLOR_KEYS } from "~/lib/colors";
+import { canonicalColor, COLOR_KEYS } from "~/lib/colors";
 import type { ActivityTemplate, Category } from "~/lib/types";
 
 const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
@@ -47,7 +47,7 @@ export const useCategories = () => {
 
   /** Pick a color not used yet, so a new category is easy to tell apart. */
   const nextColor = () => {
-    const used = new Set(categories.value.map((c) => c.color));
+    const used = new Set(categories.value.map((c) => canonicalColor(c.color)));
     return COLOR_KEYS.find((key) => !used.has(key)) ?? COLOR_KEYS[categories.value.length % COLOR_KEYS.length];
   };
 

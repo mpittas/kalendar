@@ -1,4 +1,4 @@
-import { COLOR_KEYS } from "~/lib/colors";
+import { ACCEPTED_COLOR_KEYS } from "~/lib/colors";
 
 export const MAX_TITLE = 120;
 export const MAX_NAME = 80;
@@ -45,7 +45,7 @@ export function cleanNotes(value: unknown): string | null {
 }
 
 export function isColorKey(value: unknown): value is string {
-  return typeof value === "string" && (COLOR_KEYS as string[]).includes(value);
+  return typeof value === "string" && (ACCEPTED_COLOR_KEYS as string[]).includes(value);
 }
 
 export function cleanColor(value: unknown): string {

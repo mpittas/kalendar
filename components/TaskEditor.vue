@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { COLOR_KEYS, PALETTE, paletteOf } from "~/lib/colors";
+import { canonicalColor, COLOR_KEYS, PALETTE, paletteOf } from "~/lib/colors";
 import { api } from "~/lib/api";
 import {
   DURATION_CHOICES,
@@ -37,7 +37,7 @@ const color = ref("indigo");
 const category = ref("General");
 const day = ref("");
 const start = ref("09:00");
-const duration = ref(60);
+const duration = ref(30);
 const notes = ref("");
 const completed = ref(false);
 const templateId = ref<string | null>(null);
@@ -80,7 +80,7 @@ watch(
       category.value = template?.category ?? "General";
       day.value = req.day;
       start.value = timeInputValue(req.startMinutes);
-      duration.value = template?.defaultDuration ?? 60;
+      duration.value = template?.defaultDuration ?? 30;
       notes.value = template?.notes ?? "";
       completed.value = false;
       templateId.value = template?.id ?? null;
@@ -274,14 +274,14 @@ const remove = async () => {
             :key="key"
             type="button"
             role="radio"
-            :aria-checked="color === key"
+            :aria-checked="canonicalColor(color) === key"
             :aria-label="PALETTE[key].label"
             :title="PALETTE[key].label"
             @click="color = key"
             :class="[
               'h-6 w-6 rounded-full transition shadow-xs cursor-pointer touch:h-10 touch:w-10',
               PALETTE[key].swatch,
-              color === key ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : 'opacity-70 hover:opacity-100 hover:scale-105'
+              canonicalColor(color) === key ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : 'opacity-70 hover:opacity-100 hover:scale-105'
             ]"
           />
         </div>
