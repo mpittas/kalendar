@@ -73,8 +73,8 @@ const handleGoogleSignUp = async () => {
 </script>
 
 <template>
-  <div class="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-    <div class="w-full max-w-sm space-y-6 rounded-xl border border-border bg-card p-6 sm:p-7 shadow-xs">
+  <div class="flex w-full flex-1 items-center justify-center px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+    <div class="mx-auto w-full max-w-sm space-y-6 rounded-xl border border-border bg-card p-6 sm:p-7 shadow-xs">
       <div class="text-center">
         <NuxtLink to="/" class="inline-block text-2xl font-bold tracking-tight text-foreground">
           klndr.

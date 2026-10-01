@@ -16,11 +16,11 @@ onBeforeUnmount(() => stop?.());
 
 <template>
   <div
-    class="flex flex-col bg-canvas font-sans text-foreground antialiased"
+    class="flex w-full flex-col bg-canvas font-sans text-foreground antialiased"
     :class="isDayView ? 'h-dvh overflow-hidden' : 'min-h-dvh'"
   >
     <AppHeader />
-    <main class="flex min-h-0 flex-1 flex-col">
+    <main class="flex min-h-0 w-full flex-1 flex-col">
       <NuxtPage />
     </main>
   </div>

@@ -38,7 +38,11 @@ const initials = computed(() => {
         </NuxtLink>
 
         <!-- Compact shadcn segmented toggle with high-contrast active state & icons -->
-        <nav aria-label="Primary" class="inline-flex h-10 items-center justify-center rounded-lg bg-muted p-0.5 text-muted-foreground shadow-2xs sm:h-8">
+        <nav
+          v-if="user"
+          aria-label="Primary"
+          class="inline-flex h-10 items-center justify-center rounded-lg bg-muted p-0.5 text-muted-foreground shadow-2xs sm:h-8"
+        >
           <NuxtLink
             to="/"
             class="relative inline-flex h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2.5 text-xs font-medium transition-all after:absolute after:inset-x-0 after:-inset-y-0.5 active:scale-[0.98] max-[359px]:w-10 max-[359px]:px-0 sm:h-7 sm:after:hidden"
