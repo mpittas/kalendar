@@ -73,7 +73,7 @@ const handleGoogleSignUp = async () => {
 </script>
 
 <template>
-  <div class="flex min-h-[calc(100vh-57px)] items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+  <div class="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
     <div class="w-full max-w-sm space-y-6 rounded-xl border border-border bg-card p-6 sm:p-7 shadow-xs">
       <div class="text-center">
         <NuxtLink to="/" class="inline-block text-2xl font-bold tracking-tight text-foreground">
@@ -120,8 +120,9 @@ const handleGoogleSignUp = async () => {
             type="text"
             required
             autocomplete="name"
+            autocapitalize="words"
             placeholder="Jane Doe"
-            class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none"
+            class="h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none sm:h-9"
           />
         </div>
 
@@ -135,8 +136,12 @@ const handleGoogleSignUp = async () => {
             type="email"
             required
             autocomplete="email"
+            inputmode="email"
+            autocapitalize="none"
+            autocorrect="off"
+            spellcheck="false"
             placeholder="you@example.com"
-            class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none"
+            class="h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none sm:h-9"
           />
         </div>
 
@@ -151,7 +156,7 @@ const handleGoogleSignUp = async () => {
             required
             autocomplete="new-password"
             placeholder="••••••••"
-            class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none"
+            class="h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none sm:h-9"
           />
         </div>
 
@@ -166,14 +171,14 @@ const handleGoogleSignUp = async () => {
             required
             autocomplete="new-password"
             placeholder="••••••••"
-            class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none"
+            class="h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none sm:h-9"
           />
         </div>
 
         <button
           type="submit"
           :disabled="isSubmitting"
-          class="flex h-9 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:opacity-50"
+          class="flex h-11 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:opacity-50 sm:h-9"
         >
           <span v-if="isSubmitting">Creating account...</span>
           <span v-else>Create Account</span>
@@ -193,7 +198,7 @@ const handleGoogleSignUp = async () => {
         type="button"
         @click="handleGoogleSignUp"
         :disabled="isSubmitting"
-        class="flex h-9 w-full items-center justify-center gap-2.5 rounded-md border border-input bg-background px-3.5 py-2 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+        class="flex h-11 w-full items-center justify-center gap-2.5 rounded-md border border-input bg-background px-3.5 py-2 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground disabled:opacity-50 sm:h-9"
       >
         <svg class="h-4 w-4" viewBox="0 0 24 24">
           <path
@@ -218,7 +223,7 @@ const handleGoogleSignUp = async () => {
 
       <p class="text-center text-xs sm:text-sm text-muted-foreground">
         Already have an account?
-        <NuxtLink to="/login" class="font-medium text-foreground underline underline-offset-4 hover:text-primary transition">
+        <NuxtLink to="/login" class="-my-2 inline-block py-2 font-medium text-foreground underline underline-offset-4 transition hover:text-primary">
           Sign in
         </NuxtLink>
       </p>

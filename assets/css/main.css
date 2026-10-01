@@ -2,6 +2,10 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+/* Phones and tablets: no hover, finger-sized pointer. Use for touch-only layout and copy. */
+@custom-variant touch (@media (hover: none) and (pointer: coarse));
+/* Landscape phones: very little vertical room, so chrome should shrink. */
+@custom-variant short (@media (max-height: 500px));
 
 :root {
   color-scheme: light;
@@ -139,5 +143,49 @@
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/*
+ * Touch behaviour. These are deliberately outside any @layer so they beat utility classes.
+ */
+
+/* No double-tap-to-zoom delay on anything tappable. */
+a,
+button,
+summary,
+label,
+input,
+select,
+textarea,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+@media (pointer: coarse) {
+  /* iOS Safari zooms the whole page when a focused field is smaller than 16px. */
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Taps have no hover state and the tap highlight is off, so show the press itself. */
+@media (hover: none) {
+  button:not(:disabled):active,
+  summary:active {
+    opacity: 0.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -52,7 +52,7 @@ const onTabKeydown = (event: KeyboardEvent) => {
           :aria-selected="tab === item.key"
           :aria-controls="`library-panel-${item.key}`"
           :tabindex="tab === item.key ? 0 : -1"
-          class="inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-md text-sm font-medium transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          class="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md text-sm font-medium transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-8"
           :class="tab === item.key
             ? 'bg-background text-foreground shadow-xs'
             : 'text-muted-foreground hover:text-foreground'"

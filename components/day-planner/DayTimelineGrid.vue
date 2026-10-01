@@ -282,7 +282,7 @@ const toneOf = (color: string) => paletteOf(color);
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-4xl pt-4 pb-28 sm:pt-6 sm:pb-12">
+  <div class="mx-auto flex max-w-4xl pt-4 pb-8 sm:pt-6 sm:pb-12">
     <!-- Hour gutter -->
     <div class="relative w-14 sm:w-16 shrink-0 select-none border-r border-border bg-background pr-1.5 sm:pr-2.5">
       <div
@@ -302,7 +302,7 @@ const toneOf = (color: string) => paletteOf(color);
       <!-- Hover time pill in gutter -->
       <div
         v-if="hoverMinutes !== null && !preview && !resizing"
-        class="pointer-events-none absolute right-0.5 sm:right-1 z-20 -translate-y-1/2 whitespace-nowrap rounded-md bg-background px-1 sm:px-1.5 py-0.5 font-mono text-[9px] sm:text-[10px] font-medium leading-none text-primary/70"
+        class="pointer-events-none absolute right-0.5 sm:right-1 z-20 -translate-y-1/2 whitespace-nowrap rounded-md bg-background px-1 sm:px-1.5 py-0.5 font-mono text-[10px] font-medium leading-none text-primary/70"
         :style="{ top: `${(hoverMinutes / SLOT_MINUTES) * SLOT_HEIGHT}px` }"
       >
         {{ formatTime(hoverMinutes) }}
@@ -311,7 +311,7 @@ const toneOf = (color: string) => paletteOf(color);
       <!-- Live time pill in gutter -->
       <div
         v-if="nowMinute !== null"
-        class="pointer-events-none absolute right-0.5 sm:right-1 z-30 -translate-y-1/2 whitespace-nowrap rounded-md bg-rose-500 px-1 sm:px-1.5 py-0.5 font-mono text-[9px] sm:text-[10px] font-bold leading-none text-white shadow-xs"
+        class="pointer-events-none absolute right-0.5 sm:right-1 z-30 -translate-y-1/2 whitespace-nowrap rounded-md bg-rose-500 px-1 sm:px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-white shadow-xs"
         :style="{ top: `${(nowMinute / SLOT_MINUTES) * SLOT_HEIGHT}px` }"
       >
         {{ formatTime(nowMinute) }}
@@ -456,8 +456,8 @@ const toneOf = (color: string) => paletteOf(color);
             :aria-label="task.completed ? 'Mark as not done' : 'Mark as done'"
             @click.stop="emit('toggle-complete', task)"
             :class="[
-              'flex shrink-0 items-center justify-center rounded-xs border transition-colors cursor-pointer',
-              isCompact(task.durationMinutes) ? 'h-3.5 w-3.5' : 'mt-0.5 h-4 w-4',
+              'relative flex shrink-0 items-center justify-center rounded-xs border transition-colors cursor-pointer after:absolute after:-inset-1.5 touch:after:-inset-2.5',
+              isCompact(task.durationMinutes) ? 'h-3.5 w-3.5 touch:h-4 touch:w-4' : 'mt-0.5 h-4 w-4 touch:h-5 touch:w-5',
               task.completed
                 ? 'border-emerald-600 bg-emerald-600 text-white shadow-2xs'
                 : 'border-input bg-background text-transparent hover:border-foreground/60'
@@ -485,7 +485,7 @@ const toneOf = (color: string) => paletteOf(color);
             @pointerdown.stop
             @mousedown.stop
             :class="isCompact(task.durationMinutes) ? 'h-4 w-4' : 'mt-0.5 h-4.5 w-4.5'"
-            class="flex shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-75 hover:opacity-100 focus-visible:opacity-100"
+            class="flex shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-75 hover:opacity-100 focus-visible:opacity-100 touch:hidden"
           >
             <svg
               viewBox="0 0 20 20"
@@ -521,10 +521,10 @@ const toneOf = (color: string) => paletteOf(color);
         <div
           data-resize-handle
           @pointerdown="(e) => emit('start-resize', task, e)"
-          :class="isCompact(task.durationMinutes) ? 'h-2' : 'h-3.5 sm:h-2'"
+          :class="isCompact(task.durationMinutes) ? 'h-2 touch:h-3' : 'h-3.5 sm:h-2 touch:h-5'"
           class="absolute inset-x-0 bottom-0 flex touch-none cursor-ns-resize items-center justify-center"
         >
-          <span class="h-0.5 w-6 rounded-full bg-foreground/20 opacity-0 transition group-hover:opacity-100" />
+          <span class="h-0.5 w-6 rounded-full bg-foreground/20 opacity-0 transition group-hover:opacity-100 touch:opacity-70" />
         </div>
 
         <!-- Active resizing duration badge -->

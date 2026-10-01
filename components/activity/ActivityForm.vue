@@ -80,7 +80,7 @@ onMounted(async () => {
     <div>
       <label for="activity-name" class="text-xs font-medium text-foreground">Name</label>
       <div
-        class="mt-1.5 flex h-10 w-full items-center rounded-md border bg-background shadow-xs transition-colors focus-within:ring-1 focus-within:ring-ring"
+        class="mt-1.5 flex h-11 w-full items-center rounded-md border bg-background shadow-xs transition-colors focus-within:ring-1 focus-within:ring-ring sm:h-10"
         :class="nameError ? 'border-destructive' : 'border-input'"
       >
         <EmojiPicker v-model="draft.emoji" />
@@ -108,14 +108,14 @@ onMounted(async () => {
     <!-- Duration -->
     <div>
       <span class="text-xs font-medium text-foreground">Default length</span>
-      <div role="radiogroup" aria-label="Default length" class="mt-1.5 flex flex-wrap gap-1.5">
+      <div role="radiogroup" aria-label="Default length" class="mt-1.5 flex flex-wrap gap-2 sm:gap-1.5">
         <button
           v-for="minutes in DURATION_CHOICES"
           :key="minutes"
           type="button"
           role="radio"
           :aria-checked="draft.defaultDuration === minutes"
-          class="h-8 min-w-12 cursor-pointer rounded-md border px-2.5 text-xs font-medium tabular-nums transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          class="h-10 min-w-14 cursor-pointer rounded-md border px-3 text-sm font-medium tabular-nums transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-8 sm:min-w-12 sm:px-2.5 sm:text-xs"
           :class="draft.defaultDuration === minutes
             ? 'border-primary bg-primary text-primary-foreground shadow-xs'
             : 'border-input bg-background text-foreground hover:bg-accent'"
@@ -153,10 +153,10 @@ onMounted(async () => {
       {{ error }}
     </p>
 
-    <div class="flex justify-end gap-2 border-t border-border pt-4">
+    <div class="sticky -bottom-[max(1rem,env(safe-area-inset-bottom))] -mx-4 -mb-[max(1rem,env(safe-area-inset-bottom))] flex gap-2 border-t border-border bg-background px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:static sm:mx-0 sm:mb-0 sm:justify-end sm:px-0 sm:pb-0 sm:pt-4">
       <button
         type="button"
-        class="inline-flex h-9 cursor-pointer items-center rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent"
+        class="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent sm:h-9 sm:flex-none"
         @click="emit('cancel')"
       >
         Cancel
@@ -164,7 +164,7 @@ onMounted(async () => {
       <button
         type="submit"
         :disabled="busy"
-        class="inline-flex h-9 cursor-pointer items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+        class="inline-flex h-11 flex-[1.6] cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:flex-none"
       >
         {{ busy ? "Saving…" : submitLabel }}
       </button>

@@ -19,12 +19,17 @@ onMounted(() => load());
 
 const PANEL_MAX_HEIGHT = 340;
 const GAP = 6;
+/** Phones get a bottom sheet instead of a popover anchored to the field. */
+const SHEET_QUERY = "(max-width: 639px)";
 
 const open = ref(false);
 const triggerRef = ref<HTMLButtonElement | null>(null);
 const panelRef = ref<HTMLDivElement | null>(null);
 const newInputRef = ref<HTMLInputElement | null>(null);
 const position = ref({ top: 0, left: 0, width: 240, maxHeight: PANEL_MAX_HEIGHT });
+const isSheet = ref(false);
+/** How much of the bottom of the screen the on-screen keyboard covers, so the sheet can sit above it. */
+const keyboardInset = ref(0);
 
 const creating = ref(false);
 const newName = ref("");
@@ -43,7 +48,15 @@ const entries = computed(() => {
 
 const selected = computed(() => entries.value.find((c) => c.name.toLowerCase() === props.modelValue?.trim().toLowerCase()));
 
+const syncKeyboard = () => {
+  const viewport = window.visualViewport;
+  keyboardInset.value = viewport ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop) : 0;
+};
+
 const place = () => {
+  isSheet.value = window.matchMedia(SHEET_QUERY).matches;
+  syncKeyboard();
+  if (isSheet.value) return;
   const rect = triggerRef.value?.getBoundingClientRect();
   if (!rect) return;
   const below = window.innerHeight - rect.bottom - GAP - 8;
@@ -64,9 +77,10 @@ const show = async () => {
   open.value = true;
   creating.value = false;
   window.addEventListener("resize", place);
+  window.visualViewport?.addEventListener("resize", syncKeyboard);
   await nextTick();
   const active = panelRef.value?.querySelector<HTMLElement>('[aria-selected="true"]') ?? panelRef.value?.querySelector<HTMLElement>("[role=option]");
-  active?.focus();
+  active?.focus({ preventScroll: true });
   active?.scrollIntoView({ block: "nearest" });
 };
 
@@ -76,7 +90,8 @@ const hide = () => {
   newName.value = "";
   newError.value = null;
   window.removeEventListener("resize", place);
-  triggerRef.value?.focus();
+  window.visualViewport?.removeEventListener("resize", syncKeyboard);
+  triggerRef.value?.focus({ preventScroll: true });
 };
 
 const choose = (name: string) => {
@@ -123,7 +138,10 @@ const onListKeydown = (event: KeyboardEvent) => {
   event.preventDefault();
 };
 
-onBeforeUnmount(() => window.removeEventListener("resize", place));
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", place);
+  window.visualViewport?.removeEventListener("resize", syncKeyboard);
+});
 </script>
 
 <template>
@@ -133,7 +151,7 @@ onBeforeUnmount(() => window.removeEventListener("resize", place));
       type="button"
       aria-haspopup="listbox"
       :aria-expanded="open"
-      class="flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-2 text-left text-sm shadow-xs transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      class="flex h-11 w-full cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-2.5 text-left text-sm shadow-xs transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-9 sm:px-2"
       @click="open ? hide() : show()"
     >
       <span class="h-2.5 w-2.5 shrink-0 rounded-full" :class="paletteOf(selected?.color ?? 'slate').dot" />
@@ -144,21 +162,28 @@ onBeforeUnmount(() => window.removeEventListener("resize", place));
     </button>
 
     <Teleport to="body">
-      <div v-if="open" class="fixed inset-0 z-[60]" @click="hide">
+      <div v-if="open" class="fixed inset-0 z-[60]" :class="isSheet ? 'bg-black/40' : ''" @click="hide">
         <div
           ref="panelRef"
-          class="fixed flex flex-col overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-lg"
-          :style="{ top: `${position.top}px`, left: `${position.left}px`, width: `${position.width}px`, maxHeight: `${position.maxHeight}px` }"
+          class="fixed flex flex-col overflow-hidden border border-border bg-popover text-popover-foreground shadow-lg"
+          :class="isSheet ? 'inset-x-0 rounded-t-2xl border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)]' : 'rounded-xl'"
+          :style="isSheet
+            ? { bottom: `${keyboardInset}px`, maxHeight: `min(70dvh, ${PANEL_MAX_HEIGHT + 100}px)` }
+            : { top: `${position.top}px`, left: `${position.left}px`, width: `${position.width}px`, maxHeight: `${position.maxHeight}px` }"
           @click.stop
           @keydown.esc.stop.prevent="hide"
         >
+          <div v-if="isSheet" class="shrink-0 border-b border-border px-4 pb-2.5 pt-2.5">
+            <div class="mx-auto h-1.5 w-10 rounded-full bg-muted-foreground/30" />
+            <p class="mt-2 text-sm font-semibold text-foreground">Category</p>
+          </div>
           <ul role="listbox" aria-label="Categories" class="min-h-0 flex-1 overflow-y-auto p-1" @keydown="onListKeydown">
             <li v-for="entry in entries" :key="entry.name" role="presentation">
               <button
                 type="button"
                 role="option"
                 :aria-selected="entry.name.toLowerCase() === modelValue?.trim().toLowerCase()"
-                class="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm transition hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                class="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm transition hover:bg-accent focus-visible:bg-accent focus-visible:outline-none touch:min-h-12 touch:px-3"
                 @click="choose(entry.name)"
               >
                 <span class="flex h-6 w-6 shrink-0 items-center justify-center">
@@ -186,13 +211,13 @@ onBeforeUnmount(() => window.removeEventListener("resize", place));
                   maxlength="40"
                   autocomplete="off"
                   placeholder="New category name"
-                  class="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  class="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-8"
                   @input="newError = null"
                 />
                 <button
                   type="submit"
                   :disabled="busy || !newName.trim()"
-                  class="h-8 shrink-0 cursor-pointer rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="h-10 shrink-0 cursor-pointer rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:px-3 sm:text-xs"
                 >
                   Add
                 </button>
@@ -202,7 +227,7 @@ onBeforeUnmount(() => window.removeEventListener("resize", place));
             <template v-else>
               <button
                 type="button"
-                class="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm font-medium text-foreground transition hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                class="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm font-medium text-foreground transition hover:bg-accent focus-visible:bg-accent focus-visible:outline-none touch:min-h-12 touch:px-3"
                 @click="startCreating"
               >
                 <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
@@ -212,7 +237,7 @@ onBeforeUnmount(() => window.removeEventListener("resize", place));
               </button>
               <button
                 type="button"
-                class="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:outline-none"
+                class="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:outline-none touch:min-h-12 touch:px-3"
                 @click="manage"
               >
                 <span class="flex h-6 w-6 shrink-0 items-center justify-center">

@@ -145,8 +145,8 @@ const removeItem = async (item: DayChecklistItem) => {
     />
 
     <!-- Items list -->
-    <div class="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
-      <p v-if="items.length > 0 || skippedItems.length > 0" class="px-2 pb-1 text-[11px] text-muted-foreground">
+    <div class="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-4 py-3">
+      <p v-if="items.length > 0 || skippedItems.length > 0" class="px-2 pb-1 text-xs text-muted-foreground">
         Your default checklist repeats every day. Skip items or add one-offs for just this day.
       </p>
 
@@ -170,7 +170,7 @@ const removeItem = async (item: DayChecklistItem) => {
 
       <!-- Default items skipped on this day only -->
       <details v-if="skippedItems.length > 0" class="pt-2">
-        <summary class="cursor-pointer select-none text-xs font-medium text-muted-foreground hover:text-foreground">
+        <summary class="flex min-h-11 cursor-pointer select-none items-center text-xs font-medium text-muted-foreground hover:text-foreground touch:text-sm">
           Skipped on this day ({{ skippedItems.length }})
         </summary>
         <div class="mt-1.5 space-y-1">
@@ -184,7 +184,7 @@ const removeItem = async (item: DayChecklistItem) => {
             <button
               type="button"
               @click="skipForDay(item, false)"
-              class="shrink-0 rounded-md border border-input bg-background px-2 py-1 text-xs font-medium text-foreground shadow-xs hover:bg-accent cursor-pointer"
+              class="shrink-0 cursor-pointer rounded-md border border-input bg-background px-2 py-1 text-xs font-medium text-foreground shadow-xs hover:bg-accent touch:h-10 touch:px-4 touch:text-sm"
             >
               Restore
             </button>
@@ -199,64 +199,60 @@ const removeItem = async (item: DayChecklistItem) => {
       @submit="handleAddSubmitted"
     />
 
-    <!-- Edit modal -->
-    <div
-      v-if="editingItem"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
-      @click.self="cancelEdit"
-    >
-      <div class="w-full max-w-sm rounded-xl border border-border bg-background p-5 shadow-lg">
-        <h3 class="text-base font-semibold leading-none tracking-tight text-foreground">Edit Checklist Item</h3>
-        <p class="mt-1.5 text-xs text-muted-foreground">
-          Changes will apply across all days.
-        </p>
-
-        <form @submit.prevent="saveEdit" class="mt-4 space-y-4">
-          <div>
-            <label class="block text-xs font-medium text-foreground">Emoji</label>
-            <div class="mt-1.5 flex flex-wrap gap-1.5">
-              <button
-                v-for="e in HABIT_EMOJIS"
-                :key="e"
-                type="button"
-                @click="editEmoji = e"
-                class="flex h-8 w-8 items-center justify-center rounded-md border text-base transition cursor-pointer"
-                :class="editEmoji === e ? 'border-primary bg-primary text-primary-foreground shadow-xs' : 'border-input bg-background hover:bg-accent'"
-              >
-                {{ e }}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-foreground">Title</label>
-            <input
-              v-model="editTitle"
-              type="text"
-              required
-              maxlength="100"
-              class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            />
-          </div>
-
-          <div class="flex items-center justify-end gap-2 pt-3 border-t border-border">
+    <!-- Edit item (applies to every day) -->
+    <Modal :open="Boolean(editingItem)" title="Edit checklist item" subtitle="Changes apply across all days." @close="cancelEdit">
+      <form id="checklist-edit-form" class="space-y-4" @submit.prevent="saveEdit">
+        <div role="group" aria-labelledby="checklist-edit-emoji">
+          <span id="checklist-edit-emoji" class="block text-xs font-medium text-foreground">Emoji</span>
+          <div class="mt-1.5 flex flex-wrap gap-1.5 touch:gap-2">
             <button
+              v-for="e in HABIT_EMOJIS"
+              :key="e"
               type="button"
-              @click="cancelEdit"
-              class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground cursor-pointer"
+              :aria-pressed="editEmoji === e"
+              @click="editEmoji = e"
+              class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border text-base transition touch:h-11 touch:w-11 touch:text-xl"
+              :class="editEmoji === e ? 'border-primary bg-primary text-primary-foreground shadow-xs' : 'border-input bg-background hover:bg-accent'"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              :disabled="!editTitle.trim() || saving"
-              class="inline-flex items-center justify-center rounded-md bg-primary px-3.5 py-1.5 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-40 cursor-pointer"
-            >
-              {{ saving ? "Saving…" : "Save changes" }}
+              {{ e }}
             </button>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+
+        <div>
+          <label for="checklist-edit-title" class="block text-xs font-medium text-foreground">Title</label>
+          <input
+            id="checklist-edit-title"
+            v-model="editTitle"
+            type="text"
+            required
+            maxlength="100"
+            autocomplete="off"
+            enterkeyhint="done"
+            class="mt-1.5 flex h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-9"
+          />
+        </div>
+      </form>
+
+      <template #footer>
+        <div class="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            @click="cancelEdit"
+            class="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-md border border-input bg-background px-3.5 text-sm font-medium text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground sm:h-9 sm:flex-none sm:text-xs"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="checklist-edit-form"
+            :disabled="!editTitle.trim() || saving"
+            class="inline-flex h-11 flex-[1.6] cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-40 sm:h-9 sm:flex-none sm:text-xs"
+          >
+            {{ saving ? "Saving…" : "Save changes" }}
+          </button>
+        </div>
+      </template>
+    </Modal>
   </div>
 </template>

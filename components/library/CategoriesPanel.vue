@@ -179,13 +179,13 @@ const toggleColors = (entry: CategoryEntry) => {
             maxlength="40"
             autocomplete="off"
             placeholder="e.g. Fitness, Side project…"
-            class="h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            class="h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-9"
             @input="addError = null"
           />
           <button
             type="submit"
             :disabled="adding || !newName.trim()"
-            class="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3.5 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            class="inline-flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:px-3.5"
           >
             <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
               <path d="M10 4v12M4 10h12" stroke-linecap="round" />
@@ -230,7 +230,7 @@ const toggleColors = (entry: CategoryEntry) => {
                 :aria-label="`Change color of ${entry.name}`"
                 :aria-expanded="colorOpen === keyOf(entry)"
                 title="Change color"
-                class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-9 sm:w-9"
                 :class="paletteOf(entry.color).icon"
                 @click="toggleColors(entry)"
               >
@@ -238,7 +238,7 @@ const toggleColors = (entry: CategoryEntry) => {
               </button>
               <span
                 v-else
-                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9"
                 :class="paletteOf(entry.color).icon"
               >
                 <span class="h-3.5 w-3.5 rounded-full shadow-2xs" :class="paletteOf(entry.color).swatch" />
@@ -251,7 +251,7 @@ const toggleColors = (entry: CategoryEntry) => {
                 type="text"
                 maxlength="40"
                 :aria-label="`Rename ${entry.name}`"
-                class="h-9 min-w-0 flex-1 truncate rounded-md border border-transparent bg-transparent px-2 text-sm font-medium text-foreground transition hover:bg-muted focus:border-input focus:bg-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                class="h-11 min-w-0 flex-1 truncate rounded-md border border-transparent bg-transparent px-2 text-sm font-medium text-foreground transition hover:bg-muted focus:border-input focus:bg-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-9"
                 @input="nameDrafts[keyOf(entry)] = ($event.target as HTMLInputElement).value"
                 @blur="commitName(entry)"
                 @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
@@ -269,7 +269,7 @@ const toggleColors = (entry: CategoryEntry) => {
                   type="button"
                   :aria-label="`Delete ${entry.name}`"
                   title="Delete"
-                  class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-8 sm:w-8"
                   :class="deleting === keyOf(entry) ? 'bg-destructive/10 text-destructive' : ''"
                   @click="askDelete(entry)"
                 >
@@ -281,7 +281,7 @@ const toggleColors = (entry: CategoryEntry) => {
               <button
                 v-else
                 type="button"
-                class="h-8 shrink-0 cursor-pointer rounded-md border border-input bg-background px-2.5 text-xs font-medium text-foreground shadow-xs transition hover:bg-accent"
+                class="h-11 shrink-0 cursor-pointer rounded-md border border-input bg-background px-3.5 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent sm:h-8 sm:px-2.5 sm:text-xs"
                 @click="saveUnsaved(entry)"
               >
                 Save
@@ -303,7 +303,7 @@ const toggleColors = (entry: CategoryEntry) => {
                   v-if="moveTargets(entry).length"
                   v-model="moveTo"
                   aria-label="Move activities to"
-                  class="h-9 w-full cursor-pointer rounded-md border border-input bg-background px-2.5 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  class="h-11 w-full cursor-pointer rounded-md border border-input bg-background px-2.5 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-9"
                 >
                   <option v-for="target in moveTargets(entry)" :key="target.name" :value="target.name">
                     {{ target.name }}
@@ -316,7 +316,7 @@ const toggleColors = (entry: CategoryEntry) => {
               <div class="flex justify-end gap-2">
                 <button
                   type="button"
-                  class="h-8 cursor-pointer rounded-md border border-input bg-background px-3 text-xs font-medium text-foreground shadow-xs transition hover:bg-accent"
+                  class="h-11 flex-1 cursor-pointer rounded-md border border-input bg-background px-3 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent sm:h-8 sm:flex-none sm:text-xs"
                   @click="deleting = null"
                 >
                   Cancel
@@ -324,7 +324,7 @@ const toggleColors = (entry: CategoryEntry) => {
                 <button
                   type="button"
                   :disabled="removing || (countOf(entry) > 0 && !moveTo)"
-                  class="h-8 cursor-pointer rounded-md bg-destructive px-3 text-xs font-medium text-destructive-foreground shadow-xs transition hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="h-11 flex-1 cursor-pointer rounded-md bg-destructive px-3 text-sm font-medium text-destructive-foreground shadow-xs transition hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:flex-none sm:text-xs"
                   @click="confirmDelete(entry)"
                 >
                   {{ removing ? "Deleting…" : "Delete category" }}
@@ -339,8 +339,8 @@ const toggleColors = (entry: CategoryEntry) => {
         </ul>
       </div>
 
-      <p class="px-0.5 text-[11px] leading-relaxed text-muted-foreground">
-        Click a dot to change its color, or a name to rename it. Deleting a category never deletes activities; they move to the category you choose.
+      <p class="px-0.5 text-xs leading-relaxed text-muted-foreground">
+        <span class="touch:hidden">Click</span><span class="hidden touch:inline">Tap</span> a dot to change its color, or a name to rename it. Deleting a category never deletes activities; they move to the category you choose.
       </p>
   </div>
 </template>

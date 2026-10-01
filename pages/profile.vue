@@ -127,16 +127,16 @@ const handleLogout = async () => {
       <p class="mt-2 text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
         Your user profile and personal preferences are stored securely in your Firebase backend. Please sign in or create an account to view and edit this information.
       </p>
-      <div class="mt-6 flex justify-center gap-3">
+      <div class="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
         <NuxtLink
           to="/login?redirect=/profile"
-          class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition"
+          class="inline-flex h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 sm:h-9 sm:px-4"
         >
           Sign In
         </NuxtLink>
         <NuxtLink
           to="/signup"
-          class="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground shadow-2xs hover:bg-accent transition"
+          class="inline-flex h-11 items-center justify-center rounded-md border border-input bg-background px-5 py-2 text-sm font-medium text-foreground shadow-2xs transition hover:bg-accent sm:h-9 sm:px-4"
         >
           Create Account
         </NuxtLink>
@@ -160,7 +160,7 @@ const handleLogout = async () => {
         <span>{{ profileError }}</span>
         <button
           type="button"
-          class="rounded-md border border-rose-300 dark:border-rose-400/40 bg-background px-2 py-1 text-xs text-rose-800 dark:text-rose-200 transition hover:bg-rose-50 dark:hover:bg-rose-500/10"
+          class="h-10 shrink-0 cursor-pointer rounded-md border border-rose-300 bg-background px-3 text-xs text-rose-800 transition hover:bg-rose-50 sm:h-auto sm:px-2 sm:py-1 dark:border-rose-400/40 dark:text-rose-200 dark:hover:bg-rose-500/10"
           @click="user && loadProfile(user)"
         >
           Retry
@@ -219,7 +219,7 @@ const handleLogout = async () => {
                 required
                 :maxlength="PROFILE_LIMITS.displayName"
                 placeholder="Your full name"
-                class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none"
+                class="h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none sm:h-9"
               />
             </div>
 
@@ -232,7 +232,7 @@ const handleLogout = async () => {
                 :value="user.email"
                 disabled
                 type="email"
-                class="h-9 w-full rounded-md border border-input bg-muted/50 px-3 py-1 text-sm text-muted-foreground shadow-2xs cursor-not-allowed"
+                class="h-11 w-full rounded-md border border-input bg-muted/50 px-3 py-1 text-sm text-muted-foreground shadow-2xs cursor-not-allowed sm:h-9"
               />
             </div>
 
@@ -246,7 +246,7 @@ const handleLogout = async () => {
                 type="tel"
                 :maxlength="PROFILE_LIMITS.phone"
                 placeholder="+1 (555) 000-0000"
-                class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none"
+                class="h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none sm:h-9"
               />
             </div>
 
@@ -260,7 +260,7 @@ const handleLogout = async () => {
                 type="text"
                 :maxlength="PROFILE_LIMITS.location"
                 placeholder="City, Country"
-                class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none"
+                class="h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none sm:h-9"
               />
             </div>
 
@@ -295,7 +295,7 @@ const handleLogout = async () => {
                 type="text"
                 :maxlength="PROFILE_LIMITS.timezone"
                 placeholder="e.g. America/New_York or UTC"
-                class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors focus-visible:border-foreground focus-visible:outline-none"
+                class="h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors focus-visible:border-foreground focus-visible:outline-none sm:h-9"
               />
             </div>
 
@@ -306,7 +306,7 @@ const handleLogout = async () => {
               <select
                 id="defaultDuration"
                 v-model="form.defaultTaskDuration"
-                class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors focus-visible:border-foreground focus-visible:outline-none"
+                class="h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors focus-visible:border-foreground focus-visible:outline-none sm:h-9"
               >
                 <option :value="15">15 minutes</option>
                 <option :value="30">30 minutes</option>
@@ -318,22 +318,22 @@ const handleLogout = async () => {
             </div>
 
             <div class="sm:col-span-2">
-              <label class="flex items-center gap-2.5 cursor-pointer">
+              <label class="flex min-h-11 cursor-pointer items-center gap-3 sm:min-h-0 sm:gap-2.5">
                 <input
                   type="checkbox"
                   v-model="form.weekStartsOnMonday"
-                  class="h-4 w-4 rounded border-input text-primary focus:ring-ring"
+                  class="h-5 w-5 rounded border-input accent-primary text-primary focus:ring-ring sm:h-4 sm:w-4"
                 />
                 <span class="text-xs sm:text-sm font-medium text-foreground">Week starts on Monday</span>
               </label>
             </div>
           </div>
 
-          <div class="flex items-center justify-between pt-4 border-t border-border">
+          <div class="flex flex-col-reverse items-stretch gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               @click="handleSendResetEmail"
-              class="text-xs sm:text-sm font-medium text-muted-foreground transition hover:text-foreground underline-offset-4 hover:underline cursor-pointer"
+              class="min-h-11 cursor-pointer text-sm font-medium text-muted-foreground underline-offset-4 transition hover:text-foreground hover:underline sm:min-h-0"
             >
               Reset password via email
             </button>
@@ -341,7 +341,7 @@ const handleLogout = async () => {
             <button
               type="submit"
               :disabled="isSaving || !profile"
-              class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-xs sm:text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:opacity-50 cursor-pointer"
+              class="inline-flex h-11 cursor-pointer items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:opacity-50 sm:h-9"
             >
               <span v-if="isSaving">Saving...</span>
               <span v-else>Save Changes</span>

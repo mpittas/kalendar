@@ -19,14 +19,14 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <header class="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <div class="flex items-center gap-2">
         <!-- Interactive Month & Year title button -->
         <button
           type="button"
           @click="emit('open-selector')"
-          class="group inline-flex items-center gap-2 rounded-xl py-1 px-1.5 -ml-1.5 text-2xl font-bold tracking-tight text-foreground transition hover:bg-muted/70 cursor-pointer sm:text-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          class="group inline-flex min-h-11 items-center gap-2 rounded-xl py-1 px-1.5 -ml-1.5 text-2xl font-bold tracking-tight text-foreground transition hover:bg-muted/70 cursor-pointer sm:text-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-haspopup="dialog"
           :aria-expanded="isDateSelectorOpen"
           title="Click to select month, year, or jump to exact date"
@@ -70,15 +70,15 @@ const emit = defineEmits<{
 
     <!-- Compact Date Navigation Control -->
     <div class="flex items-center gap-2">
-      <div class="inline-flex h-9 items-center rounded-xl border border-border bg-card p-0.5 shadow-2xs">
+      <div class="inline-flex h-12 w-full items-center rounded-xl border border-border bg-card p-0.5 shadow-2xs sm:h-9 sm:w-auto">
         <!-- Previous Month (<) -->
         <NuxtLink
           :to="`/?m=${addMonths(month, -1).slice(0, 7)}`"
-          class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition"
+          class="flex h-11 w-12 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground active:bg-muted sm:h-8 sm:w-8"
           title="Previous month"
           aria-label="Previous month"
         >
-          <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 20 20" class="h-5 w-5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12.5 15l-5-5 5-5" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </NuxtLink>
@@ -86,7 +86,7 @@ const emit = defineEmits<{
         <!-- Today Button -->
         <NuxtLink
           :to="`/?m=${today.slice(0, 7)}`"
-          class="flex h-8 items-center px-2.5 rounded-lg text-xs font-semibold transition"
+          class="flex h-11 flex-1 items-center justify-center rounded-lg px-2.5 text-sm font-semibold transition sm:h-8 sm:flex-none sm:text-xs"
           :class="isCurrentMonth
             ? 'bg-muted text-muted-foreground cursor-default'
             : 'text-foreground hover:bg-muted'"
@@ -98,26 +98,26 @@ const emit = defineEmits<{
         <!-- Next Month (>) -->
         <NuxtLink
           :to="`/?m=${addMonths(month, 1).slice(0, 7)}`"
-          class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition"
+          class="flex h-11 w-12 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground active:bg-muted sm:h-8 sm:w-8"
           title="Next month"
           aria-label="Next month"
         >
-          <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 20 20" class="h-5 w-5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M7.5 15l5-5-5-5" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </NuxtLink>
 
-        <div class="h-4 w-px bg-border mx-0.5" />
+        <div class="mx-0.5 h-5 w-px bg-border sm:h-4" />
 
         <!-- Date Picker Button (Opens Modal) -->
         <button
           type="button"
           @click="emit('open-selector')"
-          class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer"
+          class="flex h-11 w-12 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground active:bg-muted sm:h-8 sm:w-8"
           title="Jump to date"
           aria-label="Jump to date"
         >
-          <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+          <svg viewBox="0 0 20 20" class="h-5 w-5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="4" width="14" height="13" rx="2" stroke-linecap="round" stroke-linejoin="round" />
             <path d="M3 8h14M7 2v4M13 2v4" stroke-linecap="round" stroke-linejoin="round" />
           </svg>

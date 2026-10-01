@@ -141,7 +141,7 @@ const confirmDelete = async (id: string) => {
     <div v-if="mode.kind !== 'list'">
       <button
         type="button"
-        class="mb-4 inline-flex cursor-pointer items-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        class="-ml-2 mb-3 inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-md px-2 text-sm font-medium text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:mb-4 sm:min-h-0 sm:text-xs"
         @click="backToList"
       >
         <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l-5 5 5 5" /></svg>
@@ -173,15 +173,17 @@ const confirmDelete = async (id: string) => {
           </svg>
           <input
             v-model="search"
-            type="text"
+            type="search"
+            enterkeyhint="search"
+            autocomplete="off"
             placeholder="Search activities"
             aria-label="Search activities"
-            class="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            class="h-11 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-9"
           />
         </div>
         <button
           type="button"
-          class="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3.5 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90"
+          class="inline-flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 sm:h-9 sm:px-3.5"
           @click="startCreate"
         >
           <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
@@ -200,7 +202,7 @@ const confirmDelete = async (id: string) => {
         <button
           v-if="templates.length === 0"
           type="button"
-          class="mt-3 inline-flex h-9 cursor-pointer items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90"
+          class="mt-3 inline-flex h-11 cursor-pointer items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 sm:h-9"
           @click="startCreate"
         >
           Create your first activity
@@ -215,7 +217,7 @@ const confirmDelete = async (id: string) => {
         </h3>
         <ul class="space-y-1.5">
           <li v-for="template in group.items" :key="template.id" class="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
-            <div class="group flex items-center gap-3 p-2.5">
+            <div class="group flex items-center gap-2 p-2.5 sm:gap-3">
               <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl" :class="paletteOf(template.color).icon">
                 {{ template.emoji }}
               </span>
@@ -229,7 +231,7 @@ const confirmDelete = async (id: string) => {
                 type="button"
                 :aria-label="`Edit ${template.name}`"
                 title="Edit"
-                class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-8 sm:w-8"
                 @click="startEdit(template)"
               >
                 <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -240,7 +242,7 @@ const confirmDelete = async (id: string) => {
                 type="button"
                 :aria-label="`Delete ${template.name}`"
                 title="Delete"
-                class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-8 sm:w-8"
                 :class="deletingId === template.id ? 'bg-destructive/10 text-destructive' : ''"
                 @click="deletingId = deletingId === template.id ? null : template.id"
               >
@@ -251,12 +253,12 @@ const confirmDelete = async (id: string) => {
             </div>
             <div v-if="deletingId === template.id" class="flex flex-wrap items-center justify-between gap-2 border-t border-destructive/20 bg-destructive/5 px-3 py-2.5">
               <p class="text-xs text-foreground">Delete “{{ template.name }}”? Blocks already on your calendar stay.</p>
-              <div class="flex gap-2">
-                <button type="button" class="h-8 cursor-pointer rounded-md border border-input bg-background px-3 text-xs font-medium text-foreground shadow-xs transition hover:bg-accent" @click="deletingId = null">Cancel</button>
+              <div class="flex w-full gap-2 sm:w-auto">
+                <button type="button" class="h-11 flex-1 cursor-pointer rounded-md border border-input bg-background px-3 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent sm:h-8 sm:flex-none sm:text-xs" @click="deletingId = null">Cancel</button>
                 <button
                   type="button"
                   :disabled="busy"
-                  class="h-8 cursor-pointer rounded-md bg-destructive px-3 text-xs font-medium text-destructive-foreground shadow-xs transition hover:bg-destructive/90 disabled:opacity-50"
+                  class="h-11 flex-1 cursor-pointer rounded-md bg-destructive px-3 text-sm font-medium text-destructive-foreground shadow-xs transition hover:bg-destructive/90 disabled:opacity-50 sm:h-8 sm:flex-none sm:text-xs"
                   @click="confirmDelete(template.id)"
                 >
                   Delete

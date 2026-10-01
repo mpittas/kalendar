@@ -35,20 +35,23 @@ const toneOf = (color: string) => paletteOf(color);
     @close="emit('close')"
   >
     <div class="space-y-4">
-      <p class="text-xs text-muted-foreground">Tap an activity to schedule it on today's timeline.</p>
+      <p class="text-sm text-muted-foreground">Tap an activity to schedule it on this day's timeline.</p>
       <div class="relative">
         <input
           v-model="templateSearch"
           type="search"
+          enterkeyhint="search"
+          autocomplete="off"
+          aria-label="Search activities"
           placeholder="Search activities..."
-          class="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          class="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
-        <svg viewBox="0 0 20 20" class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" stroke-width="2">
+        <svg viewBox="0 0 20 20" class="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M8.5 14a5.5 5.5 0 100-11 5.5 5.5 0 000 11zM13 13l4 4" stroke-linecap="round" />
         </svg>
       </div>
 
-      <div class="max-h-[50vh] overflow-y-auto space-y-1.5 pr-0.5">
+      <div class="max-h-[50dvh] space-y-1.5 overflow-y-auto overscroll-contain">
         <button
           v-for="template in filteredTemplates"
           :key="template.id"
@@ -57,10 +60,10 @@ const toneOf = (color: string) => paletteOf(color);
             emit('pick-template', template);
             emit('close');
           "
-          class="group flex w-full items-center justify-between rounded-lg border border-border bg-card p-2.5 text-left shadow-2xs transition hover:border-foreground/20 hover:bg-accent/50 active:scale-[0.99] cursor-pointer"
+          class="group flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-card p-2.5 text-left shadow-2xs transition hover:border-foreground/20 hover:bg-accent/50 active:bg-accent/60"
         >
           <div class="flex items-center gap-2.5 min-w-0">
-            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-base shadow-2xs" :class="toneOf(template.color).dot">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg shadow-2xs" :class="toneOf(template.color).dot">
               {{ template.emoji }}
             </span>
             <div class="min-w-0">
@@ -68,10 +71,13 @@ const toneOf = (color: string) => paletteOf(color);
               <p class="text-xs text-muted-foreground">{{ template.category }} · {{ formatDuration(template.defaultDuration) }}</p>
             </div>
           </div>
-          <span class="rounded-md bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground group-hover:bg-primary group-hover:text-primary-foreground transition">
+          <span class="shrink-0 rounded-md bg-secondary px-3 py-1.5 text-xs font-semibold text-secondary-foreground transition group-hover:bg-primary group-hover:text-primary-foreground">
             Add +
           </span>
         </button>
+        <p v-if="filteredTemplates.length === 0" class="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+          {{ templates.length === 0 ? "No activities yet. Create one below." : `No matches for “${templateSearch.trim()}”` }}
+        </p>
       </div>
 
       <div class="pt-3 border-t border-border flex items-center justify-between">
@@ -81,14 +87,14 @@ const toneOf = (color: string) => paletteOf(color);
             emit('close');
             emit('open-manager');
           "
-          class="text-xs font-semibold text-muted-foreground hover:text-foreground underline cursor-pointer"
+          class="-ml-1 min-h-11 cursor-pointer px-1 text-sm font-semibold text-muted-foreground underline underline-offset-4 hover:text-foreground"
         >
           Manage custom activities
         </button>
         <button
           type="button"
           @click="emit('close')"
-          class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent cursor-pointer"
+          class="inline-flex h-11 cursor-pointer items-center justify-center rounded-md border border-input bg-background px-5 text-sm font-medium text-foreground shadow-xs hover:bg-accent"
         >
           Close
         </button>

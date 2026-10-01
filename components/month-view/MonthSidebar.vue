@@ -26,7 +26,7 @@ const toneOf = (color: string) => paletteOf(color);
         <li v-for="task in upcoming" :key="task.id">
           <NuxtLink
             :to="`/day/${task.day}`"
-            class="group flex items-start gap-2.5 rounded-lg border border-border bg-card p-2.5 transition hover:border-foreground/20 hover:bg-muted/40 shadow-2xs hover:shadow-xs"
+            class="group flex min-h-12 items-start gap-2.5 rounded-lg border border-border bg-card p-3 transition active:bg-muted/60 sm:p-2.5 hover:border-foreground/20 hover:bg-muted/40 shadow-2xs hover:shadow-xs"
           >
             <span
               :class="['mt-1.5 h-2 w-2 shrink-0 rounded-full', toneOf(task.color).dot]"
@@ -56,15 +56,18 @@ const toneOf = (color: string) => paletteOf(color);
       <ul class="mt-3 space-y-2 text-sm text-muted-foreground">
         <li class="flex items-start gap-2.5">
           <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/60" />
-          <span>Click any date cell to plan that day's schedule</span>
+          <span class="touch:hidden">Click any date cell to plan that day's schedule</span>
+          <span class="hidden touch:inline">Tap any date to plan that day's schedule</span>
         </li>
         <li class="flex items-start gap-2.5">
           <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/60" />
-          <span>Drag activities directly onto the timeline grid</span>
+          <span class="touch:hidden">Drag activities directly onto the timeline grid</span>
+          <span class="hidden touch:inline">Tap Activities to drop one onto the timeline, or tap an empty slot to add a block</span>
         </li>
         <li class="flex items-start gap-2.5">
           <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/60" />
-          <span>Click a block to edit it or toggle its completion</span>
+          <span class="touch:hidden">Click a block to edit it or toggle its completion</span>
+          <span class="hidden touch:inline">Tap a block to edit it. Press and hold, then drag, to move it</span>
         </li>
       </ul>
     </section>

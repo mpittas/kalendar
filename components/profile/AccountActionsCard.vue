@@ -13,7 +13,7 @@ const emit = defineEmits<{
     <button
       type="button"
       @click="emit('logout')"
-      class="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-destructive/30 bg-destructive/5 px-4 text-xs sm:text-sm font-medium text-destructive transition hover:bg-destructive hover:text-destructive-foreground cursor-pointer shrink-0"
+      class="inline-flex h-11 items-center justify-center gap-1.5 rounded-md border border-destructive/30 sm:h-9 bg-destructive/5 px-4 text-xs sm:text-sm font-medium text-destructive transition hover:bg-destructive hover:text-destructive-foreground cursor-pointer shrink-0"
     >
       <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M13 15l5-5-5-5M18 10H8M11 4H5a2 2 0 00-2 2v8a2 2 0 002 2h6" stroke-linecap="round" stroke-linejoin="round" />

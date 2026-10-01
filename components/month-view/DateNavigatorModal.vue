@@ -31,25 +31,25 @@ const emit = defineEmits<{
           <button
             type="button"
             @click="emit('select-month', setYearMonth(month, activeYear - 1, activeMonthIndex).slice(0, 7))"
-            class="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card text-foreground transition hover:bg-muted cursor-pointer"
+            class="flex h-11 w-11 cursor-pointer items-center justify-center rounded-md border border-border bg-card text-foreground transition hover:bg-muted sm:h-8 sm:w-8"
             title="Previous year"
             aria-label="Previous year"
           >
-            <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 20 20" class="h-5 w-5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <path d="M12.5 15l-5-5 5-5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
-          <span class="font-mono text-base font-bold text-foreground min-w-[4rem] text-center">
+          <span class="min-w-[4rem] text-center font-mono text-base font-bold tabular-nums text-foreground" aria-live="polite">
             {{ activeYear }}
           </span>
           <button
             type="button"
             @click="emit('select-month', setYearMonth(month, activeYear + 1, activeMonthIndex).slice(0, 7))"
-            class="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card text-foreground transition hover:bg-muted cursor-pointer"
+            class="flex h-11 w-11 cursor-pointer items-center justify-center rounded-md border border-border bg-card text-foreground transition hover:bg-muted sm:h-8 sm:w-8"
             title="Next year"
             aria-label="Next year"
           >
-            <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 20 20" class="h-5 w-5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <path d="M7.5 15l5-5-5-5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
@@ -58,9 +58,9 @@ const emit = defineEmits<{
 
       <!-- Month Grid (12 Months) -->
       <div>
-        <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <span class="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Month
-        </label>
+        </span>
         <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
           <button
             v-for="(name, idx) in MONTH_LABELS"
@@ -71,7 +71,7 @@ const emit = defineEmits<{
               emit('close');
             "
             :class="[
-              'flex h-10 items-center justify-center rounded-lg border text-xs font-semibold transition cursor-pointer',
+              'flex h-12 cursor-pointer items-center justify-center rounded-lg border text-sm font-semibold transition sm:h-10 sm:text-xs',
               activeMonthIndex === idx
                 ? 'bg-primary text-primary-foreground border-primary shadow-2xs font-bold'
                 : 'border-border bg-card text-foreground hover:bg-muted'
@@ -84,10 +84,11 @@ const emit = defineEmits<{
 
       <!-- Specific Day Picker -->
       <div class="pt-3 border-t border-border">
-        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <label for="jump-to-day" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Jump to Specific Day
         </label>
         <input
+          id="jump-to-day"
           type="date"
           :value="month.length === 10 ? month : `${month.slice(0, 7)}-01`"
           @change="(e) => {
@@ -97,7 +98,7 @@ const emit = defineEmits<{
               emit('close');
             }
           }"
-          class="flex h-9 w-full rounded-lg border border-border bg-card px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+          class="flex h-12 w-full cursor-pointer rounded-lg border border-border bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring sm:h-9 sm:text-xs"
         />
       </div>
 
@@ -109,7 +110,7 @@ const emit = defineEmits<{
             emit('select-month', today.slice(0, 7));
             emit('close');
           "
-          class="inline-flex h-8 items-center rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground transition hover:bg-muted cursor-pointer"
+          class="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-lg border border-border bg-card px-3 text-sm font-medium text-foreground transition hover:bg-muted sm:h-8 sm:flex-none sm:text-xs"
         >
           Current Month
         </button>
@@ -119,7 +120,7 @@ const emit = defineEmits<{
             emit('open-day', today);
             emit('close');
           "
-          class="inline-flex h-8 items-center rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 cursor-pointer"
+          class="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 sm:h-8 sm:flex-none sm:text-xs"
         >
           Open Today
         </button>

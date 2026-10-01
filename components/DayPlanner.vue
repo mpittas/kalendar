@@ -476,7 +476,7 @@ const openChecklistManager = () => {
 </script>
 
 <template>
-  <div class="flex h-[calc(100dvh-56px)] flex-col bg-background lg:flex-row overflow-hidden">
+  <div class="flex min-h-0 flex-1 flex-col overflow-hidden bg-background lg:flex-row">
     <!-- Desktop Sidebar (Activities & Checklist) -->
     <aside class="hidden lg:flex lg:w-80 lg:shrink-0 lg:flex-col lg:border-r border-border bg-card">
       <div class="flex items-center justify-between gap-2 border-b border-border px-3 pb-2.5 pt-3 bg-card">
@@ -568,7 +568,7 @@ const openChecklistManager = () => {
         @create-block="editor = { mode: 'create', day, startMinutes: snapMinutes(nowMinutes(), 30), template: null }"
       />
 
-      <div ref="scrollRef" class="relative min-h-0 flex-1 overflow-y-auto bg-background scroll-pt-6">
+      <div ref="scrollRef" class="relative min-h-0 flex-1 overflow-y-auto overscroll-contain bg-background scroll-pt-6">
         <DayRoutinesShelf
           v-if="hasChecklist"
           :items="dayChecklistItems"
@@ -639,9 +639,10 @@ const openChecklistManager = () => {
       :open="mobileSheet === 'notes'"
       title="Notes"
       :subtitle="longDate(day)"
+      flush
       @close="mobileSheet = null"
     >
-      <div class="-mx-6 -my-5 flex h-[60vh] flex-col">
+      <div class="flex h-[min(60dvh,32rem)] flex-col">
         <DayNotes
           :day="day"
           :text="notesText"
@@ -655,9 +656,10 @@ const openChecklistManager = () => {
     <Modal
       :open="mobileSheet === 'checklist'"
       title="Daily Habits & Checklist"
+      flush
       @close="mobileSheet = null"
     >
-      <div class="max-h-[60vh] overflow-y-auto">
+      <div class="flex h-[min(70dvh,36rem)] flex-col">
         <DailyChecklist
           :day="day"
           :items="dayChecklistItems"
