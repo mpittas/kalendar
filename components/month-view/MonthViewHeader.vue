@@ -73,7 +73,7 @@ const emit = defineEmits<{
       <div class="inline-flex h-12 w-full items-center rounded-xl border border-border bg-card p-0.5 shadow-2xs sm:h-9 sm:w-auto">
         <!-- Previous Month (<) -->
         <NuxtLink
-          :to="`/?m=${addMonths(month, -1).slice(0, 7)}`"
+          :to="`/calendar?m=${addMonths(month, -1).slice(0, 7)}`"
           class="flex h-11 w-12 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground active:bg-muted sm:h-8 sm:w-8"
           title="Previous month"
           aria-label="Previous month"
@@ -85,7 +85,7 @@ const emit = defineEmits<{
 
         <!-- Today Button -->
         <NuxtLink
-          :to="`/?m=${today.slice(0, 7)}`"
+          :to="`/calendar?m=${today.slice(0, 7)}`"
           class="flex h-11 flex-1 items-center justify-center rounded-lg px-2.5 text-sm font-semibold transition sm:h-8 sm:flex-none sm:text-xs"
           :class="isCurrentMonth
             ? 'bg-muted text-muted-foreground cursor-default'
@@ -97,7 +97,7 @@ const emit = defineEmits<{
 
         <!-- Next Month (>) -->
         <NuxtLink
-          :to="`/?m=${addMonths(month, 1).slice(0, 7)}`"
+          :to="`/calendar?m=${addMonths(month, 1).slice(0, 7)}`"
           class="flex h-11 w-12 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground active:bg-muted sm:h-8 sm:w-8"
           title="Next month"
           aria-label="Next month"

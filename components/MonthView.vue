@@ -32,7 +32,7 @@ const activeMonthIndex = computed(() => getMonthIndex(props.month));
 const isCurrentMonth = computed(() => isSameMonth(props.month, today));
 
 const onSelectMonth = (monthIso: string) => {
-  navigateTo(`/?m=${monthIso}`);
+  navigateTo(`/calendar?m=${monthIso}`);
 };
 
 const onOpenDay = (dateIso: string) => {

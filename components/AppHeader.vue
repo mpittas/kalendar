@@ -8,7 +8,7 @@ const route = useRoute();
 const today = todayISO();
 
 const isDayView = computed(() => route.path.startsWith("/day"));
-const isCalendarView = computed(() => route.path === "/");
+const isCalendarView = computed(() => route.path === "/calendar");
 const onLoginPage = computed(() => route.path === "/login");
 
 const displayName = computed(() => {
@@ -31,7 +31,7 @@ const initials = computed(() => {
     <div class="flex h-14 w-full items-center justify-between gap-2 short:h-12 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:px-6 lg:px-8">
       <!-- Logo & Main Nav -->
       <div class="flex min-w-0 items-center gap-2.5 sm:gap-6">
-        <NuxtLink to="/" class="group -mx-1 flex items-center px-1 py-2" aria-label="klndr. home">
+        <NuxtLink :to="user ? '/calendar' : '/'" class="group -mx-1 flex items-center px-1 py-2" aria-label="klndr. home">
           <span class="text-lg font-bold tracking-tight text-foreground transition group-hover:opacity-80 sm:text-xl">
             klndr.
           </span>
@@ -44,7 +44,7 @@ const initials = computed(() => {
           class="inline-flex h-10 items-center justify-center rounded-lg bg-muted p-0.5 text-muted-foreground shadow-2xs sm:h-8"
         >
           <NuxtLink
-            to="/"
+            to="/calendar"
             class="relative inline-flex h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2.5 text-xs font-medium transition-all after:absolute after:inset-x-0 after:-inset-y-0.5 active:scale-[0.98] max-[359px]:w-10 max-[359px]:px-0 sm:h-7 sm:after:hidden"
             :class="isCalendarView
               ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
