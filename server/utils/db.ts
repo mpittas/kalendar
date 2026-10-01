@@ -245,6 +245,15 @@ function resolveMoveTarget(categories: Category[], doomed: Category, moveTo: str
   return target.name;
 }
 
+/**
+ * Scheduled blocks copy their template's color, so a recolor has to reach them too. Blocks are
+ * linked by `templateId`; older drag-and-drop blocks were saved unlinked, so those match on the
+ * template's name and category as it was before this edit.
+ */
+const followsTemplate = (task: ScheduledTask, prev: ActivityTemplate) =>
+  task.templateId === prev.id ||
+  (task.templateId === null && task.title === prev.name && task.category === prev.category);
+
 const byTemplateOrder = (a: ActivityTemplate, b: ActivityTemplate) =>
   a.category.localeCompare(b.category) || a.name.localeCompare(b.name);
 const byStart = (a: ScheduledTask, b: ScheduledTask) =>
@@ -298,7 +307,12 @@ class MemoryStore implements Store {
   async updateTemplate(id: string, patch: Partial<Omit<ActivityTemplate, "id">>) {
     const idx = this.templates.findIndex((t) => t.id === id);
     if (idx === -1) return null;
-    this.templates[idx] = { ...this.templates[idx], ...patch, id };
+    const prev = this.templates[idx];
+    this.templates[idx] = { ...prev, ...patch, id };
+    const { color } = this.templates[idx];
+    if (color !== prev.color) {
+      this.tasks = this.tasks.map((t) => (followsTemplate(t, prev) ? { ...t, color } : t));
+    }
     return this.templates[idx];
   }
 
@@ -652,14 +666,41 @@ class FirestoreStore implements Store {
 
   async updateTemplate(id: string, patch: Partial<Omit<ActivityTemplate, "id">>) {
     try {
+      const before = patch.color !== undefined ? await this.fs.get(`${this.base}/templates/${id}`) : null;
       if (Object.keys(patch).length > 0) {
         await this.fs.commit([{ op: "update", path: `${this.base}/templates/${id}`, data: patch }]);
       }
+      if (before && patch.color !== undefined) await this.recolorTasks(toTemplate(before), patch.color);
       const doc = await this.fs.get(`${this.base}/templates/${id}`);
       return doc ? toTemplate(doc) : null;
     } catch (err) {
       if (err instanceof FirestoreError && err.notFound) return null;
       rethrow(err);
+    }
+  }
+
+  /** Give every scheduled block that came from `prev` the template's new color, in batches. */
+  private async recolorTasks(prev: ActivityTemplate, color: string) {
+    if (color === prev.color) return;
+    const [linked, sameTitle] = await Promise.all([
+      this.fs.query(this.base, "tasks", [{ field: "templateId", op: "EQUAL", value: prev.id }]),
+      this.fs.query(this.base, "tasks", [{ field: "title", op: "EQUAL", value: prev.name }]),
+    ]);
+    const byId = new Map<string, ScheduledTask>();
+    for (const doc of [...linked, ...sameTitle]) {
+      const task = toTask(doc);
+      if (followsTemplate(task, prev) && task.color !== color) byId.set(task.id, task);
+    }
+    const ids = [...byId.keys()];
+    for (let i = 0; i < ids.length; i += 400) {
+      await this.fs.commit(
+        ids.slice(i, i + 400).map((taskId) => ({
+          op: "update" as const,
+          path: `${this.base}/tasks/${taskId}`,
+          data: { color },
+          serverTimes: ["updatedAt"],
+        })),
+      );
     }
   }
 

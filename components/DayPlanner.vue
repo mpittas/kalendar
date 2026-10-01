@@ -242,22 +242,29 @@ const handleDrop = async (event: DragEvent) => {
   if (template) await createFromTemplate(template, start);
 };
 
+// Shown at once under a temporary id, then swapped for the saved block (or removed if saving fails).
 const createFromTemplate = async (template: ActivityTemplate, startMinutes: number) => {
+  const draft = {
+    day: props.day,
+    templateId: template.id,
+    title: template.name,
+    category: template.category,
+    color: template.color,
+    emoji: template.emoji,
+    startMinutes,
+    durationMinutes: template.defaultDuration,
+    notes: template.notes ?? "",
+    completed: false,
+  };
+  const tempId = `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const bySlot = (a: ScheduledTask, b: ScheduledTask) => a.startMinutes - b.startMinutes;
+  tasks.value = [...tasks.value, { ...draft, id: tempId }].sort(bySlot);
   try {
-    const created = await api.createTask({
-      day: props.day,
-      title: template.name,
-      category: template.category,
-      color: template.color,
-      emoji: template.emoji,
-      startMinutes,
-      durationMinutes: template.defaultDuration,
-      notes: template.notes ?? "",
-      completed: false,
-    });
-    tasks.value = [...tasks.value, created].sort((a, b) => a.startMinutes - b.startMinutes);
+    const created = await api.createTask(draft);
+    tasks.value = tasks.value.map((item) => (item.id === tempId ? created : item)).sort(bySlot);
     notify(`Added ${template.name}`);
   } catch {
+    tasks.value = tasks.value.filter((item) => item.id !== tempId);
     notify("Could not save that block");
   }
 };
@@ -354,6 +361,15 @@ const onTaskDeleted = (id: string) => {
 };
 
 const onTemplateSaved = (template: ActivityTemplate) => {
+  const prev = templates.value.find((item) => item.id === template.id);
+  // The server recolors every block made from this activity; mirror it here so nothing lags behind.
+  if (prev && prev.color !== template.color) {
+    tasks.value = tasks.value.map((task) =>
+      task.templateId === prev.id || (!task.templateId && task.title === prev.name && task.category === prev.category)
+        ? { ...task, color: template.color }
+        : task,
+    );
+  }
   const exists = templates.value.some((item) => item.id === template.id);
   const next = exists
     ? templates.value.map((item) => (item.id === template.id ? template : item))

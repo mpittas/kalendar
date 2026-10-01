@@ -67,7 +67,7 @@ const emit = defineEmits<{
         <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M10 4v12M4 10h12" stroke-linecap="round" />
         </svg>
-        Block
+        Task
       </button>
     </div>
 

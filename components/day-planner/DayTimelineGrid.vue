@@ -30,7 +30,7 @@ const emit = defineEmits<{
 
 const gridRef = ref<HTMLDivElement | null>(null);
 const hoverMinutes = ref<number | null>(null);
-const HOVER_DURATION = 60; // matches the default duration of a block created by clicking the grid
+const HOVER_DURATION = 30; // matches the default duration of a block created by clicking the grid
 const DAY_MINUTES = 24 * 60;
 
 let lastPointer: { x: number; y: number } | null = null;
@@ -60,6 +60,15 @@ const handlePointerMove = (event: PointerEvent) => {
   if (event.pointerType !== "mouse") return; // no hover on touch
   lastPointer = { x: event.clientX, y: event.clientY };
   updateHover();
+};
+
+// Hovering a block marks where it starts and ends in the gutter and across the grid.
+const hoveredTaskId = ref<string | null>(null);
+const hoveredTask = computed(() =>
+  drag.value ? null : (props.tasks.find((item) => item.id === hoveredTaskId.value) ?? null),
+);
+const onBlockPointerEnter = (task: ScheduledTask, event: PointerEvent) => {
+  if (event.pointerType === "mouse") hoveredTaskId.value = task.id;
 };
 
 const clearHover = () => {
@@ -279,6 +288,7 @@ onBeforeUnmount(() => {
 });
 
 const toneOf = (color: string) => paletteOf(color);
+
 </script>
 
 <template>
@@ -299,10 +309,22 @@ const toneOf = (color: string) => paletteOf(color);
         </span>
       </div>
 
+      <!-- Start and end times of the hovered block -->
+      <template v-if="hoveredTask">
+        <div
+          v-for="minute in [hoveredTask.startMinutes, Math.min(hoveredTask.startMinutes + hoveredTask.durationMinutes, DAY_MINUTES)]"
+          :key="`edge-${minute}`"
+          class="pointer-events-none absolute right-0.5 sm:right-1 z-20 -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-muted px-1 sm:px-1.5 py-0.5 font-mono text-[10px] font-medium leading-none text-foreground/70"
+          :style="{ top: `${(minute / SLOT_MINUTES) * SLOT_HEIGHT}px` }"
+        >
+          {{ formatTime(minute) }}
+        </div>
+      </template>
+
       <!-- Hover time pill in gutter -->
       <div
         v-if="hoverMinutes !== null && !preview && !resizing"
-        class="pointer-events-none absolute right-0.5 sm:right-1 z-20 -translate-y-1/2 whitespace-nowrap rounded-md bg-background px-1 sm:px-1.5 py-0.5 font-mono text-[10px] font-medium leading-none text-primary/70"
+        class="pointer-events-none absolute right-0.5 sm:right-1 z-20 -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-muted px-1 sm:px-1.5 py-0.5 font-mono text-[10px] font-medium leading-none text-foreground/70"
         :style="{ top: `${(hoverMinutes / SLOT_MINUTES) * SLOT_HEIGHT}px` }"
       >
         {{ formatTime(hoverMinutes) }}
@@ -340,6 +362,16 @@ const toneOf = (color: string) => paletteOf(color);
           (minute + 30) % 60 === 0 ? 'border-border/70' : 'border-dashed border-border/30'
         ]"
       />
+
+      <!-- Guides across the grid at the hovered block's start and end -->
+      <template v-if="hoveredTask">
+        <span
+          v-for="minute in [hoveredTask.startMinutes, Math.min(hoveredTask.startMinutes + hoveredTask.durationMinutes, DAY_MINUTES)]"
+          :key="`guide-${minute}`"
+          class="pointer-events-none absolute inset-x-0 z-[5] border-t border-dashed border-foreground/15"
+          :style="{ top: `${(minute / SLOT_MINUTES) * SLOT_HEIGHT}px` }"
+        />
+      </template>
 
       <!-- Live Time Indicator Line -->
       <div
@@ -422,6 +454,8 @@ const toneOf = (color: string) => paletteOf(color);
         @keydown.enter.self.prevent="emit('task-click', task)"
         @keydown="(e) => onBlockKeydown(task, e)"
         @pointerdown="(e) => onBlockPointerDown(task, e)"
+        @pointerenter="(e) => onBlockPointerEnter(task, e)"
+        @pointerleave="hoveredTaskId = null"
         @contextmenu="(e) => { if (drag || pending) e.preventDefault(); }"
         @click.stop="onBlockClick(task)"
         :style="{
@@ -502,17 +536,17 @@ const toneOf = (color: string) => paletteOf(color);
         <!-- Time display for non-compact tasks -->
         <p
           v-if="blockHeight(task.durationMinutes) >= SLOT_HEIGHT * 1.5"
-          class="mt-0.5 pl-6 text-xs font-mono leading-4 opacity-85 tabular-nums font-medium text-foreground"
+          class="mt-1 pl-6 text-[12.5px] font-medium leading-4 tabular-nums text-foreground/70"
         >
           {{ formatTime(task.startMinutes) }} – {{ formatTime(task.startMinutes + task.durationMinutes) }}
-          <span class="opacity-50">·</span>
-          {{ formatDuration(task.durationMinutes) }}
+          <span class="mx-0.5 text-foreground/35">·</span>
+          <span class="font-normal text-foreground/55">{{ formatDuration(task.durationMinutes) }}</span>
         </p>
 
         <!-- Notes snippet for non-compact tasks -->
         <p
           v-if="blockHeight(task.durationMinutes) >= SLOT_HEIGHT * 2.2 && task.notes"
-          class="mt-0.5 line-clamp-1 pl-6 text-xs leading-4 opacity-75 text-foreground"
+          class="mt-1 line-clamp-1 pl-6 text-[13px] leading-5 text-foreground/60"
         >
           {{ task.notes }}
         </p>
