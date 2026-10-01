@@ -6,6 +6,10 @@
  * no admin credentials, so a server bug can't read or write another user's data.
  */
 
+/** REST endpoint; `FIRESTORE_EMULATOR_HOST` (e.g. `127.0.0.1:8080`) points it at the local emulator for tests. */
+const emulatorHost = typeof process !== "undefined" ? process.env?.FIRESTORE_EMULATOR_HOST : undefined;
+const API = emulatorHost ? `http://${emulatorHost}/v1` : "https://firestore.googleapis.com/v1";
+
 type FsValue = Record<string, unknown>;
 export type FsDoc = { id: string; data: Record<string, unknown> };
 
@@ -29,6 +33,10 @@ function encode(value: unknown): FsValue {
   if (typeof value === "string") return { stringValue: value };
   if (typeof value === "boolean") return { booleanValue: value };
   if (typeof value === "number" && Number.isInteger(value)) return { integerValue: String(value) };
+  if (Array.isArray(value)) return { arrayValue: { values: value.map(encode) } };
+  if (typeof value === "object") {
+    return { mapValue: { fields: Object.fromEntries(Object.entries(value).map(([k, v]) => [k, encode(v)])) } };
+  }
   throw new Error("Unsupported Firestore value");
 }
 
@@ -38,6 +46,14 @@ function decode(value: FsValue): unknown {
   if ("booleanValue" in value) return value.booleanValue;
   if ("timestampValue" in value) return value.timestampValue;
   if ("doubleValue" in value) return value.doubleValue;
+  if ("arrayValue" in value) {
+    const values = (value.arrayValue as { values?: FsValue[] }).values ?? [];
+    return values.map(decode);
+  }
+  if ("mapValue" in value) {
+    const fields = (value.mapValue as { fields?: Record<string, FsValue> }).fields ?? {};
+    return Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, decode(v)]));
+  }
   return null;
 }
 
@@ -91,7 +107,7 @@ export class Firestore {
 
   async get(path: string): Promise<FsDoc | null> {
     try {
-      return decodeDoc(await this.call(`https://firestore.googleapis.com/v1/${this.root}/${path}`));
+      return decodeDoc(await this.call(`${API}/${this.root}/${path}`));
     } catch (err) {
       if (err instanceof FirestoreError && err.notFound) return null;
       throw err;
@@ -111,7 +127,7 @@ export class Firestore {
           : { compositeFilter: { op: "AND", filters: fieldFilters } };
 
     const rows: Array<{ document?: RawDoc }> = await this.call(
-      `https://firestore.googleapis.com/v1/${this.root}/${parentPath}:runQuery`,
+      `${API}/${this.root}/${parentPath}:runQuery`,
       { structuredQuery: { from: [{ collectionId }], where, limit } },
     );
     return rows.flatMap((row) => (row.document ? [decodeDoc(row.document)] : []));
@@ -141,6 +157,6 @@ export class Firestore {
         };
       }),
     };
-    await this.call(`https://firestore.googleapis.com/v1/projects/${this.projectId}/databases/(default)/documents:commit`, body);
+    await this.call(`${API}/projects/${this.projectId}/databases/(default)/documents:commit`, body);
   }
 }

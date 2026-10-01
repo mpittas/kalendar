@@ -64,7 +64,7 @@ useHead({
     :initial-tasks="tasks"
     :initial-templates="templates"
     :initial-checklist-items="checklistItems ?? []"
-    :initial-day-checklist="dayChecklist ?? { day, completedItemIds: [] }"
+    :initial-day-checklist="dayChecklist ?? { day, completedItemIds: [], hiddenItemIds: [], extraItems: [] }"
   />
   <div v-else-if="failed" class="mx-auto mt-16 max-w-sm px-4 text-center">
     <p class="text-sm font-medium text-slate-900">We couldn't load this day.</p>

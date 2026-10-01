@@ -231,9 +231,10 @@ const remove = async () => {
           <span class="text-xs font-medium text-foreground">
             Category
           </span>
-          <input
+          <CategorySelect
             v-model="category"
-            class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            :templates="templates"
+            class="mt-1.5 w-full"
           />
         </label>
       </div>

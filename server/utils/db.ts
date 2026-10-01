@@ -1,4 +1,4 @@
-import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist } from "~/lib/types";
+import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist, DayExtraItem } from "~/lib/types";
 import { toISODate } from "~/lib/time";
 import { Firestore, FirestoreError, type FsDoc } from "./firestore";
 import { sessionOf, type Session } from "./session";
@@ -23,7 +23,34 @@ export interface Store {
   deleteChecklistItem(id: string): Promise<boolean>;
   getDayChecklist(day: string): Promise<DayChecklist>;
   toggleDayChecklistItem(day: string, itemId: string, completed: boolean): Promise<DayChecklist>;
+  /** Skip (or bring back) a default checklist item for one day only. */
+  setDayChecklistItemHidden(day: string, itemId: string, hidden: boolean): Promise<DayChecklist>;
+  /** Add a one-off checklist item that exists only on `day`. */
+  addDayChecklistExtra(day: string, draft: Omit<DayExtraItem, "id">): Promise<DayChecklist>;
+  removeDayChecklistExtra(day: string, id: string): Promise<DayChecklist>;
 }
+
+const MAX_DAY_EXTRAS = 50;
+
+const emptyDay = (day: string): DayChecklist => ({ day, completedItemIds: [], hiddenItemIds: [], extraItems: [] });
+
+const tooManyExtras = () =>
+  createError({ statusCode: 400, statusMessage: `A day can have at most ${MAX_DAY_EXTRAS} one-off items` });
+
+/** Apply a day edit to a copy of `state`; shared by both stores so they behave the same. */
+function editDay(state: DayChecklist, edit: (draft: DayChecklist) => void): DayChecklist {
+  const draft: DayChecklist = {
+    day: state.day,
+    completedItemIds: [...state.completedItemIds],
+    hiddenItemIds: [...state.hiddenItemIds],
+    extraItems: state.extraItems.map((e) => ({ ...e })),
+  };
+  edit(draft);
+  return draft;
+}
+
+const withMember = (list: string[], id: string, present: boolean) =>
+  present ? (list.includes(id) ? list : [...list, id]) : list.filter((x) => x !== id);
 
 // Seed data
 const DEFAULT_TEMPLATES = [
@@ -188,7 +215,7 @@ class MemoryStore implements Store {
   private templates: ActivityTemplate[] = [];
   private tasks: ScheduledTask[] = [];
   private checklistItems: ChecklistItem[] = [];
-  private checklistDays = new Map<string, Set<string>>();
+  private checklistDays = new Map<string, DayChecklist>();
   private seq = 1;
 
   constructor() {
@@ -204,7 +231,10 @@ class MemoryStore implements Store {
     // Demo completion for today: mark first 2 items completed
     const today = toISODate(new Date());
     if (this.checklistItems.length >= 2) {
-      this.checklistDays.set(today, new Set([this.checklistItems[0].id, this.checklistItems[1].id]));
+      this.checklistDays.set(today, {
+        ...emptyDay(today),
+        completedItemIds: [this.checklistItems[0].id, this.checklistItems[1].id],
+      });
     }
   }
 
@@ -288,35 +318,52 @@ class MemoryStore implements Store {
   async deleteChecklistItem(id: string) {
     const before = this.checklistItems.length;
     this.checklistItems = this.checklistItems.filter((i) => i.id !== id);
-    for (const set of this.checklistDays.values()) {
-      set.delete(id);
+    for (const [day, state] of this.checklistDays) {
+      this.checklistDays.set(
+        day,
+        editDay(state, (d) => {
+          d.completedItemIds = withMember(d.completedItemIds, id, false);
+          d.hiddenItemIds = withMember(d.hiddenItemIds, id, false);
+        }),
+      );
     }
     return this.checklistItems.length < before;
   }
 
   async getDayChecklist(day: string) {
-    const set = this.checklistDays.get(day);
-    return {
-      day,
-      completedItemIds: set ? Array.from(set) : [],
-    };
+    return this.checklistDays.get(day) ?? emptyDay(day);
+  }
+
+  private editDayChecklist(day: string, edit: (draft: DayChecklist) => void) {
+    const next = editDay(this.checklistDays.get(day) ?? emptyDay(day), edit);
+    this.checklistDays.set(day, next);
+    return next;
   }
 
   async toggleDayChecklistItem(day: string, itemId: string, completed: boolean) {
-    let set = this.checklistDays.get(day);
-    if (!set) {
-      set = new Set<string>();
-      this.checklistDays.set(day, set);
-    }
-    if (completed) {
-      set.add(itemId);
-    } else {
-      set.delete(itemId);
-    }
-    return {
-      day,
-      completedItemIds: Array.from(set),
-    };
+    return this.editDayChecklist(day, (d) => {
+      d.completedItemIds = withMember(d.completedItemIds, itemId, completed);
+    });
+  }
+
+  async setDayChecklistItemHidden(day: string, itemId: string, hidden: boolean) {
+    return this.editDayChecklist(day, (d) => {
+      d.hiddenItemIds = withMember(d.hiddenItemIds, itemId, hidden);
+    });
+  }
+
+  async addDayChecklistExtra(day: string, draft: Omit<DayExtraItem, "id">) {
+    if ((this.checklistDays.get(day)?.extraItems.length ?? 0) >= MAX_DAY_EXTRAS) throw tooManyExtras();
+    return this.editDayChecklist(day, (d) => {
+      d.extraItems.push({ id: String(this.seq++), ...draft });
+    });
+  }
+
+  async removeDayChecklistExtra(day: string, id: string) {
+    return this.editDayChecklist(day, (d) => {
+      d.extraItems = d.extraItems.filter((e) => e.id !== id);
+      d.completedItemIds = withMember(d.completedItemIds, id, false);
+    });
   }
 }
 
@@ -362,6 +409,7 @@ const toChecklistItem = ({ id, data }: FsDoc): ChecklistItem => ({
 
 /** Turn Firestore failures into API errors; `null`-returning callers handle NOT_FOUND first. */
 function rethrow(err: unknown): never {
+  if (isError(err)) throw err; // already an API error (e.g. a validation limit)
   if (err instanceof FirestoreError) {
     if (err.status === 401) throw createError({ statusCode: 401, statusMessage: "Invalid or expired session" });
     if (err.status === 403) throw createError({ statusCode: 403, statusMessage: "Not allowed" });
@@ -375,6 +423,7 @@ const newId = () => crypto.randomUUID();
 
 /** Users whose starter data this server instance has already confirmed. */
 const seededUsers = new Set<string>();
+const checklistSeededUsers = new Set<string>();
 
 class FirestoreStore implements Store {
   private readonly base: string;
@@ -425,24 +474,43 @@ class FirestoreStore implements Store {
           )
           .catch((err) => console.warn("Demo tasks skipped:", err instanceof FirestoreError ? err.message : err));
       }
-
-      const defaultItems = DEFAULT_CHECKLIST_ITEMS.map((item) => ({ id: newId(), ...item, archived: false }));
-      await this.fs
-        .commit(
-          defaultItems.map(({ id, ...data }) => ({
-            op: "create" as const,
-            path: `${this.base}/checklist_items/${id}`,
-            data,
-            serverTimes: ["createdAt"],
-          })),
-        )
-        .catch((err) => console.warn("Checklist seed skipped:", err instanceof FirestoreError ? err.message : err));
     } catch (err) {
       if (err instanceof FirestoreError && err.alreadyExists) {
         seededUsers.add(this.userId); // another request won the race
         return;
       }
       rethrow(err);
+    }
+  }
+
+  /**
+   * Give the user the default checklist (the list every day starts from), exactly once.
+   * Separate from `ensureSeeded` so accounts created before the checklist existed get it too.
+   * Marker and items are one atomic commit, so a failure never leaves a half-seeded list.
+   */
+  private async ensureChecklistSeeded(): Promise<void> {
+    if (checklistSeededUsers.has(this.userId)) return;
+    try {
+      if (await this.fs.get(`${this.base}/meta/checklistSeed`)) {
+        checklistSeededUsers.add(this.userId);
+        return;
+      }
+      await this.fs.commit([
+        { op: "create", path: `${this.base}/meta/checklistSeed`, data: {}, serverTimes: ["seededAt"] },
+        ...DEFAULT_CHECKLIST_ITEMS.map((item) => ({
+          op: "create" as const,
+          path: `${this.base}/checklist_items/${newId()}`,
+          data: { ...item, archived: false },
+          serverTimes: ["createdAt"],
+        })),
+      ]);
+      checklistSeededUsers.add(this.userId);
+    } catch (err) {
+      if (err instanceof FirestoreError && err.alreadyExists) {
+        checklistSeededUsers.add(this.userId); // another request won the race
+        return;
+      }
+      throw err;
     }
   }
 
@@ -569,7 +637,7 @@ class FirestoreStore implements Store {
 
   async listChecklistItems() {
     try {
-      await this.ensureSeeded();
+      await this.ensureChecklistSeeded();
       const docs = await this.fs.query(this.base, "checklist_items");
       return docs
         .map(toChecklistItem)
@@ -616,49 +684,84 @@ class FirestoreStore implements Store {
     }
   }
 
+  private async readDay(day: string): Promise<{ state: DayChecklist; exists: boolean }> {
+    const doc = await this.fs.get(`${this.base}/checklist_days/${day}`);
+    if (!doc) return { state: emptyDay(day), exists: false };
+    const ids = (value: unknown) => (Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : []);
+    const extras = Array.isArray(doc.data.extraItems) ? (doc.data.extraItems as Array<Record<string, unknown>>) : [];
+    return {
+      exists: true,
+      state: {
+        day,
+        completedItemIds: ids(doc.data.completedItemIds),
+        hiddenItemIds: ids(doc.data.hiddenItemIds),
+        extraItems: extras.map((e) => ({
+          id: String(e.id ?? ""),
+          title: String(e.title ?? ""),
+          emoji: String(e.emoji ?? "✅"),
+        })),
+      },
+    };
+  }
+
   async getDayChecklist(day: string) {
     try {
       await this.ensureSeeded();
-      const doc = await this.fs.get(`${this.base}/checklist_days/${day}`);
-      const completedItemIds = doc && Array.isArray(doc.data.completedItemIds)
-        ? (doc.data.completedItemIds as string[])
-        : [];
-      return { day, completedItemIds };
+      return (await this.readDay(day)).state;
     } catch (err) {
-      if (err instanceof FirestoreError && err.notFound) {
-        return { day, completedItemIds: [] };
-      }
+      if (err instanceof FirestoreError && err.notFound) return emptyDay(day);
+      rethrow(err);
+    }
+  }
+
+  /** Read-modify-write one day's document, creating it on first use. */
+  private async editDayChecklist(day: string, edit: (draft: DayChecklist) => void) {
+    try {
+      const { state, exists } = await this.readDay(day);
+      const next = editDay(state, edit);
+      await this.fs.commit([
+        {
+          op: exists ? "update" : "create",
+          path: `${this.base}/checklist_days/${day}`,
+          data: {
+            day,
+            completedItemIds: next.completedItemIds,
+            hiddenItemIds: next.hiddenItemIds,
+            extraItems: next.extraItems,
+          },
+          serverTimes: ["updatedAt"],
+        },
+      ]);
+      return next;
+    } catch (err) {
       rethrow(err);
     }
   }
 
   async toggleDayChecklistItem(day: string, itemId: string, completed: boolean) {
-    try {
-      const doc = await this.fs.get(`${this.base}/checklist_days/${day}`);
-      let completedItemIds: string[] = [];
-      if (doc && Array.isArray(doc.data.completedItemIds)) {
-        completedItemIds = [...(doc.data.completedItemIds as string[])];
-      }
-      if (completed) {
-        if (!completedItemIds.includes(itemId)) {
-          completedItemIds.push(itemId);
-        }
-      } else {
-        completedItemIds = completedItemIds.filter((id) => id !== itemId);
-      }
+    return this.editDayChecklist(day, (d) => {
+      d.completedItemIds = withMember(d.completedItemIds, itemId, completed);
+    });
+  }
 
-      await this.fs.commit([
-        {
-          op: doc ? "update" : "create",
-          path: `${this.base}/checklist_days/${day}`,
-          data: { day, completedItemIds },
-          serverTimes: ["updatedAt"],
-        },
-      ]);
-      return { day, completedItemIds };
-    } catch (err) {
-      rethrow(err);
-    }
+  async setDayChecklistItemHidden(day: string, itemId: string, hidden: boolean) {
+    return this.editDayChecklist(day, (d) => {
+      d.hiddenItemIds = withMember(d.hiddenItemIds, itemId, hidden);
+    });
+  }
+
+  async addDayChecklistExtra(day: string, draft: Omit<DayExtraItem, "id">) {
+    return this.editDayChecklist(day, (d) => {
+      if (d.extraItems.length >= MAX_DAY_EXTRAS) throw tooManyExtras();
+      d.extraItems.push({ id: newId(), ...draft });
+    });
+  }
+
+  async removeDayChecklistExtra(day: string, id: string) {
+    return this.editDayChecklist(day, (d) => {
+      d.extraItems = d.extraItems.filter((e) => e.id !== id);
+      d.completedItemIds = withMember(d.completedItemIds, id, false);
+    });
   }
 }
 

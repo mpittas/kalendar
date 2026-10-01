@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import type { ChecklistItem } from "~/lib/types";
+import type { ChecklistItem, DayChecklist, DayChecklistItem } from "~/lib/types";
 import { api } from "~/lib/api";
 
 const props = defineProps<{
   day: string;
-  items: ChecklistItem[];
+  /** What is on this day's list: the default items not skipped today, plus one-offs. */
+  items: DayChecklistItem[];
+  /** Default items skipped on this day only. */
+  skippedItems: ChecklistItem[];
   completedIds: string[];
 }>();
 
@@ -14,6 +17,7 @@ const emit = defineEmits<{
   (e: "created", item: ChecklistItem): void;
   (e: "updated", item: ChecklistItem): void;
   (e: "deleted", id: string): void;
+  (e: "day-changed", dayChecklist: DayChecklist, message: string): void;
 }>();
 
 const HABIT_EMOJIS = [
@@ -25,6 +29,8 @@ const newTitle = ref("");
 const newEmoji = ref("💊");
 const showEmojiPicker = ref(false);
 const adding = ref(false);
+// Where a newly added item goes: the default list (every day) or just this day.
+const newScope = ref<"default" | "day">("default");
 
 const editingItem = ref<ChecklistItem | null>(null);
 const editTitle = ref("");
@@ -56,12 +62,17 @@ const submitNew = async () => {
   if (!title) return;
   adding.value = true;
   try {
-    const item = await api.createChecklistItem({
-      title,
-      emoji: newEmoji.value,
-      order: props.items.length + 1,
-    });
-    emit("created", item);
+    if (newScope.value === "day") {
+      const dayChecklist = await api.addDayChecklistExtra(props.day, { title, emoji: newEmoji.value });
+      emit("day-changed", dayChecklist, `Added "${title}" for this day`);
+    } else {
+      const item = await api.createChecklistItem({
+        title,
+        emoji: newEmoji.value,
+        order: props.items.filter((i) => i.scope === "default").length + props.skippedItems.length + 1,
+      });
+      emit("created", item);
+    }
     newTitle.value = "";
     const currentIndex = HABIT_EMOJIS.indexOf(newEmoji.value);
     if (currentIndex >= 0 && currentIndex < HABIT_EMOJIS.length - 1) {
@@ -104,6 +115,24 @@ const saveEdit = async () => {
   }
 };
 
+const skipForDay = async (item: ChecklistItem, hidden: boolean) => {
+  try {
+    const dayChecklist = await api.hideChecklistItem(props.day, item.id, hidden);
+    emit("day-changed", dayChecklist, hidden ? `Skipped "${item.title}" for this day` : `Restored "${item.title}"`);
+  } catch (err: any) {
+    alert(err?.message || "Failed to update this day");
+  }
+};
+
+const removeExtra = async (item: DayChecklistItem) => {
+  try {
+    const dayChecklist = await api.removeDayChecklistExtra(props.day, item.id);
+    emit("day-changed", dayChecklist, `Removed "${item.title}"`);
+  } catch (err: any) {
+    alert(err?.message || "Failed to remove item");
+  }
+};
+
 const removeItem = async (item: ChecklistItem) => {
   if (!confirm(`Delete "${item.title}" from your daily checklist?`)) return;
   try {
@@ -124,7 +153,7 @@ const removeItem = async (item: ChecklistItem) => {
     <div class="px-4 pt-3 pb-3 border-b border-border">
       <div class="rounded-xl border border-border bg-card p-3 shadow-xs">
         <div class="flex items-center justify-between text-xs">
-          <span class="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">Today's Progress</span>
+          <span class="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">Progress</span>
           <span class="font-mono font-semibold text-foreground tabular-nums">
             {{ completedCount }} / {{ totalCount }}
             <span class="text-muted-foreground font-normal">({{ percentage }}%)</span>
@@ -138,15 +167,22 @@ const removeItem = async (item: ChecklistItem) => {
           />
         </div>
         <p v-if="allDone" class="mt-2 text-center text-xs font-medium text-emerald-700 dark:text-emerald-400">
-          🎉 All habits completed for today!
+          🎉 Everything on this list is done!
         </p>
       </div>
     </div>
 
     <!-- Items list -->
     <div class="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
-      <p v-if="items.length === 0" class="py-10 text-center text-sm text-muted-foreground">
+      <p v-if="items.length > 0 || skippedItems.length > 0" class="px-2 pb-1 text-[11px] text-muted-foreground">
+        Your default checklist repeats every day. Skip items or add one-offs for just this day.
+      </p>
+
+      <p v-if="items.length === 0 && skippedItems.length === 0" class="py-10 text-center text-sm text-muted-foreground">
         No checklist items yet.<br />Add small habits below (e.g. pills, protein shake, shower).
+      </p>
+      <p v-else-if="items.length === 0" class="py-6 text-center text-sm text-muted-foreground">
+        Everything is skipped for this day.
       </p>
 
       <div
@@ -188,23 +224,44 @@ const removeItem = async (item: ChecklistItem) => {
           {{ item.title }}
         </span>
 
-        <!-- Actions (edit / delete) -->
-        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <span
+          v-if="item.scope === 'day'"
+          class="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+        >
+          This day
+        </span>
+
+        <!-- Actions: one-offs can only be removed; default items can be edited, skipped today, or deleted everywhere.
+             Always visible on touch screens, where there is no hover. -->
+        <div class="flex items-center gap-1 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
           <button
+            v-if="item.scope === 'default'"
             type="button"
             @click="startEdit(item)"
             class="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer"
-            title="Edit item"
+            title="Edit item (all days)"
           >
             <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
             </svg>
           </button>
           <button
+            v-if="item.scope === 'default'"
             type="button"
-            @click="removeItem(item)"
+            @click="skipForDay(item, true)"
+            class="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer"
+            title="Skip on this day only"
+          >
+            <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="10" cy="10" r="7" />
+              <path d="M5 15L15 5" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            @click="item.scope === 'day' ? removeExtra(item) : removeItem(item)"
             class="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer"
-            title="Delete item"
+            :title="item.scope === 'day' ? 'Remove from this day' : 'Delete from all days'"
           >
             <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M6 7v9a2 2 0 002 2h4a2 2 0 002-2V7M4 7h12M9 4h2a1 1 0 011 1v1H8V5a1 1 0 011-1z" stroke-linecap="round" stroke-linejoin="round" />
@@ -212,10 +269,55 @@ const removeItem = async (item: ChecklistItem) => {
           </button>
         </div>
       </div>
+
+      <!-- Default items skipped on this day only -->
+      <details v-if="skippedItems.length > 0" class="pt-2">
+        <summary class="cursor-pointer select-none text-xs font-medium text-muted-foreground hover:text-foreground">
+          Skipped on this day ({{ skippedItems.length }})
+        </summary>
+        <div class="mt-1.5 space-y-1">
+          <div
+            v-for="item in skippedItems"
+            :key="item.id"
+            class="flex items-center gap-2.5 rounded-lg p-2 text-sm text-muted-foreground"
+          >
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/60 text-sm opacity-60">{{ item.emoji }}</span>
+            <span class="min-w-0 flex-1 truncate">{{ item.title }}</span>
+            <button
+              type="button"
+              @click="skipForDay(item, false)"
+              class="shrink-0 rounded-md border border-input bg-background px-2 py-1 text-xs font-medium text-foreground shadow-xs hover:bg-accent cursor-pointer"
+            >
+              Restore
+            </button>
+          </div>
+        </div>
+      </details>
     </div>
 
     <!-- Quick add footer -->
     <div class="border-t border-border bg-card p-3 space-y-2">
+      <!-- Scope: the default list applies to every day, a one-off only to this one -->
+      <div class="inline-flex h-8 w-full items-center rounded-lg bg-muted p-0.5 text-xs text-muted-foreground" role="group" aria-label="Where to add the item">
+        <button
+          type="button"
+          @click="newScope = 'default'"
+          class="inline-flex h-7 flex-1 items-center justify-center rounded-md px-2 font-medium transition cursor-pointer"
+          :class="newScope === 'default' ? 'bg-background text-foreground shadow-xs font-semibold' : 'hover:text-foreground'"
+          :aria-pressed="newScope === 'default'"
+        >
+          Every day
+        </button>
+        <button
+          type="button"
+          @click="newScope = 'day'"
+          class="inline-flex h-7 flex-1 items-center justify-center rounded-md px-2 font-medium transition cursor-pointer"
+          :class="newScope === 'day' ? 'bg-background text-foreground shadow-xs font-semibold' : 'hover:text-foreground'"
+          :aria-pressed="newScope === 'day'"
+        >
+          Only this day
+        </button>
+      </div>
       <form @submit.prevent="submitNew" class="space-y-2">
         <div class="flex items-center gap-1.5">
           <!-- Emoji picker button -->
@@ -255,7 +357,7 @@ const removeItem = async (item: ChecklistItem) => {
           <input
             v-model="newTitle"
             type="text"
-            placeholder="Add habit (e.g. pills, shake)…"
+            :placeholder="newScope === 'day' ? 'Add for this day only…' : 'Add habit (e.g. pills, shake)…'"
             maxlength="100"
             class="min-w-0 flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />

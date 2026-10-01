@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist } from "~/lib/types";
+import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist, DayChecklistItem, DayExtraItem } from "~/lib/types";
 import { SLOT_HEIGHT, SLOT_MINUTES } from "~/lib/types";
 import { paletteOf } from "~/lib/colors";
 import { api } from "~/lib/api";
@@ -31,6 +31,8 @@ const tasks = ref<ScheduledTask[]>([...props.initialTasks]);
 const templates = ref<ActivityTemplate[]>([...props.initialTemplates]);
 const checklistItems = ref<ChecklistItem[]>([...(props.initialChecklistItems ?? [])]);
 const completedChecklistIds = ref<string[]>([...(props.initialDayChecklist?.completedItemIds ?? [])]);
+const hiddenChecklistIds = ref<string[]>([...(props.initialDayChecklist?.hiddenItemIds ?? [])]);
+const dayExtraItems = ref<DayExtraItem[]>([...(props.initialDayChecklist?.extraItems ?? [])]);
 const activeSidebarTab = ref<"activities" | "checklist">("activities");
 const mobileSheet = ref<"checklist" | "activities" | null>(null);
 const editor = ref<EditorRequest | null>(null);
@@ -87,10 +89,16 @@ watch(
 watch(
   () => props.initialDayChecklist,
   (val) => {
-    if (val) completedChecklistIds.value = [...val.completedItemIds];
+    if (val) applyDayChecklist(val);
   },
   { deep: true },
 );
+
+const applyDayChecklist = (val: DayChecklist) => {
+  completedChecklistIds.value = [...val.completedItemIds];
+  hiddenChecklistIds.value = [...val.hiddenItemIds];
+  dayExtraItems.value = [...val.extraItems];
+};
 
 const notify = (message: string) => {
   flash.value = message;
@@ -197,16 +205,6 @@ const filteredTemplates = computed(() => {
       t.name.toLowerCase().includes(query) ||
       t.category.toLowerCase().includes(query),
   );
-});
-
-const groupedTemplates = computed(() => {
-  const map = new Map<string, ActivityTemplate[]>();
-  for (const template of filteredTemplates.value) {
-    const list = map.get(template.category) ?? [];
-    list.push(template);
-    map.set(template.category, list);
-  }
-  return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 });
 
 const categoryColor = (catName: string): string => {
@@ -411,10 +409,32 @@ const refreshDay = async () => {
   }
 };
 
+// The default checklist minus what is skipped today, plus one-off items added for this day.
+const dayChecklistItems = computed<DayChecklistItem[]>(() => {
+  const hidden = new Set(hiddenChecklistIds.value);
+  const defaults = checklistItems.value
+    .filter((item) => !hidden.has(item.id))
+    .map((item) => ({ ...item, scope: "default" as const }));
+  const extras = dayExtraItems.value.map((item, index) => ({
+    ...item,
+    order: Number.MAX_SAFE_INTEGER - dayExtraItems.value.length + index,
+    archived: false,
+    scope: "day" as const,
+  }));
+  return [...defaults, ...extras];
+});
+
+const skippedChecklistItems = computed(() => {
+  const hidden = new Set(hiddenChecklistIds.value);
+  return checklistItems.value.filter((item) => hidden.has(item.id));
+});
+
+const hasChecklist = computed(() => checklistItems.value.length > 0 || dayExtraItems.value.length > 0);
+
 const checklistStats = computed(() => {
-  const total = checklistItems.value.length;
+  const total = dayChecklistItems.value.length;
   const set = new Set(completedChecklistIds.value);
-  const done = checklistItems.value.filter((item) => set.has(item.id)).length;
+  const done = dayChecklistItems.value.filter((item) => set.has(item.id)).length;
   return {
     total,
     done,
@@ -460,7 +480,13 @@ const onChecklistUpdated = (item: ChecklistItem) => {
 const onChecklistDeleted = (id: string) => {
   checklistItems.value = checklistItems.value.filter((i) => i.id !== id);
   completedChecklistIds.value = completedChecklistIds.value.filter((itemId) => itemId !== id);
+  hiddenChecklistIds.value = hiddenChecklistIds.value.filter((itemId) => itemId !== id);
   notify("Removed checklist item");
+};
+
+const onDayChecklistChanged = (val: DayChecklist, message: string) => {
+  applyDayChecklist(val);
+  notify(message);
 };
 
 const openActivityFromMobile = (template: ActivityTemplate) => {
@@ -496,7 +522,7 @@ const toneOf = (color: string) => paletteOf(color);
           >
             <span>Activities</span>
             <span class="rounded-full bg-muted-foreground/15 px-1.5 py-0.2 font-mono text-[10px]">
-              {{ filteredTemplates.length }}
+              {{ templates.length }}
             </span>
           </button>
 
@@ -523,108 +549,27 @@ const toneOf = (color: string) => paletteOf(color);
       <DailyChecklist
         v-if="activeSidebarTab === 'checklist'"
         :day="day"
-        :items="checklistItems"
+        :items="dayChecklistItems"
+        :skipped-items="skippedChecklistItems"
         :completed-ids="completedChecklistIds"
         @toggle="toggleChecklistItem"
         @created="onChecklistCreated"
         @updated="onChecklistUpdated"
         @deleted="onChecklistDeleted"
+        @day-changed="onDayChecklistChanged"
       />
 
       <!-- Activities tab content -->
-      <template v-else>
-        <div class="px-3.5 pb-2.5 pt-2">
-          <div class="relative">
-            <svg class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="9" cy="9" r="6" />
-              <path d="M13.5 13.5L18 18" stroke-linecap="round" />
-            </svg>
-            <input
-              v-model="templateSearch"
-              type="text"
-              placeholder="Search activities…"
-              class="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-xs shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            />
-          </div>
-        </div>
-
-        <div class="flex-1 space-y-4 overflow-y-auto px-4 pb-3">
-          <p v-if="groupedTemplates.length === 0" class="py-8 text-center text-sm text-muted-foreground">
-            No activities found
-          </p>
-
-          <div v-for="[category, items] in groupedTemplates" :key="category">
-            <div class="mb-1.5 flex items-center justify-between">
-              <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {{ category }}
-              </p>
-              <span class="text-xs font-mono text-muted-foreground">{{ items.length }}</span>
-            </div>
-            <ul class="space-y-1.5">
-              <li
-                v-for="template in items"
-                :key="template.id"
-                draggable="true"
-                @dragstart="(event) => {
-                  dragSource = { kind: 'template', template };
-                  if (event.dataTransfer) {
-                    event.dataTransfer.effectAllowed = 'copy';
-                    event.dataTransfer.setData('application/x-dayforge-template', String(template.id));
-                  }
-                }"
-                @dragend="() => {
-                  dragSource = null;
-                  preview = null;
-                }"
-                @click="editor = {
-                  mode: 'create',
-                  day,
-                  startMinutes: snapMinutes(nowMinutes(), 30),
-                  template,
-                }"
-                :title="`${template.name} · ${formatDuration(template.defaultDuration)}`"
-                :class="[
-                  'group relative flex cursor-grab items-center gap-2.5 rounded-lg border px-3 py-2 text-left shadow-2xs transition hover:shadow-xs active:cursor-grabbing',
-                  toneOf(template.color).block
-                ]"
-              >
-                <span
-                  class="absolute inset-y-1.5 left-1 w-0.5 rounded-full"
-                  :class="toneOf(template.color).accent"
-                />
-                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/80 text-base leading-none shadow-2xs">
-                  {{ template.emoji }}
-                </span>
-                <span class="min-w-0 flex-1">
-                  <span class="block truncate text-sm font-semibold leading-tight text-slate-900">
-                    {{ template.name }}
-                  </span>
-                  <span class="block text-xs font-mono opacity-80 tabular-nums">
-                    {{ formatDuration(template.defaultDuration) }}
-                  </span>
-                </span>
-                <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 opacity-25 transition group-hover:opacity-75 text-foreground" fill="currentColor" aria-hidden="true">
-                  <circle cx="7" cy="5" r="1.4" /><circle cx="13" cy="5" r="1.4" />
-                  <circle cx="7" cy="10" r="1.4" /><circle cx="13" cy="10" r="1.4" />
-                  <circle cx="7" cy="15" r="1.4" /><circle cx="13" cy="15" r="1.4" />
-                </svg>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div class="border-t border-border p-3">
-          <button
-            type="button"
-            @click="managerOpen = true"
-            class="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-input bg-background px-3.5 py-2 text-xs font-medium text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground cursor-pointer"
-          >
-            <svg viewBox="0 0 20 20" class="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M10 4v12M4 10h12" stroke-linecap="round" />
-            </svg>
-            <span>Customize activities</span>
-          </button>
-        </div>
-      </template>
+      <ActivityPalette
+        v-else
+        :templates="templates"
+        @pick="(template) => {
+          editor = { mode: 'create', day, startMinutes: snapMinutes(nowMinutes(), 30), template };
+        }"
+        @drag-start="(template) => { dragSource = { kind: 'template', template }; }"
+        @drag-end="() => { dragSource = null; preview = null; }"
+        @manage="managerOpen = true"
+      />
     </aside>
 
     <!-- Timeline section -->
@@ -704,7 +649,7 @@ const toneOf = (color: string) => paletteOf(color);
           <!-- Right: Routines, Categories & Actions (all h-8 height) -->
           <div class="flex items-center gap-1.5 sm:gap-2">
             <button
-              v-if="checklistItems.length > 0"
+              v-if="hasChecklist"
               type="button"
               @click="openChecklistManager"
               class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium shadow-2xs transition hover:bg-muted cursor-pointer"
@@ -761,7 +706,7 @@ const toneOf = (color: string) => paletteOf(color);
         class="relative min-h-0 flex-1 overflow-y-auto bg-background scroll-pt-6"
       >
         <!-- Scrollable Habits shelf: only visible if items exist, scrolls with timeline, NEVER pinned -->
-        <div v-if="checklistItems.length > 0" class="mx-auto max-w-4xl px-3 sm:px-6 pt-3 pb-2 border-b border-border/40">
+        <div v-if="hasChecklist" class="mx-auto max-w-4xl px-3 sm:px-6 pt-3 pb-2 border-b border-border/40">
           <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
             <span class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground shrink-0 flex items-center gap-1">
               <svg class="h-3 w-3 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
@@ -771,7 +716,7 @@ const toneOf = (color: string) => paletteOf(color);
             </span>
             <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
               <button
-                v-for="item in checklistItems"
+                v-for="item in dayChecklistItems"
                 :key="item.id"
                 type="button"
                 @click="toggleChecklistItem(item.id, !completedChecklistIds.includes(item.id))"
@@ -1190,12 +1135,14 @@ const toneOf = (color: string) => paletteOf(color);
       <div class="max-h-[60vh] overflow-y-auto">
         <DailyChecklist
           :day="day"
-          :items="checklistItems"
+          :items="dayChecklistItems"
+          :skipped-items="skippedChecklistItems"
           :completed-ids="completedChecklistIds"
           @toggle="toggleChecklistItem"
           @created="onChecklistCreated"
           @updated="onChecklistUpdated"
           @deleted="onChecklistDeleted"
+          @day-changed="onDayChecklistChanged"
         />
       </div>
     </Modal>

@@ -31,10 +31,26 @@ export type ChecklistItem = {
   archived: boolean;
 };
 
+/** A one-off item that exists only on a single day. */
+export type DayExtraItem = {
+  id: string;
+  title: string;
+  emoji: string;
+};
+
+/**
+ * Per-day state on top of the default checklist: what was ticked, which default
+ * items are skipped for this day, and the one-off items added just for this day.
+ */
 export type DayChecklist = {
   day: string;
   completedItemIds: string[];
+  hiddenItemIds: string[];
+  extraItems: DayExtraItem[];
 };
+
+/** An item as shown on one day: a default item (every day) or a one-off (this day only). */
+export type DayChecklistItem = ChecklistItem & { scope: "default" | "day" };
 
 export const DAY_START_MINUTES = 0;
 export const DAY_END_MINUTES = 24 * 60;

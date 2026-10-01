@@ -150,10 +150,10 @@ const toneOf = (color: string) => {
             </select>
           </div>
           <div class="flex gap-2">
-            <input
+            <CategorySelect
               v-model="draft.category"
-              placeholder="Category (e.g. Work, Health, Personal)"
-              class="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              :templates="templates"
+              class="flex-1"
             />
             <select
               v-model="draft.emoji"
@@ -229,10 +229,10 @@ const toneOf = (color: string) => {
                     </select>
                   </div>
                   <div class="flex gap-2">
-                    <input
+                    <CategorySelect
                       v-model="editDraft.category"
-                      placeholder="Category"
-                      class="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      :templates="templates"
+                      class="flex-1"
                     />
                     <select
                       v-model="editDraft.emoji"

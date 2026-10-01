@@ -136,4 +136,24 @@ export const api = {
     });
     return data.dayChecklist;
   },
+  async hideChecklistItem(day: string, itemId: string, hidden: boolean): Promise<DayChecklist> {
+    const data = await request<{ dayChecklist: DayChecklist }>("/api/checklist/hide", {
+      method: "POST",
+      body: JSON.stringify({ day, itemId, hidden }),
+    });
+    return data.dayChecklist;
+  },
+  async addDayChecklistExtra(day: string, draft: { title: string; emoji: string }): Promise<DayChecklist> {
+    const data = await request<{ dayChecklist: DayChecklist }>("/api/checklist/extras", {
+      method: "POST",
+      body: JSON.stringify({ day, ...draft }),
+    });
+    return data.dayChecklist;
+  },
+  async removeDayChecklistExtra(day: string, id: string): Promise<DayChecklist> {
+    const data = await request<{ dayChecklist: DayChecklist }>(`/api/checklist/extras/${id}?day=${day}`, {
+      method: "DELETE",
+    });
+    return data.dayChecklist;
+  },
 };
