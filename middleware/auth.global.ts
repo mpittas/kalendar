@@ -1,5 +1,3 @@
-const PUBLIC_PATHS = new Set(["/login", "/signup"]);
-
 /** Send signed-out visitors to the login page. The API enforces auth independently. */
 export default defineNuxtRouteMiddleware(async (to) => {
   if (import.meta.server || PUBLIC_PATHS.has(to.path)) return;
