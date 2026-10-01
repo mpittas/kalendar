@@ -1,130 +1,231 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { paletteOf } from "~/lib/colors";
+import { withImplicitCategories } from "~/composables/useCategories";
 import type { ActivityTemplate } from "~/lib/types";
-
-const DEFAULT_CATEGORIES = [
-  "General",
-  "Work",
-  "Health & Fitness",
-  "Personal",
-  "Home & Chores",
-  "Education",
-  "Finance",
-  "Social",
-];
 
 const props = defineProps<{
   modelValue: string;
   templates?: ActivityTemplate[];
-  placeholder?: string;
 }>();
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
 }>();
 
-const isCustom = ref(false);
-const inputRef = ref<HTMLInputElement | null>(null);
+const { categories, load, create, nextColor } = useCategories();
+const { show: showLibrary } = useLibrary();
+onMounted(() => load());
 
-const categoryOptions = computed(() => {
-  const set = new Set<string>(DEFAULT_CATEGORIES);
-  if (props.templates) {
-    for (const t of props.templates) {
-      if (t.category && t.category.trim()) {
-        set.add(t.category.trim());
-      }
-    }
-  }
-  if (props.modelValue && props.modelValue.trim() && !isCustom.value) {
-    set.add(props.modelValue.trim());
-  }
+const PANEL_MAX_HEIGHT = 340;
+const GAP = 6;
 
-  return Array.from(set).sort((a, b) => {
-    if (a === "General") return -1;
-    if (b === "General") return 1;
-    return a.localeCompare(b);
-  });
+const open = ref(false);
+const triggerRef = ref<HTMLButtonElement | null>(null);
+const panelRef = ref<HTMLDivElement | null>(null);
+const newInputRef = ref<HTMLInputElement | null>(null);
+const position = ref({ top: 0, left: 0, width: 240, maxHeight: PANEL_MAX_HEIGHT });
+
+const creating = ref(false);
+const newName = ref("");
+const newError = ref<string | null>(null);
+const busy = ref(false);
+
+const entries = computed(() => {
+  const list = withImplicitCategories(categories.value, props.templates);
+  const current = props.modelValue?.trim();
+  // The current value may not be saved anywhere yet (e.g. a brand-new typed name).
+  if (current && !list.some((c) => c.name.toLowerCase() === current.toLowerCase())) {
+    list.push({ id: null, name: current, color: "slate" });
+  }
+  return list;
 });
 
-watch(
-  () => props.modelValue,
-  (val) => {
-    if (!isCustom.value && val && !categoryOptions.value.includes(val.trim())) {
-      // If initialized with a value not in defaults or templates, keep it selected in options
-    }
-  },
-  { immediate: true }
-);
+const selected = computed(() => entries.value.find((c) => c.name.toLowerCase() === props.modelValue?.trim().toLowerCase()));
 
-const onSelectChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  const val = target.value;
-  if (val === "__NEW__") {
-    isCustom.value = true;
-    emit("update:modelValue", "");
-    nextTick(() => {
-      inputRef.value?.focus();
-    });
-  } else {
-    isCustom.value = false;
-    emit("update:modelValue", val);
+const place = () => {
+  const rect = triggerRef.value?.getBoundingClientRect();
+  if (!rect) return;
+  const below = window.innerHeight - rect.bottom - GAP - 8;
+  const above = rect.top - GAP - 8;
+  const openUp = below < 220 && above > below;
+  const maxHeight = Math.min(PANEL_MAX_HEIGHT, openUp ? above : below);
+  const width = Math.max(rect.width, 240);
+  position.value = {
+    top: openUp ? rect.top - GAP - maxHeight : rect.bottom + GAP,
+    left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+    width,
+    maxHeight,
+  };
+};
+
+const show = async () => {
+  place();
+  open.value = true;
+  creating.value = false;
+  window.addEventListener("resize", place);
+  await nextTick();
+  const active = panelRef.value?.querySelector<HTMLElement>('[aria-selected="true"]') ?? panelRef.value?.querySelector<HTMLElement>("[role=option]");
+  active?.focus();
+  active?.scrollIntoView({ block: "nearest" });
+};
+
+const hide = () => {
+  open.value = false;
+  creating.value = false;
+  newName.value = "";
+  newError.value = null;
+  window.removeEventListener("resize", place);
+  triggerRef.value?.focus();
+};
+
+const choose = (name: string) => {
+  emit("update:modelValue", name);
+  hide();
+};
+
+const startCreating = async () => {
+  creating.value = true;
+  newError.value = null;
+  await nextTick();
+  newInputRef.value?.focus();
+};
+
+const submitNew = async () => {
+  const name = newName.value.trim();
+  if (!name || busy.value) return;
+  const existing = entries.value.find((c) => c.name.toLowerCase() === name.toLowerCase());
+  if (existing) return choose(existing.name);
+  busy.value = true;
+  newError.value = null;
+  try {
+    const created = await create({ name, color: nextColor() });
+    choose(created.name);
+  } catch (err) {
+    newError.value = err instanceof Error ? err.message : "Could not add category";
+  } finally {
+    busy.value = false;
   }
 };
 
-const onInput = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  emit("update:modelValue", target.value);
+const manage = () => {
+  hide();
+  showLibrary("categories");
 };
 
-const switchToDropdown = () => {
-  isCustom.value = false;
-  const fallback = props.modelValue.trim() || categoryOptions.value[0] || "General";
-  emit("update:modelValue", fallback);
+// Arrow keys move through the options.
+const onListKeydown = (event: KeyboardEvent) => {
+  if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+  const options = [...(panelRef.value?.querySelectorAll<HTMLElement>("[role=option]") ?? [])];
+  const index = options.indexOf(document.activeElement as HTMLElement);
+  const next = event.key === "ArrowDown" ? index + 1 : index - 1;
+  options[Math.max(0, Math.min(options.length - 1, next))]?.focus();
+  event.preventDefault();
 };
+
+onBeforeUnmount(() => window.removeEventListener("resize", place));
 </script>
 
 <template>
-  <div class="relative flex items-center">
-    <!-- Custom text input mode -->
-    <template v-if="isCustom">
-      <div class="relative flex w-full items-center">
-        <input
-          ref="inputRef"
-          :value="modelValue"
-          type="text"
-          :placeholder="placeholder || 'Enter new category…'"
-          class="h-9 w-full rounded-md border border-input bg-background pl-3 pr-8 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          @input="onInput"
-          @keydown.esc="switchToDropdown"
-        />
-        <button
-          type="button"
-          title="Pick from existing categories"
-          aria-label="Pick from existing categories"
-          class="absolute right-1 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground cursor-pointer"
-          @click="switchToDropdown"
-        >
-          <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path d="M4 6h12M4 10h12M4 14h12" stroke-linecap="round" />
-          </svg>
-        </button>
-      </div>
-    </template>
+  <div class="relative">
+    <button
+      ref="triggerRef"
+      type="button"
+      aria-haspopup="listbox"
+      :aria-expanded="open"
+      class="flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-2 text-left text-sm shadow-xs transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      @click="open ? hide() : show()"
+    >
+      <span class="h-2.5 w-2.5 shrink-0 rounded-full" :class="paletteOf(selected?.color ?? 'slate').dot" />
+      <span class="min-w-0 flex-1 truncate text-foreground">{{ modelValue || "Choose a category" }}</span>
+      <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-muted-foreground transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+        <path d="M5.5 8l4.5 4.5L14.5 8" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </button>
 
-    <!-- Dropdown select mode -->
-    <template v-else>
-      <select
-        :value="modelValue"
-        class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
-        @change="onSelectChange"
-      >
-        <option v-for="cat in categoryOptions" :key="cat" :value="cat">
-          {{ cat }}
-        </option>
-        <option value="__NEW__" class="font-medium text-primary">
-          + Add new category…
-        </option>
-      </select>
-    </template>
+    <Teleport to="body">
+      <div v-if="open" class="fixed inset-0 z-[60]" @click="hide">
+        <div
+          ref="panelRef"
+          class="fixed flex flex-col overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-lg"
+          :style="{ top: `${position.top}px`, left: `${position.left}px`, width: `${position.width}px`, maxHeight: `${position.maxHeight}px` }"
+          @click.stop
+          @keydown.esc.stop.prevent="hide"
+        >
+          <ul role="listbox" aria-label="Categories" class="min-h-0 flex-1 overflow-y-auto p-1" @keydown="onListKeydown">
+            <li v-for="entry in entries" :key="entry.name" role="presentation">
+              <button
+                type="button"
+                role="option"
+                :aria-selected="entry.name.toLowerCase() === modelValue?.trim().toLowerCase()"
+                class="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm transition hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                @click="choose(entry.name)"
+              >
+                <span class="flex h-6 w-6 shrink-0 items-center justify-center">
+                  <span class="h-2.5 w-2.5 rounded-full" :class="paletteOf(entry.color).dot" />
+                </span>
+                <span class="min-w-0 flex-1 truncate font-medium text-foreground">{{ entry.name }}</span>
+                <svg
+                  v-if="entry.name.toLowerCase() === modelValue?.trim().toLowerCase()"
+                  viewBox="0 0 16 16" class="h-3.5 w-3.5 shrink-0 text-foreground" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+                >
+                  <path d="M3.5 8.5l3 3 6-6" />
+                </svg>
+              </button>
+            </li>
+            <li v-if="!entries.length" class="px-3 py-4 text-center text-xs text-muted-foreground">No categories yet</li>
+          </ul>
+
+          <div class="shrink-0 border-t border-border p-1">
+            <form v-if="creating" class="p-1" @submit.prevent="submitNew">
+              <div class="flex gap-1.5">
+                <input
+                  ref="newInputRef"
+                  v-model="newName"
+                  type="text"
+                  maxlength="40"
+                  autocomplete="off"
+                  placeholder="New category name"
+                  class="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  @input="newError = null"
+                />
+                <button
+                  type="submit"
+                  :disabled="busy || !newName.trim()"
+                  class="h-8 shrink-0 cursor-pointer rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </div>
+              <p v-if="newError" class="mt-1.5 text-xs font-medium text-destructive" role="alert">{{ newError }}</p>
+            </form>
+            <template v-else>
+              <button
+                type="button"
+                class="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm font-medium text-foreground transition hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                @click="startCreating"
+              >
+                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
+                  <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke-linecap="round" /></svg>
+                </span>
+                New category
+              </button>
+              <button
+                type="button"
+                class="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:outline-none"
+                @click="manage"
+              >
+                <span class="flex h-6 w-6 shrink-0 items-center justify-center">
+                  <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 6h9M15 6h2M3 14h2M8 14h9" /><circle cx="13.5" cy="6" r="1.8" /><circle cx="6.5" cy="14" r="1.8" />
+                  </svg>
+                </span>
+                Manage categories…
+              </button>
+            </template>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

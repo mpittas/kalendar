@@ -1,23 +1,23 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist, DayChecklistItem, DayExtraItem } from "~/lib/types";
-import { SLOT_HEIGHT, SLOT_MINUTES } from "~/lib/types";
+import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist, DayChecklistItem, DayExtraItem, DayNotes } from "~/lib/types";
+import { SLOT_HEIGHT, SLOT_MINUTES, SNAP_MINUTES } from "~/lib/types";
 import { paletteOf } from "~/lib/colors";
 import { api } from "~/lib/api";
 import {
-  addDaysISO,
-  formatDuration,
+  floorMinutes,
   formatTime,
-  gutterLabel,
-  HOUR_OPTIONS,
   longDate,
-  mediumDate,
   nowMinutes,
-  parseISODate,
   snapMinutes,
   todayISO,
 } from "~/lib/time";
 import type { EditorRequest } from "~/components/TaskEditor.vue";
+import DayPlannerHeader from "~/components/day-planner/DayPlannerHeader.vue";
+import DayRoutinesShelf from "~/components/day-planner/DayRoutinesShelf.vue";
+import DayTimelineGrid from "~/components/day-planner/DayTimelineGrid.vue";
+import DayMobileNav from "~/components/day-planner/DayMobileNav.vue";
+import DayMobileActivitiesSheet from "~/components/day-planner/DayMobileActivitiesSheet.vue";
 
 const props = defineProps<{
   day: string;
@@ -25,6 +25,12 @@ const props = defineProps<{
   initialTemplates: ActivityTemplate[];
   initialChecklistItems?: ChecklistItem[];
   initialDayChecklist?: DayChecklist;
+  initialNotesText?: string;
+  notesState?: "loading" | "ready" | "error";
+}>();
+
+const emit = defineEmits<{
+  (e: "retry-notes"): void;
 }>();
 
 const tasks = ref<ScheduledTask[]>([...props.initialTasks]);
@@ -33,20 +39,18 @@ const checklistItems = ref<ChecklistItem[]>([...(props.initialChecklistItems ?? 
 const completedChecklistIds = ref<string[]>([...(props.initialDayChecklist?.completedItemIds ?? [])]);
 const hiddenChecklistIds = ref<string[]>([...(props.initialDayChecklist?.hiddenItemIds ?? [])]);
 const dayExtraItems = ref<DayExtraItem[]>([...(props.initialDayChecklist?.extraItems ?? [])]);
-const activeSidebarTab = ref<"activities" | "checklist">("activities");
-const mobileSheet = ref<"checklist" | "activities" | null>(null);
+const notesText = ref(props.initialNotesText ?? "");
+const activeSidebarTab = ref<"activities" | "checklist" | "notes">("activities");
+const mobileSheet = ref<"checklist" | "activities" | "notes" | null>(null);
 const editor = ref<EditorRequest | null>(null);
-const managerOpen = ref(false);
+const { show: showLibrary } = useLibrary();
 const preview = ref<{ start: number; duration: number; color: string; label: string } | null>(null);
 const resizing = ref<string | null>(null);
 const flash = ref<string | null>(null);
 
-const gridRef = ref<HTMLDivElement | null>(null);
 const scrollRef = ref<HTMLDivElement | null>(null);
 
-type DragSource =
-  | { kind: "template"; template: ActivityTemplate }
-  | { kind: "task"; task: ScheduledTask };
+type DragSource = { kind: "template"; template: ActivityTemplate };
 
 const dragSource = ref<DragSource | null>(null);
 let resizedJustHappened = false;
@@ -54,7 +58,7 @@ let flashTimer: number | null = null;
 
 const clock = ref(nowMinutes());
 const today = computed(() => {
-  clock.value; // re-evaluate after midnight as the clock ticks
+  clock.value;
   return todayISO();
 });
 const isToday = computed(() => props.day === today.value);
@@ -64,35 +68,36 @@ const GRID_HEIGHT = (24 * 60 / SLOT_MINUTES) * SLOT_HEIGHT;
 
 watch(
   () => props.initialTasks,
-  (val) => {
-    tasks.value = [...val];
-  },
+  (val) => { tasks.value = [...val]; },
   { deep: true },
 );
 
 watch(
   () => props.initialTemplates,
-  (val) => {
-    templates.value = [...val];
-  },
+  (val) => { templates.value = [...val]; },
   { deep: true },
 );
 
 watch(
   () => props.initialChecklistItems,
-  (val) => {
-    if (val) checklistItems.value = [...val];
-  },
+  (val) => { if (val) checklistItems.value = [...val]; },
   { deep: true },
 );
 
 watch(
+  () => props.initialNotesText,
+  (val) => { notesText.value = val ?? ""; },
+);
+
+watch(
   () => props.initialDayChecklist,
-  (val) => {
-    if (val) applyDayChecklist(val);
-  },
+  (val) => { if (val) applyDayChecklist(val); },
   { deep: true },
 );
+
+const onNotesSaved = (saved: DayNotes) => {
+  if (saved.day === props.day) notesText.value = saved.text;
+};
 
 const applyDayChecklist = (val: DayChecklist) => {
   completedChecklistIds.value = [...val.completedItemIds];
@@ -119,7 +124,10 @@ const scrollToUsefulPosition = () => {
   el.scrollTop = Math.max(0, (target / SLOT_MINUTES) * SLOT_HEIGHT - 96);
 };
 
+const { load: loadCategories } = useCategories();
+
 onMounted(() => {
+  loadCategories();
   scrollToUsefulPosition();
   clockTimer = window.setInterval(() => {
     clock.value = nowMinutes();
@@ -133,9 +141,7 @@ onUnmounted(() => {
 
 watch(
   () => props.day,
-  () => {
-    scrollToUsefulPosition();
-  },
+  () => { scrollToUsefulPosition(); },
 );
 
 const layout = computed(() => {
@@ -148,33 +154,33 @@ const layout = computed(() => {
 
   const flush = () => {
     if (!cluster.length) return;
-    const columns: number[] = [];
-    const placed: { task: ScheduledTask; column: number }[] = [];
+    const columns: ScheduledTask[][] = [];
     for (const task of cluster) {
-      let column = columns.findIndex((end) => end <= task.startMinutes);
-      if (column === -1) {
-        column = columns.length;
-        columns.push(0);
+      let placed = false;
+      for (const col of columns) {
+        const last = col[col.length - 1];
+        if (last.startMinutes + last.durationMinutes <= task.startMinutes) {
+          col.push(task);
+          placed = true;
+          break;
+        }
       }
-      columns[column] = task.startMinutes + task.durationMinutes;
-      placed.push({ task, column });
+      if (!placed) columns.push([task]);
     }
-    const total = columns.length;
-    for (const item of placed) {
-      map.set(item.task.id, {
-        left: item.column / total,
-        width: 1 / total,
+    const width = 1 / columns.length;
+    columns.forEach((col, colIdx) => {
+      col.forEach((task) => {
+        map.set(task.id, { left: colIdx * width, width });
       });
-    }
+    });
     cluster = [];
     clusterEnd = -1;
   };
 
   for (const task of sorted) {
-    const end = task.startMinutes + task.durationMinutes;
     if (cluster.length && task.startMinutes >= clusterEnd) flush();
     cluster.push(task);
-    clusterEnd = Math.max(clusterEnd, end);
+    clusterEnd = Math.max(clusterEnd, task.startMinutes + task.durationMinutes);
   }
   flush();
   return map;
@@ -182,121 +188,83 @@ const layout = computed(() => {
 
 const stats = computed(() => {
   const scheduled = tasks.value.reduce((sum, task) => sum + task.durationMinutes, 0);
-  const done = tasks.value.filter((task) => task.completed).length;
-  const categories = new Map<string, number>();
-  for (const task of tasks.value) {
-    categories.set(task.category, (categories.get(task.category) ?? 0) + task.durationMinutes);
+  const count = tasks.value.length;
+  const done = tasks.value.filter((t) => t.completed).length;
+
+  const catMap = new Map<string, number>();
+  for (const t of tasks.value) {
+    catMap.set(t.category, (catMap.get(t.category) ?? 0) + t.durationMinutes);
   }
-  return {
-    scheduled,
-    done,
-    count: tasks.value.length,
-    categories: [...categories.entries()].sort((a, b) => b[1] - a[1]),
+  const categories = [...catMap.entries()].sort((a, b) => b[1] - a[1]);
+
+  return { scheduled, count, done, categories };
+});
+
+const categoryColor = (cat: string) => {
+  const map: Record<string, string> = {
+    Work: "indigo",
+    Personal: "emerald",
+    Health: "rose",
+    DeepWork: "violet",
+    Study: "amber",
   };
-});
-
-const templateSearch = ref("");
-
-const filteredTemplates = computed(() => {
-  const query = templateSearch.value.trim().toLowerCase();
-  if (!query) return templates.value;
-  return templates.value.filter(
-    (t) =>
-      t.name.toLowerCase().includes(query) ||
-      t.category.toLowerCase().includes(query),
-  );
-});
-
-const categoryColor = (catName: string): string => {
-  const tpl = templates.value.find((t) => t.category.toLowerCase() === catName.toLowerCase());
-  if (tpl) return tpl.color;
-  const task = tasks.value.find((t) => t.category.toLowerCase() === catName.toLowerCase());
-  return task?.color ?? "indigo";
+  return map[cat] ?? "slate";
 };
 
-function minutesFromEvent(grid: HTMLElement | null, clientY: number): number {
-  if (!grid) return 540;
-  const rect = grid.getBoundingClientRect();
-  const offset = clientY - rect.top;
-  return snapMinutes((offset / SLOT_HEIGHT) * SLOT_MINUTES, SLOT_MINUTES);
-}
-
-const updatePreview = (clientY: number) => {
-  const source = dragSource.value;
-  if (!source) return;
-  const start = minutesFromEvent(gridRef.value, clientY);
-  const duration =
-    source.kind === "template"
-      ? source.template.defaultDuration
-      : source.task.durationMinutes;
-  const color = source.kind === "template" ? source.template.color : source.task.color;
-  const label =
-    source.kind === "template" ? source.template.name : source.task.title;
-
-  if (
-    preview.value &&
-    preview.value.start === start &&
-    preview.value.duration === duration &&
-    preview.value.label === label
-  ) {
-    return;
-  }
-  preview.value = { start, duration, color, label };
-};
-
-const autoScroll = (clientY: number) => {
-  const el = scrollRef.value;
-  if (!el) return;
-  const rect = el.getBoundingClientRect();
-  const edge = 64;
-  if (clientY - rect.top < edge) el.scrollTop -= 14;
-  else if (rect.bottom - clientY < edge) el.scrollTop += 14;
+const minutesFromEvent = (container: HTMLDivElement | null, clientY: number) => {
+  if (!container) return 0;
+  const rect = container.getBoundingClientRect();
+  const offsetY = Math.max(0, Math.min(rect.height, clientY - rect.top));
+  const raw = (offsetY / SLOT_HEIGHT) * SLOT_MINUTES;
+  return floorMinutes(raw, SNAP_MINUTES);
 };
 
 const handleDragOver = (event: DragEvent) => {
-  if (!dragSource.value) return;
   event.preventDefault();
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect =
-      dragSource.value.kind === "template" ? "copy" : "move";
-  }
-  updatePreview(event.clientY);
-  autoScroll(event.clientY);
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+  const start = minutesFromEvent(event.currentTarget as HTMLDivElement, event.clientY);
+  const template = dragSource.value?.template;
+  preview.value = {
+    start,
+    duration: template?.defaultDuration ?? 60,
+    color: template?.color ?? "indigo",
+    label: template?.name ?? "New Block",
+  };
 };
 
 const handleDrop = async (event: DragEvent) => {
-  const source = dragSource.value;
   event.preventDefault();
+  const start = minutesFromEvent(event.currentTarget as HTMLDivElement, event.clientY);
   preview.value = null;
+
+  const template = dragSource.value?.template;
   dragSource.value = null;
-  if (!source) return;
-  const start = minutesFromEvent(gridRef.value, event.clientY);
+  if (template) await createFromTemplate(template, start);
+};
 
-  if (source.kind === "template") {
-    const template = source.template;
-    try {
-      const created = await api.createTask({
-        day: props.day,
-        title: template.name,
-        emoji: template.emoji,
-        color: template.color,
-        category: template.category,
-        startMinutes: start,
-        durationMinutes: template.defaultDuration,
-        notes: template.notes,
-        templateId: template.id,
-      });
-      tasks.value = [...tasks.value, created].sort((a, b) => a.startMinutes - b.startMinutes);
-      notify(`${template.emoji} ${template.name} at ${formatTime(start)}`);
-    } catch {
-      notify("Could not add that block");
-    }
-    return;
+const createFromTemplate = async (template: ActivityTemplate, startMinutes: number) => {
+  try {
+    const created = await api.createTask({
+      day: props.day,
+      title: template.name,
+      category: template.category,
+      color: template.color,
+      emoji: template.emoji,
+      startMinutes,
+      durationMinutes: template.defaultDuration,
+      notes: template.notes ?? "",
+      completed: false,
+    });
+    tasks.value = [...tasks.value, created].sort((a, b) => a.startMinutes - b.startMinutes);
+    notify(`Added ${template.name}`);
+  } catch {
+    notify("Could not save that block");
   }
+};
 
-  const task = source.task;
-  if (task.startMinutes === start) return;
+const moveTask = async (task: ScheduledTask, start: number) => {
   const previous = task.startMinutes;
+  if (previous === start) return;
   tasks.value = tasks.value.map((item) => (item.id === task.id ? { ...item, startMinutes: start } : item));
   try {
     await api.updateTask(task.id, { startMinutes: start });
@@ -316,11 +284,16 @@ const startResize = (task: ScheduledTask, event: PointerEvent) => {
   const startDuration = task.durationMinutes;
   resizedJustHappened = false;
   resizing.value = task.id;
+  const snapDuration = (minutes: number) => {
+    const step = SNAP_MINUTES;
+    const longest = Math.floor((24 * 60 - task.startMinutes) / step) * step;
+    return Math.max(Math.min(step, longest) || step, Math.min(longest, snapMinutes(minutes, step)));
+  };
 
   const onMove = (moveEvent: PointerEvent) => {
     resizedJustHappened = true;
     const delta = ((moveEvent.clientY - startY) / SLOT_HEIGHT) * SLOT_MINUTES;
-    const next = Math.max(30, Math.min(24 * 60 - task.startMinutes, snapMinutes(startDuration + delta, 15)));
+    const next = snapDuration(startDuration + delta);
     tasks.value = tasks.value.map((item) =>
       item.id === task.id ? { ...item, durationMinutes: next } : item,
     );
@@ -331,7 +304,7 @@ const startResize = (task: ScheduledTask, event: PointerEvent) => {
     window.removeEventListener("pointerup", finish);
     resizing.value = null;
     const delta = ((moveEvent.clientY - startY) / SLOT_HEIGHT) * SLOT_MINUTES;
-    const next = Math.max(30, Math.min(24 * 60 - task.startMinutes, snapMinutes(startDuration + delta, 15)));
+    const next = snapDuration(startDuration + delta);
     if (next === startDuration) {
       resizedJustHappened = false;
       return;
@@ -388,6 +361,18 @@ const onTemplateSaved = (template: ActivityTemplate) => {
   templates.value = next.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
 };
 
+// Dragging an activity onto another category in the sidebar. Shown at once, undone if saving fails.
+const moveTemplate = async (template: ActivityTemplate, category: string) => {
+  onTemplateSaved({ ...template, category });
+  try {
+    onTemplateSaved(await api.updateTemplate(template.id, { category }));
+    notify(`Moved ${template.name} to ${category}`);
+  } catch {
+    onTemplateSaved(template);
+    notify("Could not move that activity");
+  }
+};
+
 const onTaskSaved = (task: ScheduledTask) => {
   const exists = tasks.value.some((item) => item.id === task.id);
   if (exists && task.day !== props.day) {
@@ -400,6 +385,17 @@ const onTaskSaved = (task: ScheduledTask) => {
   tasks.value = next.sort((a, b) => a.startMinutes - b.startMinutes);
 };
 
+// Renaming or deleting a category rewrites its activities and blocks on the server.
+const onCategoriesChanged = async () => {
+  try {
+    const [nextTemplates, nextTasks] = await Promise.all([api.getTemplates(), api.getTasksForDay(props.day)]);
+    templates.value = nextTemplates;
+    tasks.value = nextTasks;
+  } catch {
+    notify("Could not refresh activities");
+  }
+};
+
 const refreshDay = async () => {
   try {
     tasks.value = await api.getTasksForDay(props.day);
@@ -409,7 +405,6 @@ const refreshDay = async () => {
   }
 };
 
-// The default checklist minus what is skipped today, plus one-off items added for this day.
 const dayChecklistItems = computed<DayChecklistItem[]>(() => {
   const hidden = new Set(hiddenChecklistIds.value);
   const defaults = checklistItems.value
@@ -450,68 +445,40 @@ const toggleChecklistItem = async (itemId: string, completed: boolean) => {
   } else {
     completedChecklistIds.value = completedChecklistIds.value.filter((id) => id !== itemId);
   }
-
   try {
-    const res = await api.toggleChecklistItem(props.day, itemId, completed);
-    completedChecklistIds.value = res.completedItemIds;
+    await api.toggleChecklistItem(props.day, itemId, completed);
   } catch {
-    if (completed) {
-      completedChecklistIds.value = completedChecklistIds.value.filter((id) => id !== itemId);
-    } else {
-      completedChecklistIds.value.push(itemId);
-    }
     notify("Could not update checklist item");
   }
 };
 
 const onChecklistCreated = (item: ChecklistItem) => {
-  checklistItems.value.push(item);
-  notify(`Added "${item.title}"`);
+  checklistItems.value = [...checklistItems.value, item].sort((a, b) => a.order - b.order);
 };
 
 const onChecklistUpdated = (item: ChecklistItem) => {
-  const idx = checklistItems.value.findIndex((i) => i.id === item.id);
-  if (idx !== -1) {
-    checklistItems.value[idx] = item;
-  }
-  notify(`Updated "${item.title}"`);
+  checklistItems.value = checklistItems.value.map((t) => (t.id === item.id ? item : t));
 };
 
 const onChecklistDeleted = (id: string) => {
-  checklistItems.value = checklistItems.value.filter((i) => i.id !== id);
-  completedChecklistIds.value = completedChecklistIds.value.filter((itemId) => itemId !== id);
-  hiddenChecklistIds.value = hiddenChecklistIds.value.filter((itemId) => itemId !== id);
-  notify("Removed checklist item");
+  checklistItems.value = checklistItems.value.filter((item) => item.id !== id);
+  completedChecklistIds.value = completedChecklistIds.value.filter((item) => item !== id);
 };
 
-const onDayChecklistChanged = (val: DayChecklist, message: string) => {
-  applyDayChecklist(val);
-  notify(message);
-};
-
-const openActivityFromMobile = (template: ActivityTemplate) => {
-  mobileSheet.value = null;
-  editor.value = {
-    mode: "create",
-    day: props.day,
-    startMinutes: snapMinutes(nowMinutes(), 30),
-    template,
-  };
+const onDayChecklistChanged = (updated: DayChecklist) => {
+  applyDayChecklist(updated);
 };
 
 const openChecklistManager = () => {
   activeSidebarTab.value = "checklist";
   mobileSheet.value = "checklist";
 };
-
-const toneOf = (color: string) => paletteOf(color);
 </script>
 
 <template>
   <div class="flex h-[calc(100dvh-56px)] flex-col bg-background lg:flex-row overflow-hidden">
-    <!-- Desktop Activity palette and daily checklist sidebar (hidden on mobile, replaced by bottom bar and sheets) -->
+    <!-- Desktop Sidebar (Activities & Checklist) -->
     <aside class="hidden lg:flex lg:w-80 lg:shrink-0 lg:flex-col lg:border-r border-border bg-card">
-      <!-- Tabs switcher (shadcn style) -->
       <div class="flex items-center justify-between gap-2 border-b border-border px-3 pb-2.5 pt-3 bg-card">
         <div class="inline-flex h-9 w-full items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground">
           <button
@@ -536,18 +503,36 @@ const toneOf = (color: string) => paletteOf(color);
             <span
               class="rounded-full px-1.5 py-0.2 font-mono text-[10px] font-bold"
               :class="checklistStats.total > 0 && checklistStats.done === checklistStats.total
-                ? 'bg-emerald-500/15 text-emerald-700'
+                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
                 : 'bg-muted-foreground/15 text-foreground'"
             >
               {{ checklistStats.done }}/{{ checklistStats.total }}
             </span>
           </button>
+
+          <button
+            type="button"
+            @click="activeSidebarTab = 'notes'"
+            class="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all cursor-pointer"
+            :class="activeSidebarTab === 'notes' ? 'bg-background text-foreground shadow-xs font-semibold' : 'hover:text-foreground'"
+          >
+            <span>Notes</span>
+            <span v-if="notesText.trim()" class="h-1.5 w-1.5 rounded-full bg-primary" aria-label="Has notes" />
+          </button>
         </div>
       </div>
 
-      <!-- Checklist tab content -->
+      <DayNotes
+        v-if="activeSidebarTab === 'notes'"
+        :day="day"
+        :text="notesText"
+        :state="notesState ?? 'ready'"
+        @saved="onNotesSaved"
+        @retry="emit('retry-notes')"
+      />
+
       <DailyChecklist
-        v-if="activeSidebarTab === 'checklist'"
+        v-else-if="activeSidebarTab === 'checklist'"
         :day="day"
         :items="dayChecklistItems"
         :skipped-items="skippedChecklistItems"
@@ -559,7 +544,6 @@ const toneOf = (color: string) => paletteOf(color);
         @day-changed="onDayChecklistChanged"
       />
 
-      <!-- Activities tab content -->
       <ActivityPalette
         v-else
         :templates="templates"
@@ -568,565 +552,106 @@ const toneOf = (color: string) => paletteOf(color);
         }"
         @drag-start="(template) => { dragSource = { kind: 'template', template }; }"
         @drag-end="() => { dragSource = null; preview = null; }"
-        @manage="managerOpen = true"
+        @manage="showLibrary('activities')"
+        @move="moveTemplate"
       />
     </aside>
 
     <!-- Timeline section -->
     <section class="flex min-h-0 flex-1 flex-col bg-background">
-      <!-- Single, compact, beautiful pinned header -->
-      <header class="border-b border-border bg-background/95 backdrop-blur px-3 py-2 sm:px-5">
-        <div class="flex flex-wrap items-center justify-between gap-2.5">
-          <!-- Left: Compact navigation button group & date info -->
-          <div class="flex items-center gap-2">
-            <div class="inline-flex h-8 items-center rounded-lg border border-border bg-card p-0.5 shadow-2xs">
-              <NuxtLink
-                :to="`/day/${addDaysISO(day, -1)}`"
-                class="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition"
-                aria-label="Previous day"
-              >
-                <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12.5 15l-5-5 5-5" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </NuxtLink>
-              <NuxtLink
-                v-if="!isToday"
-                :to="`/day/${today}`"
-                class="flex h-7 items-center px-2.5 rounded-md text-xs font-medium text-foreground hover:bg-muted transition"
-              >
-                Today
-              </NuxtLink>
-              <NuxtLink
-                :to="`/day/${addDaysISO(day, 1)}`"
-                class="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition"
-                aria-label="Next day"
-              >
-                <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M7.5 15l5-5-5-5" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </NuxtLink>
-              <div class="relative flex h-7 w-7 items-center justify-center" title="Choose specific date">
-                <input
-                  type="date"
-                  :value="day"
-                  @change="(e) => navigateTo(`/day/${(e.target as HTMLInputElement).value}`)"
-                  class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                  aria-label="Choose specific date"
-                />
-                <button
-                  type="button"
-                  class="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer"
-                  title="Choose date"
-                  aria-label="Choose date"
-                >
-                  <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="14" height="13" rx="2" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M3 8h14M7 2v4M13 2v4" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+      <DayPlannerHeader
+        :day="day"
+        :is-today="isToday"
+        :today="today"
+        :stats="stats"
+        :flash="flash"
+        @create-block="editor = { mode: 'create', day, startMinutes: snapMinutes(nowMinutes(), 30), template: null }"
+      />
 
-            <div class="ml-1 sm:ml-2">
-              <div class="flex items-center gap-2">
-                <h1 class="text-sm sm:text-base font-semibold text-foreground tracking-tight leading-tight">
-                  <span class="sm:hidden">{{ mediumDate(day) }}</span>
-                  <span class="hidden sm:inline">{{ longDate(day) }}</span>
-                </h1>
-                <span
-                  v-if="isToday"
-                  class="hidden sm:inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary leading-none"
-                >
-                  Today
-                </span>
-              </div>
-              <p class="text-[11px] text-muted-foreground font-mono tabular-nums leading-none mt-0.5">
-                {{ formatDuration(stats.scheduled) }} planned · {{ stats.done }} of {{ stats.count }} completed
-              </p>
-            </div>
-          </div>
+      <div ref="scrollRef" class="relative min-h-0 flex-1 overflow-y-auto bg-background scroll-pt-6">
+        <DayRoutinesShelf
+          v-if="hasChecklist"
+          :items="dayChecklistItems"
+          :completed-ids="completedChecklistIds"
+          @toggle="toggleChecklistItem"
+          @open-manager="openChecklistManager"
+        />
 
-          <!-- Right: Routines, Categories & Actions (all h-8 height) -->
-          <div class="flex items-center gap-1.5 sm:gap-2">
-            <button
-              v-if="hasChecklist"
-              type="button"
-              @click="openChecklistManager"
-              class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium shadow-2xs transition hover:bg-muted cursor-pointer"
-              :class="checklistStats.total > 0 && checklistStats.done === checklistStats.total
-                ? 'border-emerald-300 bg-emerald-50/50 text-emerald-800'
-                : 'text-foreground'"
-              title="Open Daily Checklist"
-            >
-              <svg class="h-3.5 w-3.5 text-emerald-600 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-              </svg>
-              <span class="hidden sm:inline">Routines</span>
-              <span class="rounded-full bg-muted px-1.5 py-0.2 font-mono text-[10px] font-semibold text-muted-foreground">
-                {{ checklistStats.done }}/{{ checklistStats.total }}
-              </span>
-            </button>
-
-            <span
-              v-for="[category, minutes] in stats.categories.slice(0, 3)"
-              :key="category"
-              class="hidden xl:inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground tabular-nums shadow-2xs"
-            >
-              <span class="h-1.5 w-1.5 rounded-full" :class="toneOf(categoryColor(category)).dot" />
-              <span>{{ category }}</span>
-              <span class="opacity-40">·</span>
-              <span class="font-mono text-foreground font-semibold">{{ formatDuration(minutes) }}</span>
-            </span>
-
-            <button
-              type="button"
-              @click="editor = {
-                mode: 'create',
-                day,
-                startMinutes: snapMinutes(nowMinutes(), 30),
-                template: null,
-              }"
-              class="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 sm:px-3.5 text-xs sm:text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 active:scale-95 cursor-pointer"
-            >
-              <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10 4v12M4 10h12" stroke-linecap="round" />
-              </svg>
-              <span class="hidden sm:inline">Time block</span>
-              <span class="sm:hidden">Block</span>
-            </button>
-          </div>
-        </div>
-        <p v-if="flash" role="status" aria-live="polite" class="mt-2 rounded-md border border-emerald-300/80 bg-emerald-50/80 px-3 py-1 text-xs font-medium text-emerald-800">
-          {{ flash }}
-        </p>
-      </header>
-
-      <div
-        ref="scrollRef"
-        class="relative min-h-0 flex-1 overflow-y-auto bg-background scroll-pt-6"
-      >
-        <!-- Scrollable Habits shelf: only visible if items exist, scrolls with timeline, NEVER pinned -->
-        <div v-if="hasChecklist" class="mx-auto max-w-4xl px-3 sm:px-6 pt-3 pb-2 border-b border-border/40">
-          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-            <span class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground shrink-0 flex items-center gap-1">
-              <svg class="h-3 w-3 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-              </svg>
-              Routines
-            </span>
-            <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-              <button
-                v-for="item in dayChecklistItems"
-                :key="item.id"
-                type="button"
-                @click="toggleChecklistItem(item.id, !completedChecklistIds.includes(item.id))"
-                class="group inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium shadow-2xs transition cursor-pointer"
-                :class="completedChecklistIds.includes(item.id)
-                  ? 'border-border/60 bg-muted/50 text-muted-foreground line-through opacity-70'
-                  : 'border-border bg-card text-foreground hover:bg-accent hover:border-foreground/30'"
-              >
-                <span
-                  class="flex h-3.5 w-3.5 items-center justify-center rounded-full border transition text-[9px]"
-                  :class="completedChecklistIds.includes(item.id)
-                    ? 'border-emerald-600 bg-emerald-600 text-white font-bold'
-                    : 'border-muted-foreground/40 group-hover:border-foreground text-transparent'"
-                >
-                  ✓
-                </span>
-                <span>{{ item.emoji }}</span>
-                <span class="truncate max-w-[12rem]">{{ item.title }}</span>
-              </button>
-            </div>
-            <button
-              type="button"
-              @click="openChecklistManager"
-              class="inline-flex shrink-0 items-center gap-1 rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-muted-foreground hover:border-foreground/30 hover:text-foreground transition cursor-pointer"
-              title="Manage habits"
-            >
-              <svg viewBox="0 0 20 20" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10 4v12M4 10h12" stroke-linecap="round" />
-              </svg>
-              <span>Manage</span>
-            </button>
-          </div>
-        </div>
-        <div class="mx-auto flex max-w-4xl pt-4 pb-28 sm:pt-6 sm:pb-12">
-          <!-- Hour gutter -->
-          <div class="relative w-14 sm:w-16 shrink-0 select-none border-r border-border bg-background pr-1.5 sm:pr-2.5">
-            <div
-              v-for="minute in HOUR_OPTIONS"
-              :key="minute"
-              :style="{ height: `${SLOT_HEIGHT}px` }"
-              class="relative"
-            >
-              <span
-                v-if="gutterLabel(minute)"
-                class="absolute -top-2.5 right-1.5 sm:right-2 text-[11px] sm:text-xs font-mono font-medium text-muted-foreground tracking-tight"
-              >
-                {{ gutterLabel(minute) }}
-              </span>
-            </div>
-
-            <!-- Amie live time pill in gutter -->
-            <div
-              v-if="nowMinute !== null"
-              class="pointer-events-none absolute right-0.5 sm:right-1 z-30 -translate-y-1/2 rounded-full bg-rose-500 px-1.5 sm:px-2 py-0.5 font-mono text-[10px] sm:text-xs font-bold text-white shadow-xs"
-              :style="{ top: `${(nowMinute / SLOT_MINUTES) * SLOT_HEIGHT}px` }"
-            >
-              {{ formatTime(nowMinute) }}
-            </div>
-          </div>
-
-          <!-- Drop grid -->
-          <div
-            ref="gridRef"
-            @dragover="handleDragOver"
-            @dragleave="(event) => {
-              if (!gridRef?.contains(event.relatedTarget as Node | null)) {
-                preview = null;
-              }
-            }"
-            @drop="handleDrop"
-            @click="(event) => {
-              if (resizedJustHappened) return;
-              editor = {
-                mode: 'create',
-                day,
-                startMinutes: minutesFromEvent(gridRef, event.clientY),
-                template: null,
-              };
-            }"
-            :style="{ height: `${GRID_HEIGHT}px` }"
-            class="relative flex-1 bg-background border-t border-border"
-          >
-            <div
-              v-for="minute in HOUR_OPTIONS"
-              :key="minute"
-              :style="{ height: `${SLOT_HEIGHT}px` }"
-              :class="[
-                'border-b',
-                (minute + 30) % 60 === 0 ? 'border-border/70' : 'border-dashed border-border/30'
-              ]"
-            />
-
-            <!-- Amie Live Time Indicator Line -->
-            <div
-              v-if="nowMinute !== null"
-              class="pointer-events-none absolute inset-x-0 z-20 flex items-center"
-              :style="{ top: `${(nowMinute / SLOT_MINUTES) * SLOT_HEIGHT}px` }"
-            >
-              <div class="relative flex items-center w-full">
-                <span class="absolute -left-1 flex h-2 w-2 items-center justify-center">
-                  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-60"></span>
-                  <span class="relative inline-flex h-2 w-2 rounded-full bg-rose-500"></span>
-                </span>
-                <span class="h-[1.5px] w-full bg-rose-500/80"></span>
-              </div>
-            </div>
-
-            <!-- Drag preview placeholder -->
-            <div
-              v-if="preview"
-              :class="[
-                'pointer-events-none absolute z-30 flex items-center justify-center rounded-lg border border-dashed shadow-2xs backdrop-blur-xs',
-                toneOf(preview.color).ghost
-              ]"
-              :style="{
-                top: `${(preview.start / SLOT_MINUTES) * SLOT_HEIGHT}px`,
-                height: `${Math.max(
-                  SLOT_HEIGHT,
-                  ((Math.min(preview.start + preview.duration, 24 * 60) - preview.start) /
-                    SLOT_MINUTES) *
-                    SLOT_HEIGHT,
-                )}px`,
-                left: '2%',
-                width: '96%',
-              }"
-            >
-              <span class="rounded-full bg-background px-3 py-1 font-mono text-xs font-semibold text-foreground shadow-2xs border border-border">
-                {{ preview.label }} · {{ formatTime(preview.start) }}
-              </span>
-            </div>
-
-            <!-- Scheduled task blocks -->
-            <div
-              v-for="task in tasks"
-              :key="task.id"
-              :draggable="resizing !== task.id"
-              role="button"
-              tabindex="0"
-              :aria-label="`${task.title}, ${formatTime(task.startMinutes)} to ${formatTime(task.startMinutes + task.durationMinutes)}. Press Enter to edit.`"
-              @keydown.enter.self.prevent="editor = { mode: 'edit', day, startMinutes: task.startMinutes, task }"
-              @dragstart="(event) => {
-                dragSource = { kind: 'task', task };
-                if (event.dataTransfer) {
-                  event.dataTransfer.effectAllowed = 'move';
-                  event.dataTransfer.setData('text/plain', String(task.id));
-                }
-              }"
-              @dragend="() => {
-                dragSource = null;
-                preview = null;
-              }"
-              @click.stop="() => {
-                if (resizedJustHappened) return;
-                editor = {
-                  mode: 'edit',
-                  day,
-                  startMinutes: task.startMinutes,
-                  task,
-                };
-              }"
-              :style="{
-                top: `${(task.startMinutes / SLOT_MINUTES) * SLOT_HEIGHT + 2}px`,
-                height: `${Math.max(
-                  SLOT_HEIGHT - 4,
-                  (task.durationMinutes / SLOT_MINUTES) * SLOT_HEIGHT - 4,
-                )}px`,
-                left: `${(layout.get(task.id)?.left ?? 0) * 100 + 1}%`,
-                width: `${(layout.get(task.id)?.width ?? 1) * 100 - 2}%`,
-              }"
-              :class="[
-                'group absolute z-10 flex cursor-grab flex-col overflow-hidden rounded-lg border px-2.5 py-1.5 shadow-2xs transition-shadow hover:z-20 hover:shadow-xs active:cursor-grabbing',
-                task.completed ? toneOf(task.color).blockDone : toneOf(task.color).block
-              ]"
-            >
-              <!-- Amie vertical accent line -->
-              <span
-                class="absolute inset-y-1.5 left-1 w-0.5 rounded-full transition-opacity"
-                :class="[toneOf(task.color).accent, task.completed ? 'opacity-40' : 'opacity-100']"
-              />
-
-              <div class="flex items-start gap-2 pl-1.5">
-                <button
-                  type="button"
-                  :aria-label="task.completed ? 'Mark as not done' : 'Mark as done'"
-                  @click.stop="toggleComplete(task)"
-                  :class="[
-                    'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-xs border transition-colors cursor-pointer',
-                    task.completed
-                      ? 'border-emerald-600 bg-emerald-600 text-white shadow-2xs'
-                      : 'border-input bg-background text-transparent hover:border-foreground/60'
-                  ]"
-                >
-                  <svg viewBox="0 0 16 16" class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3.5 8.5l3 3 6-6" />
-                  </svg>
-                </button>
-                <p
-                  :class="[
-                    'min-w-0 flex-1 truncate text-sm font-semibold leading-tight text-foreground',
-                    task.completed ? 'line-through text-muted-foreground font-normal' : ''
-                  ]"
-                >
-                  {{ task.emoji }} {{ task.title }}
-                </p>
-                <button
-                  v-if="resizing !== task.id"
-                  type="button"
-                  aria-label="Remove block"
-                  title="Remove block"
-                  @click.stop="deleteTask(task.id)"
-                  @pointerdown.stop
-                  @mousedown.stop
-                  class="mt-0.5 flex h-4.5 w-4.5 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-75 hover:opacity-100 focus-visible:opacity-100"
-                >
-                  <svg
-                    viewBox="0 0 20 20"
-                    class="h-3 w-3"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M5 5l10 10M15 5L5 15" stroke-linecap="round" />
-                  </svg>
-                </button>
-              </div>
-
-              <!-- Time display for non-compact tasks -->
-              <p
-                v-if="((task.durationMinutes / SLOT_MINUTES) * SLOT_HEIGHT - 4) >= SLOT_HEIGHT * 1.5"
-                class="mt-0.5 pl-6 text-xs font-mono leading-4 opacity-85 tabular-nums font-medium text-foreground"
-              >
-                {{ formatTime(task.startMinutes) }} – {{ formatTime(task.startMinutes + task.durationMinutes) }}
-                <span class="opacity-50">·</span>
-                {{ formatDuration(task.durationMinutes) }}
-              </p>
-
-              <!-- Notes snippet for non-compact tasks -->
-              <p
-                v-if="((task.durationMinutes / SLOT_MINUTES) * SLOT_HEIGHT - 4) >= SLOT_HEIGHT * 2.2 && task.notes"
-                class="mt-0.5 line-clamp-1 pl-6 text-xs leading-4 opacity-75 text-foreground"
-              >
-                {{ task.notes }}
-              </p>
-
-              <!-- Resize handle at bottom -->
-              <div
-                @pointerdown="(event) => startResize(task, event)"
-                class="absolute inset-x-0 bottom-0 flex h-2 cursor-ns-resize items-center justify-center"
-              >
-                <span class="h-0.5 w-6 rounded-full bg-foreground/20 opacity-0 transition group-hover:opacity-100" />
-              </div>
-
-              <!-- Active resizing duration badge -->
-              <span
-                v-if="resizing === task.id"
-                class="absolute right-1.5 top-1.5 rounded-md bg-primary px-2 py-0.5 font-mono text-xs font-semibold text-primary-foreground shadow-xs"
-              >
-                {{ formatDuration(task.durationMinutes) }}
-              </span>
-            </div>
-          </div>
-        </div>
+        <DayTimelineGrid
+          :day="day"
+          :tasks="tasks"
+          :now-minute="nowMinute"
+          :resizing="resizing"
+          :preview="preview"
+          :layout="layout"
+          :grid-height="GRID_HEIGHT"
+          @task-click="(task) => { if (!resizedJustHappened) editor = { mode: 'edit', day, startMinutes: task.startMinutes, task }; }"
+          @grid-click="(event) => {
+            if (resizedJustHappened) return;
+            editor = { mode: 'create', day, startMinutes: minutesFromEvent(event.currentTarget as HTMLDivElement, event.clientY), template: null };
+          }"
+          @toggle-complete="toggleComplete"
+          @delete-task="deleteTask"
+          @start-resize="startResize"
+          @drag-over="handleDragOver"
+          @drag-leave="(event) => { if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) preview = null; }"
+          @drop="handleDrop"
+          @move-task="moveTask"
+          @refresh="refreshDay"
+        />
       </div>
 
-      <footer class="hidden lg:flex items-center justify-between gap-3 border-t border-border bg-card px-5 py-2.5 text-xs text-muted-foreground">
-        <span>
-          Drag an activity into the grid · drag blocks to move · pull the bottom edge to
-          resize · click a slot for details
-        </span>
-        <button
-          type="button"
-          @click="refreshDay"
-          class="shrink-0 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium text-foreground shadow-xs hover:bg-accent cursor-pointer"
-        >
-          Refresh
-        </button>
-      </footer>
-
-      <!-- Mobile Bottom Navigation Bar (iOS / Android thumb friendly) -->
-      <nav aria-label="Mobile navigation" class="lg:hidden fixed bottom-0 inset-x-0 z-30 flex items-center justify-around border-t border-border bg-background/95 px-4 py-2 backdrop-blur-md shadow-lg">
-        <button
-          type="button"
-          @click="mobileSheet = 'activities'"
-          class="flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground transition active:scale-95 cursor-pointer"
-        >
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground">
-            <svg viewBox="0 0 20 20" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 6h12M4 10h12M4 14h8" stroke-linecap="round" />
-            </svg>
-          </div>
-          <span class="text-[11px] font-medium">Activities</span>
-        </button>
-
-        <button
-          type="button"
-          @click="editor = {
-            mode: 'create',
-            day,
-            startMinutes: snapMinutes(nowMinutes(), 30),
-            template: null,
-          }"
-          class="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition active:scale-95 hover:bg-primary/90 cursor-pointer"
-        >
-          <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M10 4v12M4 10h12" stroke-linecap="round" />
-          </svg>
-          <span>Schedule</span>
-        </button>
-
-        <button
-          type="button"
-          @click="mobileSheet = 'checklist'"
-          class="relative flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground transition active:scale-95 cursor-pointer"
-        >
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground">
-            <svg viewBox="0 0 20 20" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M5 10l3 3 7-7" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </div>
-          <span class="text-[11px] font-medium">Checklist</span>
-          <span
-            v-if="checklistStats.total > 0"
-            class="absolute -top-1 right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 font-mono text-[9px] font-bold text-white shadow-xs"
-          >
-            {{ checklistStats.done }}/{{ checklistStats.total }}
-          </span>
-        </button>
-      </nav>
+      <DayMobileNav
+        :checklist-stats="checklistStats"
+        :has-notes="notesText.trim().length > 0"
+        @open-sheet="(sheet) => { mobileSheet = sheet; }"
+        @create-block="editor = { mode: 'create', day, startMinutes: snapMinutes(nowMinutes(), 30), template: null }"
+      />
     </section>
 
-    <!-- Modals -->
+    <!-- Modals & Sheets -->
     <TaskEditor
       :request="editor"
       :templates="templates"
       @close="editor = null"
       @saved="onTaskSaved"
       @deleted="onTaskDeleted"
+      @template-deleted="(id) => { templates = templates.filter((item) => item.id !== id); notify('Activity deleted'); }"
     />
 
-    <TemplateManager
-      :open="managerOpen"
+    <!-- After the editors so it opens on top of them (e.g. from a category picker). -->
+    <LibraryModal
       :templates="templates"
-      @close="managerOpen = false"
       @saved="onTemplateSaved"
       @deleted="(id) => { templates = templates.filter((item) => item.id !== id) }"
+      @categories-changed="onCategoriesChanged"
     />
 
-    <!-- Mobile Activities Bottom Sheet -->
-    <Modal
+    <DayMobileActivitiesSheet
       :open="mobileSheet === 'activities'"
-      title="Add Activity"
+      :templates="templates"
+      @close="mobileSheet = null"
+      @pick-template="(template) => { editor = { mode: 'create', day, startMinutes: snapMinutes(nowMinutes(), 30), template }; }"
+      @open-manager="showLibrary('activities')"
+    />
+
+    <Modal
+      :open="mobileSheet === 'notes'"
+      title="Notes"
+      :subtitle="longDate(day)"
       @close="mobileSheet = null"
     >
-      <div class="space-y-4">
-        <p class="text-xs text-muted-foreground">Tap an activity to schedule it on today's timeline.</p>
-        <div class="relative">
-          <input
-            v-model="templateSearch"
-            type="search"
-            placeholder="Search activities..."
-            class="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
-          <svg viewBox="0 0 20 20" class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M8.5 14a5.5 5.5 0 100-11 5.5 5.5 0 000 11zM13 13l4 4" stroke-linecap="round" />
-          </svg>
-        </div>
-
-        <div class="max-h-[50vh] overflow-y-auto space-y-1.5 pr-0.5">
-          <button
-            v-for="template in filteredTemplates"
-            :key="template.id"
-            type="button"
-            @click="openActivityFromMobile(template)"
-            class="group flex w-full items-center justify-between rounded-lg border border-border bg-card p-2.5 text-left shadow-2xs transition hover:border-foreground/20 hover:bg-accent/50 active:scale-[0.99] cursor-pointer"
-          >
-            <div class="flex items-center gap-2.5 min-w-0">
-              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-base shadow-2xs" :class="toneOf(template.color).dot">
-                {{ template.emoji }}
-              </span>
-              <div class="min-w-0">
-                <p class="truncate text-sm font-semibold text-foreground">{{ template.name }}</p>
-                <p class="text-xs text-muted-foreground">{{ template.category }} · {{ formatDuration(template.defaultDuration) }}</p>
-              </div>
-            </div>
-            <span class="rounded-md bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground group-hover:bg-primary group-hover:text-primary-foreground transition">
-              Add +
-            </span>
-          </button>
-        </div>
-
-        <div class="pt-3 border-t border-border flex items-center justify-between">
-          <button
-            type="button"
-            @click="mobileSheet = null; managerOpen = true"
-            class="text-xs font-semibold text-muted-foreground hover:text-foreground underline cursor-pointer"
-          >
-            Manage custom activities
-          </button>
-          <button
-            type="button"
-            @click="mobileSheet = null"
-            class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent cursor-pointer"
-          >
-            Close
-          </button>
-        </div>
+      <div class="-mx-6 -my-5 flex h-[60vh] flex-col">
+        <DayNotes
+          :day="day"
+          :text="notesText"
+          :state="notesState ?? 'ready'"
+          @saved="onNotesSaved"
+          @retry="emit('retry-notes')"
+        />
       </div>
     </Modal>
 
-    <!-- Mobile Checklist Bottom Sheet -->
     <Modal
       :open="mobileSheet === 'checklist'"
       title="Daily Habits & Checklist"

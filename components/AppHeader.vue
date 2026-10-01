@@ -2,7 +2,8 @@
 import { computed } from "vue";
 import { todayISO } from "~/lib/time";
 
-const { user, profile, loading, isConfigured, logout } = useAuth();
+const { user, profile, loading, isConfigured } = useAuth();
+const { toggle: toggleTheme } = useTheme();
 const route = useRoute();
 const today = todayISO();
 
@@ -22,11 +23,6 @@ const initials = computed(() => {
   }
   return name.slice(0, 2).toUpperCase();
 });
-
-const handleLogout = async () => {
-  await logout();
-  navigateTo("/login");
-};
 </script>
 
 <template>
@@ -75,6 +71,22 @@ const handleLogout = async () => {
 
       <!-- User / Auth Actions - all standardized to h-8 -->
       <div class="flex items-center gap-2">
+        <!-- Both icons render; CSS picks one so SSR and client markup always match. -->
+        <button
+          type="button"
+          aria-label="Toggle light/dark theme"
+          title="Toggle theme"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-foreground shadow-2xs transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer"
+          @click="toggleTheme"
+        >
+          <svg viewBox="0 0 24 24" class="h-4 w-4 dark:hidden" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+          <svg viewBox="0 0 24 24" class="hidden h-4 w-4 dark:block" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+          </svg>
+        </button>
         <div v-if="loading" class="h-8 w-20 animate-pulse rounded-md bg-muted" />
 
         <template v-else-if="user">
@@ -87,14 +99,6 @@ const handleLogout = async () => {
             </div>
             <span class="hidden sm:inline max-w-[130px] truncate">{{ displayName }}</span>
           </NuxtLink>
-
-          <button
-            type="button"
-            @click="handleLogout"
-            class="inline-flex h-8 items-center rounded-md border border-input bg-background px-3 text-xs font-medium text-muted-foreground shadow-2xs transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
-          >
-            Log Out
-          </button>
         </template>
 
         <template v-else>
@@ -117,11 +121,11 @@ const handleLogout = async () => {
     <!-- Alert banner if Firebase is not yet connected -->
     <div
       v-if="!loading && !isConfigured"
-      class="border-t border-amber-200/70 bg-amber-50/70 px-4 py-1 text-center text-xs text-amber-900"
+      class="border-t border-amber-200/70 bg-amber-50/70 px-4 py-1 text-center text-xs text-amber-900 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200"
     >
       <span class="inline-flex items-center gap-1.5">
         <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
-        Local database active · Set Firebase credentials in <code class="rounded bg-amber-100/70 px-1 py-0.2 font-mono text-[11px]">.env</code> for cloud sync
+        Local database active · Set Firebase credentials in <code class="rounded bg-amber-100/70 dark:bg-amber-400/20 px-1 py-0.2 font-mono text-[11px]">.env</code> for cloud sync
       </span>
     </div>
   </header>

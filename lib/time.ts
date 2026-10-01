@@ -158,6 +158,11 @@ export function snapMinutes(minutes: number, step = 30): number {
   return Math.max(0, Math.min(24 * 60, Math.round(minutes / step) * step));
 }
 
+/** Start of the step that contains `minutes` (what a click on a time slot should mean). */
+export function floorMinutes(minutes: number, step = 30): number {
+  return Math.max(0, Math.min(24 * 60 - step, Math.floor(minutes / step) * step));
+}
+
 /** 495 -> "8:15 AM" */
 export function formatTime(minutes: number): string {
   const total = ((minutes % 1440) + 1440) % 1440;
@@ -199,7 +204,7 @@ export function timeInputValue(minutes: number): string {
 export function fromTimeInput(value: string): number {
   const [h, m] = value.split(":").map((part) => Number.parseInt(part, 10));
   if (Number.isNaN(h)) return 540;
-  return snapMinutes(h * 60 + (Number.isNaN(m) ? 0 : m));
+  return Math.max(0, Math.min(24 * 60, h * 60 + (Number.isNaN(m) ? 0 : m)));
 }
 
 export function nowMinutes(): number {

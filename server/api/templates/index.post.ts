@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
     name,
     emoji: cleanEmoji(body.emoji),
     color: cleanColor(body.color),
-    category: cleanCategory(body.category),
+    category: await canonicalCategory(event, body.category),
     defaultDuration: clampDuration(body.defaultDuration),
     notes: cleanNotes(body.notes),
   });

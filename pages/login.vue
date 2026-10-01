@@ -102,20 +102,20 @@ const handleResetPassword = async () => {
       <!-- Warning if Firebase is not yet configured -->
       <div
         v-if="!isConfigured"
-        class="rounded-lg border border-amber-200/80 bg-amber-50/80 p-3 text-xs text-amber-900"
+        class="rounded-lg border border-amber-200/80 bg-amber-50/80 dark:border-amber-400/20 dark:bg-amber-400/10 p-3 text-xs text-amber-900 dark:text-amber-200"
       >
         <p class="font-medium">Firebase credentials required for cloud login</p>
-        <p class="mt-0.5 text-amber-800">
-          Set credentials in <code class="rounded bg-amber-100/70 px-1 py-0.5 font-mono text-[11px]">.env</code> to activate cloud auth.
+        <p class="mt-0.5 text-amber-800 dark:text-amber-300">
+          Set credentials in <code class="rounded bg-amber-100/70 dark:bg-amber-400/20 px-1 py-0.5 font-mono text-[11px]">.env</code> to activate cloud auth.
         </p>
       </div>
 
       <!-- Error and Success Alerts -->
       <div
         v-if="error"
-        class="flex items-center gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 p-3 text-xs sm:text-sm font-medium text-rose-800"
+        class="flex items-center gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 dark:border-rose-400/25 dark:bg-rose-500/10 p-3 text-xs sm:text-sm font-medium text-rose-800 dark:text-rose-200"
       >
-        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" stroke-width="2">
+        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="10" cy="10" r="7" />
           <path d="M10 6v4M10 14h.01" stroke-linecap="round" />
         </svg>
@@ -124,9 +124,9 @@ const handleResetPassword = async () => {
 
       <div
         v-if="successMessage"
-        class="flex items-center gap-2.5 rounded-lg border border-emerald-200/80 bg-emerald-50/80 p-3 text-xs sm:text-sm font-medium text-emerald-800"
+        class="flex items-center gap-2.5 rounded-lg border border-emerald-200/80 bg-emerald-50/80 dark:border-emerald-400/25 dark:bg-emerald-500/10 p-3 text-xs sm:text-sm font-medium text-emerald-800 dark:text-emerald-200"
       >
-        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2">
+        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M5 10l3 3 7-7" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         <span>{{ successMessage }}</span>

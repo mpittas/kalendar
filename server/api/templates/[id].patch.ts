@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   if (name) patch.name = name;
   if (cleanText(body.emoji, MAX_EMOJI)) patch.emoji = cleanEmoji(body.emoji);
   if (isColorKey(body.color)) patch.color = body.color;
-  if (cleanText(body.category, MAX_CATEGORY)) patch.category = cleanCategory(body.category);
+  if (cleanText(body.category, MAX_CATEGORY)) patch.category = await canonicalCategory(event, body.category);
   if (isNumeric(body.defaultDuration)) patch.defaultDuration = clampDuration(body.defaultDuration);
   if (body.notes !== undefined) patch.notes = cleanNotes(body.notes);
   if (typeof body.archived === "boolean") patch.archived = body.archived;

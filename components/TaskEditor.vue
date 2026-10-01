@@ -28,12 +28,8 @@ const emit = defineEmits<{
   (e: "close"): void;
   (e: "saved", task: ScheduledTask): void;
   (e: "deleted", id: string): void;
+  (e: "template-deleted", id: string): void;
 }>();
-
-const EMOJI_CHOICES = [
-  "🧹", "🛠️", "🏋️", "☀️", "🌙", "🍽️", "📚", "🛒", "👥", "📬",
-  "🚶", "🧘", "💡", "🎯", "🧑‍🍳", "🐶", "🎸", "🧴", "🚗", "📌",
-];
 
 const title = ref("");
 const emoji = ref("📌");
@@ -47,6 +43,7 @@ const completed = ref(false);
 const templateId = ref<string | null>(null);
 const busy = ref(false);
 const error = ref<string | null>(null);
+const confirmingTemplateDelete = ref(false);
 
 const isEdit = computed(() => props.request?.mode === "edit");
 const tone = computed(() => paletteOf(color.value));
@@ -89,6 +86,7 @@ watch(
       templateId.value = template?.id ?? null;
     }
     error.value = null;
+    confirmingTemplateDelete.value = false;
   },
   { immediate: true },
 );
@@ -141,6 +139,26 @@ const submit = async () => {
   }
 };
 
+// When the popup was opened from an activity in the library, that activity can be deleted here.
+const sourceTemplate = computed(() => (!isEdit.value ? props.request?.template ?? null : null));
+
+const removeTemplate = async () => {
+  const template = sourceTemplate.value;
+  if (!template) return;
+  busy.value = true;
+  error.value = null;
+  try {
+    await api.deleteTemplate(template.id);
+    emit("template-deleted", template.id);
+    emit("close");
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : "Could not delete";
+    confirmingTemplateDelete.value = false;
+  } finally {
+    busy.value = false;
+  }
+};
+
 const remove = async () => {
   if (!props.request?.task) return;
   busy.value = true;
@@ -164,17 +182,22 @@ const remove = async () => {
     @close="emit('close')"
   >
     <div class="space-y-4">
-      <label class="block">
-        <span class="text-xs font-medium text-foreground">
+      <div>
+        <label for="task-title" class="text-xs font-medium text-foreground">
           Activity Name
-        </span>
-        <input
-          v-model="title"
-          autofocus
-          placeholder="e.g. Deep focus, Team sync, Workout"
-          class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        />
-      </label>
+        </label>
+        <div class="mt-1.5 flex h-10 w-full items-center rounded-md border border-input bg-background shadow-xs transition-colors focus-within:ring-1 focus-within:ring-ring">
+          <EmojiPicker v-model="emoji" />
+          <span class="h-5 w-px shrink-0 bg-border" />
+          <input
+            id="task-title"
+            v-model="title"
+            autofocus
+            placeholder="e.g. Deep focus, Team sync, Workout"
+            class="h-full min-w-0 flex-1 bg-transparent px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none"
+          />
+        </div>
+      </div>
 
       <label v-if="!isEdit && templates.length > 0" class="block">
         <span class="text-xs font-medium text-foreground">
@@ -259,26 +282,6 @@ const remove = async () => {
         </div>
       </div>
 
-      <div>
-        <span class="text-xs font-medium text-foreground">
-          Icon
-        </span>
-        <div class="mt-1.5 flex flex-wrap gap-1.5">
-          <button
-            v-for="choice in EMOJI_CHOICES"
-            :key="choice"
-            type="button"
-            @click="emoji = choice"
-            :class="[
-              'flex h-8 w-8 items-center justify-center rounded-md text-sm transition shadow-2xs cursor-pointer',
-              emoji === choice ? 'bg-primary text-primary-foreground ring-2 ring-ring shadow-xs' : 'border border-input bg-background hover:bg-accent'
-            ]"
-          >
-            {{ choice }}
-          </button>
-        </div>
-      </div>
-
       <label class="block">
         <span class="text-xs font-medium text-foreground">
           Notes
@@ -304,9 +307,44 @@ const remove = async () => {
         {{ error }}
       </p>
 
+      <div
+        v-if="confirmingTemplateDelete && sourceTemplate"
+        class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5"
+      >
+        <p class="text-xs text-foreground">
+          Delete the activity “{{ sourceTemplate.name }}”? Blocks already on your calendar stay.
+        </p>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="h-8 cursor-pointer rounded-md border border-input bg-background px-3 text-xs font-medium text-foreground shadow-xs transition hover:bg-accent"
+            @click="confirmingTemplateDelete = false"
+          >
+            Keep it
+          </button>
+          <button
+            type="button"
+            :disabled="busy"
+            class="h-8 cursor-pointer rounded-md bg-destructive px-3 text-xs font-medium text-destructive-foreground shadow-xs transition hover:bg-destructive/90 disabled:opacity-50"
+            @click="removeTemplate"
+          >
+            {{ busy ? "Deleting…" : "Delete activity" }}
+          </button>
+        </div>
+      </div>
+
       <div class="flex items-center justify-between gap-3 pt-3 border-t border-border">
         <button
-          v-if="isEdit"
+          v-if="sourceTemplate"
+          type="button"
+          :disabled="busy"
+          @click="confirmingTemplateDelete = !confirmingTemplateDelete"
+          class="inline-flex items-center justify-center rounded-md border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive shadow-xs hover:bg-destructive hover:text-destructive-foreground transition-colors disabled:opacity-50 cursor-pointer"
+        >
+          Delete activity
+        </button>
+        <button
+          v-else-if="isEdit"
           type="button"
           :disabled="busy"
           @click="remove"

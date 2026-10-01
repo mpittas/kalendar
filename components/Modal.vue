@@ -6,6 +6,7 @@ const props = defineProps<{
   title: string;
   subtitle?: string;
   wide?: boolean;
+  lg?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -59,7 +60,7 @@ onUnmounted(() => {
       aria-modal="true"
       :class="[
         'relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl sm:rounded-xl border border-border bg-background shadow-lg',
-        wide ? 'sm:max-w-2xl' : 'sm:max-w-md'
+        wide ? 'sm:max-w-2xl' : lg ? 'sm:max-w-xl' : 'sm:max-w-md'
       ]"
     >
       <div class="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/30 sm:hidden" />

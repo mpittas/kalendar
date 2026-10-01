@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import type { ActivityTemplate } from "~/lib/types";
 import { paletteOf } from "~/lib/colors";
 import { formatDuration } from "~/lib/time";
+import { withImplicitCategories } from "~/composables/useCategories";
 
 const props = defineProps<{
   templates: ActivityTemplate[];
@@ -12,8 +13,12 @@ const emit = defineEmits<{
   (e: "pick", template: ActivityTemplate): void;
   (e: "drag-start", template: ActivityTemplate): void;
   (e: "drag-end"): void;
+  (e: "move", template: ActivityTemplate, category: string): void;
   (e: "manage"): void;
 }>();
+
+const { categories } = useCategories();
+const { show: showLibrary } = useLibrary();
 
 const search = ref("");
 const searchRef = ref<HTMLInputElement | null>(null);
@@ -40,8 +45,10 @@ watch(collapsed, (value) => {
 
 const query = computed(() => search.value.trim().toLowerCase());
 
+// One group per category, including empty ones, so a new category shows up right away.
+// While searching, only groups with a match are listed.
 const groups = computed(() => {
-  const map = new Map<string, ActivityTemplate[]>();
+  const byCategory = new Map<string, ActivityTemplate[]>();
   for (const template of props.templates) {
     if (
       query.value &&
@@ -50,13 +57,13 @@ const groups = computed(() => {
     ) {
       continue;
     }
-    const list = map.get(template.category) ?? [];
+    const list = byCategory.get(template.category) ?? [];
     list.push(template);
-    map.set(template.category, list);
+    byCategory.set(template.category, list);
   }
-  return [...map.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([category, items]) => ({ category, items, color: items[0].color }));
+  return withImplicitCategories(categories.value, props.templates)
+    .map((entry) => ({ category: entry.name, color: entry.color, items: byCategory.get(entry.name) ?? [] }))
+    .filter((group) => !query.value || group.items.length > 0);
 });
 
 const matchCount = computed(() => groups.value.reduce((sum, g) => sum + g.items.length, 0));
@@ -72,7 +79,7 @@ const toggleGroup = (category: string) => {
 
 const allCollapsed = computed(() => groups.value.length > 0 && groups.value.every((g) => collapsed.value.includes(g.category)));
 const toggleAll = () => {
-  collapsed.value = allCollapsed.value ? [] : [...new Set(props.templates.map((t) => t.category))];
+  collapsed.value = allCollapsed.value ? [] : groups.value.map((g) => g.category);
 };
 
 const clearSearch = () => {
@@ -80,10 +87,43 @@ const clearSearch = () => {
   searchRef.value?.focus();
 };
 
+// Dropping an activity on a category group moves it there. The drop works on the whole group,
+// so it also works on a collapsed one.
+const dragging = ref<ActivityTemplate | null>(null);
+const dropTarget = ref<string | null>(null);
+
+const onGroupDragOver = (event: DragEvent, category: string) => {
+  if (!dragging.value) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+  dropTarget.value = category;
+};
+
+const onGroupDragLeave = (event: DragEvent, category: string) => {
+  const next = event.relatedTarget as Node | null;
+  if (dropTarget.value === category && !(event.currentTarget as HTMLElement).contains(next)) dropTarget.value = null;
+};
+
+const onGroupDrop = (category: string) => {
+  const template = dragging.value;
+  dragging.value = null;
+  dropTarget.value = null;
+  // The dragged row may be re-rendered into another group, in which case it never gets "dragend".
+  emit("drag-end");
+  if (template && template.category !== category) emit("move", template, category);
+};
+
+const onDragEnd = () => {
+  dragging.value = null;
+  dropTarget.value = null;
+  emit("drag-end");
+};
+
 const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
+  dragging.value = template;
   emit("drag-start", template);
   if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.effectAllowed = "copyMove";
     event.dataTransfer.setData("application/x-dayforge-template", String(template.id));
   }
 };
@@ -92,8 +132,9 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
     <!-- Search -->
-    <div class="px-3 pb-1 pt-2.5">
-      <div class="relative">
+    <div class="px-3 pb-2 pt-2.5">
+      <div class="flex items-center gap-2">
+      <div class="relative min-w-0 flex-1">
         <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
           <circle cx="9" cy="9" r="5.5" />
           <path d="M13.5 13.5L17 17" stroke-linecap="round" />
@@ -119,21 +160,37 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
           </svg>
         </button>
       </div>
-      <div class="mt-2 flex items-center justify-between px-0.5 text-[11px] text-muted-foreground">
-        <span>Drag onto the timeline, or click to add</span>
         <button
           v-if="!query && groups.length > 1"
           type="button"
-          class="font-medium transition hover:text-foreground cursor-pointer"
+          class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-input bg-background text-muted-foreground shadow-xs transition hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          :title="allCollapsed ? 'Expand all categories' : 'Collapse all categories'"
+          :aria-label="allCollapsed ? 'Expand all categories' : 'Collapse all categories'"
           @click="toggleAll"
         >
-          {{ allCollapsed ? "Expand all" : "Collapse all" }}
+          <svg v-if="allCollapsed" viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 7.5l4-3.5 4 3.5M6 12.5l4 3.5 4-3.5" />
+          </svg>
+          <svg v-else viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 4l4 3.5L14 4M6 16l4-3.5L14 16" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-input bg-background text-muted-foreground shadow-xs transition hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          title="Manage categories"
+          aria-label="Manage categories"
+          @click="showLibrary('categories')"
+        >
+          <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6.5A1.5 1.5 0 014.5 5h3.4a1.5 1.5 0 011.1.5l.9 1h5.6A1.5 1.5 0 0117 8v6.5a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 14.5v-8z" />
+          </svg>
         </button>
       </div>
     </div>
 
     <!-- Activities, grouped by category -->
-    <div class="flex-1 space-y-1 overflow-y-auto px-2 pb-3 pt-1">
+    <div class="flex-1 overflow-y-auto px-2 pb-3 pt-1">
       <div v-if="groups.length === 0" class="px-3 py-10 text-center">
         <p class="text-sm font-medium text-foreground">
           {{ templates.length === 0 ? "No activities yet" : `No matches for "${search.trim()}"` }}
@@ -147,30 +204,50 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
         </button>
       </div>
 
-      <section v-for="group in groups" :key="group.category">
+      <section
+        v-for="group in groups"
+        :key="group.category"
+        class="mb-2.5 overflow-hidden rounded-xl border bg-card shadow-2xs transition-all"
+        :class="dropTarget === group.category && dragging?.category !== group.category
+          ? 'border-ring bg-accent/60 ring-2 ring-ring/30'
+          : 'border-border/70'"
+        @dragover="onGroupDragOver($event, group.category)"
+        @dragleave="onGroupDragLeave($event, group.category)"
+        @drop.prevent="onGroupDrop(group.category)"
+      >
         <button
           type="button"
-          class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-semibold text-muted-foreground transition hover:text-foreground cursor-pointer"
+          class="flex w-full items-center justify-between gap-2 bg-muted/40 px-2.5 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-muted/70 cursor-pointer"
           :aria-expanded="isOpen(group.category)"
           @click="toggleGroup(group.category)"
         >
-          <svg
-            viewBox="0 0 20 20"
-            class="h-3.5 w-3.5 shrink-0 transition-transform"
-            :class="isOpen(group.category) ? 'rotate-90' : ''"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <path d="M7.5 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-          <span class="h-2 w-2 shrink-0 rounded-full" :class="paletteOf(group.color).dot" />
-          <span class="truncate">{{ group.category }}</span>
-          <span class="ml-auto font-mono text-[11px] font-normal tabular-nums">{{ group.items.length }}</span>
+          <div class="flex items-center gap-2 min-w-0">
+            <svg
+              viewBox="0 0 20 20"
+              class="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200"
+              :class="isOpen(group.category) ? 'rotate-90 text-foreground' : ''"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M7.5 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span class="h-2.5 w-2.5 shrink-0 rounded-full shadow-2xs" :class="paletteOf(group.color).dot" />
+            <span class="truncate font-semibold tracking-tight text-foreground">{{ group.category }}</span>
+          </div>
+          <span class="inline-flex items-center rounded-full border border-border bg-background px-2 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground tabular-nums">
+            {{ group.items.length }}
+          </span>
         </button>
 
-        <ul v-show="isOpen(group.category)" class="space-y-0.5">
+        <p
+          v-if="group.items.length === 0 && isOpen(group.category)"
+          class="border-t border-border/40 px-3 py-3 text-center text-[11px] text-muted-foreground"
+        >
+          No activities yet
+        </p>
+        <ul v-else v-show="isOpen(group.category)" class="p-1 space-y-0.5 border-t border-border/40">
           <li
             v-for="template in group.items"
             :key="template.id"
@@ -178,26 +255,27 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
             role="button"
             tabindex="0"
             :title="`${template.name} · ${formatDuration(template.defaultDuration)}`"
-            class="group flex cursor-grab items-center gap-2.5 rounded-lg border border-transparent px-2 py-1.5 outline-none transition hover:border-border hover:bg-accent/50 focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring active:cursor-grabbing"
+            :class="dragging?.id === template.id ? 'opacity-40' : ''"
+            class="group flex cursor-grab items-center gap-2 rounded-md border border-transparent px-2 py-1 outline-none transition hover:border-border hover:bg-accent/50 focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring active:cursor-grabbing"
             @dragstart="onDragStart($event, template)"
-            @dragend="emit('drag-end')"
+            @dragend="onDragEnd"
             @click="emit('pick', template)"
             @keydown.enter.prevent="emit('pick', template)"
             @keydown.space.prevent="emit('pick', template)"
           >
             <span
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-base leading-none"
-              :class="paletteOf(template.color).chip"
+              class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs leading-none"
+              :class="paletteOf(template.color).icon"
             >
               {{ template.emoji }}
             </span>
-            <span class="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{{ template.name }}</span>
-            <span class="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+            <span class="min-w-0 flex-1 truncate text-xs font-medium text-foreground">{{ template.name }}</span>
+            <span class="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
               {{ formatDuration(template.defaultDuration) }}
             </span>
             <svg
               viewBox="0 0 20 20"
-              class="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-60 group-focus-visible:opacity-60"
+              class="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-60 group-focus-visible:opacity-60"
               fill="currentColor"
               aria-hidden="true"
             >

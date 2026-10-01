@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
 import { PROFILE_LIMITS, type UserProfile } from "~/composables/useAuth";
+import ProfileCard from "~/components/profile/ProfileCard.vue";
+import AccountActionsCard from "~/components/profile/AccountActionsCard.vue";
 
 useHead({
   title: "Profile · klndr.",
@@ -143,48 +145,22 @@ const handleLogout = async () => {
 
     <!-- Authenticated Profile View & Editor -->
     <div v-else class="space-y-6">
-      <!-- Header Banner / Card -->
-      <div class="overflow-hidden rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div class="flex items-center gap-4">
-            <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground text-lg font-bold shadow-xs">
-              {{ initials }}
-            </div>
-            <div>
-              <h1 class="text-xl font-bold tracking-tight text-foreground">
-                {{ form.displayName || 'Your Profile' }}
-              </h1>
-              <p class="text-xs sm:text-sm text-muted-foreground">{{ user.email }}</p>
-              <div class="mt-1.5 flex items-center gap-2">
-                <span class="inline-flex items-center rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                  Firebase Connected
-                </span>
-                <span class="text-[11px] text-muted-foreground font-mono">UID: {{ user.uid.slice(0, 12) }}...</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <button
-              type="button"
-              @click="handleLogout"
-              class="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground shadow-2xs transition hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
-            >
-              Log Out
-            </button>
-          </div>
-        </div>
-      </div>
+      <ProfileCard
+        :initials="initials"
+        :display-name="form.displayName || ''"
+        :email="user.email || ''"
+        :uid="user.uid"
+      />
 
       <!-- Alerts -->
       <div
         v-if="profileError"
-        class="flex items-center justify-between gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 p-3 text-xs sm:text-sm font-medium text-rose-800"
+        class="flex items-center justify-between gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 dark:border-rose-400/25 dark:bg-rose-500/10 p-3 text-xs sm:text-sm font-medium text-rose-800 dark:text-rose-200"
       >
         <span>{{ profileError }}</span>
         <button
           type="button"
-          class="rounded-md border border-rose-300 bg-white px-2 py-1 text-xs text-rose-800 transition hover:bg-rose-50"
+          class="rounded-md border border-rose-300 dark:border-rose-400/40 bg-background px-2 py-1 text-xs text-rose-800 dark:text-rose-200 transition hover:bg-rose-50 dark:hover:bg-rose-500/10"
           @click="user && loadProfile(user)"
         >
           Retry
@@ -193,9 +169,9 @@ const handleLogout = async () => {
 
       <div
         v-if="saveSuccess"
-        class="flex items-center gap-2.5 rounded-lg border border-emerald-200/80 bg-emerald-50/80 p-3 text-xs sm:text-sm font-medium text-emerald-800"
+        class="flex items-center gap-2.5 rounded-lg border border-emerald-200/80 bg-emerald-50/80 dark:border-emerald-400/25 dark:bg-emerald-500/10 p-3 text-xs sm:text-sm font-medium text-emerald-800 dark:text-emerald-200"
       >
-        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2">
+        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M5 10l3 3 7-7" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         <span>Profile saved successfully.</span>
@@ -203,9 +179,9 @@ const handleLogout = async () => {
 
       <div
         v-if="saveError"
-        class="flex items-center gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 p-3 text-xs sm:text-sm font-medium text-rose-800"
+        class="flex items-center gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 dark:border-rose-400/25 dark:bg-rose-500/10 p-3 text-xs sm:text-sm font-medium text-rose-800 dark:text-rose-200"
       >
-        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" stroke-width="2">
+        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="10" cy="10" r="7" />
           <path d="M10 6v4M10 14h.01" stroke-linecap="round" />
         </svg>
@@ -357,7 +333,7 @@ const handleLogout = async () => {
             <button
               type="button"
               @click="handleSendResetEmail"
-              class="text-xs sm:text-sm font-medium text-muted-foreground transition hover:text-foreground underline-offset-4 hover:underline"
+              class="text-xs sm:text-sm font-medium text-muted-foreground transition hover:text-foreground underline-offset-4 hover:underline cursor-pointer"
             >
               Reset password via email
             </button>
@@ -365,7 +341,7 @@ const handleLogout = async () => {
             <button
               type="submit"
               :disabled="isSaving || !profile"
-              class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-xs sm:text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:opacity-50"
+              class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-xs sm:text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:opacity-50 cursor-pointer"
             >
               <span v-if="isSaving">Saving...</span>
               <span v-else>Save Changes</span>
@@ -373,6 +349,8 @@ const handleLogout = async () => {
           </div>
         </form>
       </div>
+
+      <AccountActionsCard @logout="handleLogout" />
     </div>
   </div>
 </template>

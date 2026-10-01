@@ -64,6 +64,14 @@ export default defineNuxtConfig({
             "Plan your day on a calendar, then drag activities like cleaning, workouts and project work onto an hour-by-hour timeline.",
         },
       ],
+      script: [
+        {
+          // Apply the saved (or OS) theme before first paint to avoid a light/dark flash.
+          innerHTML:
+            "try{var t=localStorage.getItem('klndr-theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}",
+          tagPosition: "head",
+        },
+      ],
       link: [
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" },
