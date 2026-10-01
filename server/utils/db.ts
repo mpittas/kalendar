@@ -1,4 +1,4 @@
-import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist, DayExtraItem } from "~/lib/types";
+import type { ActivityTemplate, Category, ScheduledTask, ChecklistItem, DayChecklist, DayExtraItem, DayNotes } from "~/lib/types";
 import { toISODate } from "~/lib/time";
 import { Firestore, FirestoreError, type FsDoc } from "./firestore";
 import { sessionOf, type Session } from "./session";
@@ -12,6 +12,15 @@ export interface Store {
   createTemplate(draft: Omit<ActivityTemplate, "id" | "archived">): Promise<ActivityTemplate>;
   updateTemplate(id: string, patch: Partial<Omit<ActivityTemplate, "id">>): Promise<ActivityTemplate | null>;
   deleteTemplate(id: string): Promise<boolean>;
+  listCategories(): Promise<Category[]>;
+  /** Throws a 409 when the name is already taken (case-insensitive). */
+  createCategory(draft: Omit<Category, "id">): Promise<Category>;
+  /** Renaming also moves the category's activities and scheduled blocks to the new name. */
+  updateCategory(id: string, patch: Partial<Omit<Category, "id">>): Promise<Category | null>;
+  /** Activities in the category must be moved elsewhere via `moveTo` (another category's name). */
+  deleteCategory(id: string, moveTo: string | null): Promise<boolean>;
+  /** Make sure a category with this name exists; returns its canonical spelling. */
+  ensureCategory(name: string): Promise<string>;
   listTasksForDay(day: string): Promise<ScheduledTask[]>;
   listTasksBetween(from: string, to: string): Promise<ScheduledTask[]>;
   createTask(draft: Omit<ScheduledTask, "id">): Promise<ScheduledTask>;
@@ -28,9 +37,14 @@ export interface Store {
   /** Add a one-off checklist item that exists only on `day`. */
   addDayChecklistExtra(day: string, draft: Omit<DayExtraItem, "id">): Promise<DayChecklist>;
   removeDayChecklistExtra(day: string, id: string): Promise<DayChecklist>;
+  getDayNotes(day: string): Promise<DayNotes>;
+  setDayNotes(day: string, text: string): Promise<DayNotes>;
 }
 
 const MAX_DAY_EXTRAS = 50;
+export const MAX_NOTES_LENGTH = 20_000;
+
+const emptyNotes = (day: string): DayNotes => ({ day, text: "" });
 
 const emptyDay = (day: string): DayChecklist => ({ day, completedItemIds: [], hiddenItemIds: [], extraItems: [] });
 
@@ -203,6 +217,34 @@ function demoTasks(
 }
 
 
+const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+const byCategoryName = (a: Category, b: Category) => a.name.localeCompare(b.name);
+
+const duplicateCategory = () =>
+  createError({ statusCode: 409, statusMessage: "A category with that name already exists" });
+
+/** One category per distinct name already used by the templates (existing accounts, first run). */
+const categoriesFromTemplates = (templates: ActivityTemplate[]): Omit<Category, "id">[] => {
+  const seen = new Map<string, Omit<Category, "id">>();
+  for (const t of templates) {
+    if (t.category && !seen.has(t.category)) {
+      seen.set(t.category, { name: t.category, color: t.color || "slate" });
+    }
+  }
+  return [...seen.values()];
+};
+
+/** Where a deleted category's activities go; null when it has none and no target was given. */
+function resolveMoveTarget(categories: Category[], doomed: Category, moveTo: string | null, inUse: boolean): string | null {
+  if (!moveTo) {
+    if (inUse) throw createError({ statusCode: 400, statusMessage: "Choose a category to move its activities to" });
+    return null;
+  }
+  const target = categories.find((c) => c.id !== doomed.id && sameName(c.name, moveTo));
+  if (!target) throw createError({ statusCode: 400, statusMessage: "That category to move to doesn't exist" });
+  return target.name;
+}
+
 const byTemplateOrder = (a: ActivityTemplate, b: ActivityTemplate) =>
   a.category.localeCompare(b.category) || a.name.localeCompare(b.name);
 const byStart = (a: ScheduledTask, b: ScheduledTask) =>
@@ -213,14 +255,19 @@ const byStart = (a: ScheduledTask, b: ScheduledTask) =>
 // ---------------------------------------------------------------------------
 class MemoryStore implements Store {
   private templates: ActivityTemplate[] = [];
+  private categories: Category[] = [];
   private tasks: ScheduledTask[] = [];
   private checklistItems: ChecklistItem[] = [];
   private checklistDays = new Map<string, DayChecklist>();
+  private notes = new Map<string, DayNotes>();
   private seq = 1;
 
   constructor() {
     for (const tpl of DEFAULT_TEMPLATES) {
       this.templates.push({ id: String(this.seq++), ...tpl, archived: false });
+    }
+    for (const category of categoriesFromTemplates(this.templates)) {
+      this.categories.push({ id: String(this.seq++), ...category });
     }
     for (const task of demoTasks(this.templates)) {
       this.tasks.push({ id: String(this.seq++), ...task, completed: false });
@@ -260,6 +307,52 @@ class MemoryStore implements Store {
     this.templates = this.templates.filter((t) => t.id !== id);
     this.tasks = this.tasks.map((t) => (t.templateId === id ? { ...t, templateId: null } : t));
     return this.templates.length < before;
+  }
+
+  async listCategories() {
+    return [...this.categories].sort(byCategoryName);
+  }
+
+  async createCategory(draft: Omit<Category, "id">) {
+    if (this.categories.some((c) => sameName(c.name, draft.name))) throw duplicateCategory();
+    const item: Category = { id: String(this.seq++), ...draft };
+    this.categories.push(item);
+    return item;
+  }
+
+  private recategorize(from: string, to: string) {
+    this.templates = this.templates.map((t) => (t.category === from ? { ...t, category: to } : t));
+    this.tasks = this.tasks.map((t) => (t.category === from ? { ...t, category: to } : t));
+  }
+
+  async updateCategory(id: string, patch: Partial<Omit<Category, "id">>) {
+    const idx = this.categories.findIndex((c) => c.id === id);
+    if (idx === -1) return null;
+    const prev = this.categories[idx];
+    if (patch.name !== undefined && this.categories.some((c) => c.id !== id && sameName(c.name, patch.name!))) {
+      throw duplicateCategory();
+    }
+    const next: Category = { ...prev, ...patch, id };
+    this.categories[idx] = next;
+    if (next.name !== prev.name) this.recategorize(prev.name, next.name);
+    return next;
+  }
+
+  async deleteCategory(id: string, moveTo: string | null) {
+    const doomed = this.categories.find((c) => c.id === id);
+    if (!doomed) return false;
+    const inUse = this.templates.some((t) => t.category === doomed.name);
+    const target = resolveMoveTarget(this.categories, doomed, moveTo, inUse);
+    if (target) this.recategorize(doomed.name, target);
+    this.categories = this.categories.filter((c) => c.id !== id);
+    return true;
+  }
+
+  async ensureCategory(name: string) {
+    const hit = this.categories.find((c) => sameName(c.name, name));
+    if (hit) return hit.name;
+    this.categories.push({ id: String(this.seq++), name, color: "slate" });
+    return name;
   }
 
   async listTasksForDay(day: string) {
@@ -365,6 +458,16 @@ class MemoryStore implements Store {
       d.completedItemIds = withMember(d.completedItemIds, id, false);
     });
   }
+
+  async getDayNotes(day: string) {
+    return this.notes.get(day) ?? emptyNotes(day);
+  }
+
+  async setDayNotes(day: string, text: string) {
+    const next = { day, text };
+    this.notes.set(day, next);
+    return next;
+  }
 }
 
 // One in-memory store per user, so the dev fallback keeps the same isolation.
@@ -399,6 +502,12 @@ const toTask = ({ id, data }: FsDoc): ScheduledTask => ({
   completed: data.completed === true,
 });
 
+const toCategory = ({ id, data }: FsDoc): Category => ({
+  id,
+  name: String(data.name ?? ""),
+  color: String(data.color ?? "slate"),
+});
+
 const toChecklistItem = ({ id, data }: FsDoc): ChecklistItem => ({
   id,
   title: String(data.title ?? ""),
@@ -424,6 +533,7 @@ const newId = () => crypto.randomUUID();
 /** Users whose starter data this server instance has already confirmed. */
 const seededUsers = new Set<string>();
 const checklistSeededUsers = new Set<string>();
+const categorySeededUsers = new Set<string>();
 
 class FirestoreStore implements Store {
   private readonly base: string;
@@ -571,6 +681,136 @@ class FirestoreStore implements Store {
       if (err instanceof FirestoreError && err.notFound) return false;
       rethrow(err);
     }
+  }
+
+  /**
+   * Turn the category names the templates already use into real categories, exactly once
+   * (accounts created before categories existed). The marker stops a user who deletes every
+   * category from getting them back.
+   */
+  private async ensureCategoriesSeeded(): Promise<void> {
+    if (categorySeededUsers.has(this.userId)) return;
+    try {
+      if (await this.fs.get(`${this.base}/meta/categorySeed`)) {
+        categorySeededUsers.add(this.userId);
+        return;
+      }
+      const drafts = categoriesFromTemplates(await this.listTemplates());
+      await this.fs.commit([
+        { op: "create", path: `${this.base}/meta/categorySeed`, data: {}, serverTimes: ["seededAt"] },
+        ...drafts.map((data) => ({
+          op: "create" as const,
+          path: `${this.base}/categories/${newId()}`,
+          data,
+          serverTimes: ["createdAt"],
+        })),
+      ]);
+      categorySeededUsers.add(this.userId);
+    } catch (err) {
+      if (err instanceof FirestoreError && err.alreadyExists) {
+        categorySeededUsers.add(this.userId); // another request won the race
+        return;
+      }
+      throw err;
+    }
+  }
+
+  async listCategories() {
+    try {
+      let docs = await this.fs.query(this.base, "categories");
+      if (docs.length > 0) {
+        categorySeededUsers.add(this.userId);
+      } else {
+        await this.ensureCategoriesSeeded();
+        docs = await this.fs.query(this.base, "categories");
+      }
+      return docs.map(toCategory).sort(byCategoryName);
+    } catch (err) {
+      rethrow(err);
+    }
+  }
+
+  async createCategory(draft: Omit<Category, "id">) {
+    const id = newId();
+    try {
+      const existing = await this.listCategories();
+      if (existing.some((c) => sameName(c.name, draft.name))) throw duplicateCategory();
+      await this.fs.commit([{ op: "create", path: `${this.base}/categories/${id}`, data: draft, serverTimes: ["createdAt"] }]);
+    } catch (err) {
+      rethrow(err);
+    }
+    return { id, ...draft };
+  }
+
+  /** Point every template and task in category `from` at category `to`, in batches. */
+  private async recategorize(from: string, to: string) {
+    if (from === to) return;
+    const where = [{ field: "category", op: "EQUAL" as const, value: from }];
+    for (;;) {
+      const [templates, tasks] = await Promise.all([
+        this.fs.query(this.base, "templates", where, 200),
+        this.fs.query(this.base, "tasks", where, 200),
+      ]);
+      if (templates.length === 0 && tasks.length === 0) return;
+      await this.fs.commit([
+        ...templates.map((t) => ({ op: "update" as const, path: `${this.base}/templates/${t.id}`, data: { category: to } })),
+        ...tasks.map((t) => ({
+          op: "update" as const,
+          path: `${this.base}/tasks/${t.id}`,
+          data: { category: to },
+          serverTimes: ["updatedAt"],
+        })),
+      ]);
+    }
+  }
+
+  async updateCategory(id: string, patch: Partial<Omit<Category, "id">>) {
+    try {
+      const doc = await this.fs.get(`${this.base}/categories/${id}`);
+      if (!doc) return null;
+      const prev = toCategory(doc);
+      if (patch.name !== undefined) {
+        const others = (await this.listCategories()).filter((c) => c.id !== id);
+        if (others.some((c) => sameName(c.name, patch.name!))) throw duplicateCategory();
+      }
+      if (Object.keys(patch).length > 0) {
+        await this.fs.commit([{ op: "update", path: `${this.base}/categories/${id}`, data: patch }]);
+      }
+      const next: Category = { ...prev, ...patch, id };
+      if (next.name !== prev.name) await this.recategorize(prev.name, next.name);
+      return next;
+    } catch (err) {
+      if (err instanceof FirestoreError && err.notFound) return null;
+      rethrow(err);
+    }
+  }
+
+  async deleteCategory(id: string, moveTo: string | null) {
+    try {
+      const doc = await this.fs.get(`${this.base}/categories/${id}`);
+      if (!doc) return false;
+      const doomed = toCategory(doc);
+      const inUse =
+        (await this.fs.query(this.base, "templates", [{ field: "category", op: "EQUAL", value: doomed.name }], 1)).length > 0;
+      const target = resolveMoveTarget(await this.listCategories(), doomed, moveTo, inUse);
+      if (target) await this.recategorize(doomed.name, target);
+      await this.fs.commit([{ op: "delete", path: `${this.base}/categories/${id}` }]);
+      return true;
+    } catch (err) {
+      if (err instanceof FirestoreError && err.notFound) return false;
+      rethrow(err);
+    }
+  }
+
+  async ensureCategory(name: string) {
+    const hit = (await this.listCategories()).find((c) => sameName(c.name, name));
+    if (hit) return hit.name;
+    try {
+      await this.createCategory({ name, color: "slate" });
+    } catch (err) {
+      if (!(isError(err) && err.statusCode === 409)) throw err; // lost a race: it exists now
+    }
+    return name;
   }
 
   async listTasksForDay(day: string) {
@@ -762,6 +1002,33 @@ class FirestoreStore implements Store {
       d.extraItems = d.extraItems.filter((e) => e.id !== id);
       d.completedItemIds = withMember(d.completedItemIds, id, false);
     });
+  }
+
+  async getDayNotes(day: string) {
+    try {
+      const doc = await this.fs.get(`${this.base}/day_notes/${day}`);
+      return doc ? { day, text: String(doc.data.text ?? "") } : emptyNotes(day);
+    } catch (err) {
+      if (err instanceof FirestoreError && err.notFound) return emptyNotes(day);
+      rethrow(err);
+    }
+  }
+
+  async setDayNotes(day: string, text: string) {
+    try {
+      const exists = (await this.fs.get(`${this.base}/day_notes/${day}`)) !== null;
+      await this.fs.commit([
+        {
+          op: exists ? "update" : "create",
+          path: `${this.base}/day_notes/${day}`,
+          data: { day, text },
+          serverTimes: ["updatedAt"],
+        },
+      ]);
+      return { day, text };
+    } catch (err) {
+      rethrow(err);
+    }
   }
 }
 

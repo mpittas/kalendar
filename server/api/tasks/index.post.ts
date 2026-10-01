@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     title,
     emoji: cleanEmoji(body.emoji),
     color: cleanColor(body.color),
-    category: cleanCategory(body.category),
+    category: await canonicalCategory(event, body.category),
     day,
     startMinutes: clampStart(body.startMinutes),
     durationMinutes: clampDuration(body.durationMinutes),

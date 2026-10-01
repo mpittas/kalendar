@@ -57,11 +57,25 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: "klndr. · Daily Task Scheduler",
+      // viewport-fit=cover lets the layout use the safe-area insets (notch, home indicator);
+      // interactive-widget makes Android resize the page, not overlay it, when the keyboard opens.
+      viewport: "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
       meta: [
+        // Colors the browser chrome to match the page background in each theme.
+        { name: "theme-color", content: "#ffffff", media: "(prefers-color-scheme: light)" },
+        { name: "theme-color", content: "#313338", media: "(prefers-color-scheme: dark)" },
         {
           name: "description",
           content:
             "Plan your day on a calendar, then drag activities like cleaning, workouts and project work onto an hour-by-hour timeline.",
+        },
+      ],
+      script: [
+        {
+          // Apply the saved (or OS) theme before first paint to avoid a light/dark flash.
+          innerHTML:
+            "try{var t=localStorage.getItem('klndr-theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}",
+          tagPosition: "head",
         },
       ],
       link: [

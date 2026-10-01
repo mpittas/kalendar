@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { isValidISODate, todayISO } from "~/lib/time";
 import { api } from "~/lib/api";
-import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist } from "~/lib/types";
+import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist, DayNotes } from "~/lib/types";
 
 const route = useRoute();
 const rawDate = computed(() => route.params.date as string);
@@ -44,12 +44,27 @@ const {
   lazy: true,
 });
 
+const {
+  data: dayNotes,
+  error: notesError,
+  refresh: refreshDayNotes,
+} = useAsyncData<DayNotes>(() => `day-notes:${day.value}`, () => api.getDayNotes(day.value), {
+  server: false,
+  lazy: true,
+});
+
+const notesText = computed(() => (dayNotes.value?.day === day.value ? dayNotes.value.text : ""));
+const notesState = computed<"loading" | "ready" | "error">(() =>
+  dayNotes.value?.day === day.value ? "ready" : notesError.value ? "error" : "loading",
+);
+
 const failed = computed(() => Boolean(tasksError.value || templatesError.value));
 const retry = () => {
   refreshTasks();
   refreshTemplates();
   refreshChecklistItems();
   refreshDayChecklist();
+  refreshDayNotes();
 };
 
 useHead({
@@ -65,20 +80,23 @@ useHead({
     :initial-templates="templates"
     :initial-checklist-items="checklistItems ?? []"
     :initial-day-checklist="dayChecklist ?? { day, completedItemIds: [], hiddenItemIds: [], extraItems: [] }"
+    :initial-notes-text="notesText"
+    :notes-state="notesState"
+    @retry-notes="refreshDayNotes"
   />
   <div v-else-if="failed" class="mx-auto mt-16 max-w-sm px-4 text-center">
-    <p class="text-sm font-medium text-slate-900">We couldn't load this day.</p>
-    <p class="mt-1 text-xs text-slate-500">Check your connection and try again.</p>
+    <p class="text-sm font-medium text-foreground">We couldn't load this day.</p>
+    <p class="mt-1 text-xs text-muted-foreground">Check your connection and try again.</p>
     <button
       type="button"
-      class="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-slate-800"
+      class="mt-4 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground transition hover:bg-primary/90"
       @click="retry"
     >
       Try again
     </button>
   </div>
   <div v-else class="mx-auto mt-10 w-full max-w-5xl space-y-3 px-4" aria-busy="true">
-    <div class="h-10 animate-pulse rounded-xl bg-slate-200" />
-    <div class="h-96 animate-pulse rounded-xl bg-slate-200" />
+    <div class="h-10 animate-pulse rounded-xl bg-muted" />
+    <div class="h-96 animate-pulse rounded-xl bg-muted" />
   </div>
 </template>

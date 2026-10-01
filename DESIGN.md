@@ -84,6 +84,12 @@ DayForge is an intentional, distraction-free daily planner. The interface is cal
 
 - **Desktop**: Two-panel split on the day view: flexible activity library drawer (left) and hour-by-hour timeline canvas (right). Calendar month view on a clean 7-column layout with right sidebar.
 - **Responsive**: Graceful collapse into stacked column on mobile viewports with sticky navigation and accessible touch targets (≥44px).
+- **Touch conventions**:
+  - Tap targets are ≥40px (primary controls 44px). Where the visual must stay small, extend the hit area with an `after:` pseudo-element.
+  - Use the `touch:` variant (`hover: none` + `pointer: coarse`) for anything that depends on hover or finger size, and `short:` (height ≤ 500px) for landscape phones. Never hide an action behind hover without a touch alternative.
+  - Fields are 16px on touch (global rule in `main.css`); smaller text makes iOS zoom the page on focus.
+  - Dialogs and pickers are bottom sheets below `sm` (`Modal.vue`, `CategorySelect.vue`, `EmojiPicker.vue`): `dvh` heights, safe-area padding, swipe-down to dismiss, and the primary action pinned in the `footer` slot.
+  - Don't auto-focus fields on touch; it raises the keyboard over the sheet.
 
 ## Elevation & Depth
 

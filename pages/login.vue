@@ -85,7 +85,7 @@ const handleResetPassword = async () => {
 </script>
 
 <template>
-  <div class="flex min-h-[calc(100vh-57px)] items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+  <div class="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
     <div class="w-full max-w-sm space-y-6 rounded-xl border border-border bg-card p-6 sm:p-7 shadow-xs">
       <div class="text-center">
         <NuxtLink to="/" class="inline-block text-2xl font-bold tracking-tight text-foreground">
@@ -102,20 +102,20 @@ const handleResetPassword = async () => {
       <!-- Warning if Firebase is not yet configured -->
       <div
         v-if="!isConfigured"
-        class="rounded-lg border border-amber-200/80 bg-amber-50/80 p-3 text-xs text-amber-900"
+        class="rounded-lg border border-amber-200/80 bg-amber-50/80 dark:border-amber-400/20 dark:bg-amber-400/10 p-3 text-xs text-amber-900 dark:text-amber-200"
       >
         <p class="font-medium">Firebase credentials required for cloud login</p>
-        <p class="mt-0.5 text-amber-800">
-          Set credentials in <code class="rounded bg-amber-100/70 px-1 py-0.5 font-mono text-[11px]">.env</code> to activate cloud auth.
+        <p class="mt-0.5 text-amber-800 dark:text-amber-300">
+          Set credentials in <code class="rounded bg-amber-100/70 dark:bg-amber-400/20 px-1 py-0.5 font-mono text-[11px]">.env</code> to activate cloud auth.
         </p>
       </div>
 
       <!-- Error and Success Alerts -->
       <div
         v-if="error"
-        class="flex items-center gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 p-3 text-xs sm:text-sm font-medium text-rose-800"
+        class="flex items-center gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 dark:border-rose-400/25 dark:bg-rose-500/10 p-3 text-xs sm:text-sm font-medium text-rose-800 dark:text-rose-200"
       >
-        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" stroke-width="2">
+        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="10" cy="10" r="7" />
           <path d="M10 6v4M10 14h.01" stroke-linecap="round" />
         </svg>
@@ -124,9 +124,9 @@ const handleResetPassword = async () => {
 
       <div
         v-if="successMessage"
-        class="flex items-center gap-2.5 rounded-lg border border-emerald-200/80 bg-emerald-50/80 p-3 text-xs sm:text-sm font-medium text-emerald-800"
+        class="flex items-center gap-2.5 rounded-lg border border-emerald-200/80 bg-emerald-50/80 dark:border-emerald-400/25 dark:bg-emerald-500/10 p-3 text-xs sm:text-sm font-medium text-emerald-800 dark:text-emerald-200"
       >
-        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2">
+        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M5 10l3 3 7-7" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         <span>{{ successMessage }}</span>
@@ -143,8 +143,12 @@ const handleResetPassword = async () => {
             type="email"
             required
             autocomplete="email"
+            inputmode="email"
+            autocapitalize="none"
+            autocorrect="off"
+            spellcheck="false"
             placeholder="you@example.com"
-            class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none"
+            class="h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none sm:h-9"
           />
         </div>
 
@@ -156,7 +160,7 @@ const handleResetPassword = async () => {
             <button
               type="button"
               @click="showForgotPassword = !showForgotPassword"
-              class="text-xs text-muted-foreground hover:text-foreground transition underline-offset-4 hover:underline"
+              class="-my-2.5 -mr-2 cursor-pointer px-2 py-2.5 text-xs text-muted-foreground underline-offset-4 transition hover:text-foreground hover:underline"
             >
               Forgot password?
             </button>
@@ -168,7 +172,7 @@ const handleResetPassword = async () => {
             required
             autocomplete="current-password"
             placeholder="••••••••"
-            class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none"
+            class="h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none sm:h-9"
           />
         </div>
 
@@ -177,7 +181,7 @@ const handleResetPassword = async () => {
           <button
             type="button"
             @click="handleResetPassword"
-            class="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-2xs hover:bg-accent transition"
+            class="h-11 w-full cursor-pointer rounded-md border border-input bg-background px-3 text-sm font-medium text-foreground shadow-2xs transition hover:bg-accent sm:h-9 sm:text-xs"
           >
             Send Reset Email
           </button>
@@ -186,7 +190,7 @@ const handleResetPassword = async () => {
         <button
           type="submit"
           :disabled="isSubmitting"
-          class="flex h-9 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:opacity-50"
+          class="flex h-11 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:opacity-50 sm:h-9"
         >
           <span v-if="isSubmitting">Signing in...</span>
           <span v-else>Sign In</span>
@@ -206,7 +210,7 @@ const handleResetPassword = async () => {
         type="button"
         @click="handleGoogleLogin"
         :disabled="isSubmitting"
-        class="flex h-9 w-full items-center justify-center gap-2.5 rounded-md border border-input bg-background px-3.5 py-2 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+        class="flex h-11 w-full items-center justify-center gap-2.5 rounded-md border border-input bg-background px-3.5 py-2 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground disabled:opacity-50 sm:h-9"
       >
         <svg class="h-4 w-4" viewBox="0 0 24 24">
           <path
@@ -231,7 +235,7 @@ const handleResetPassword = async () => {
 
       <p class="text-center text-xs sm:text-sm text-muted-foreground">
         Don't have an account?
-        <NuxtLink to="/signup" class="font-medium text-foreground underline underline-offset-4 hover:text-primary transition">
+        <NuxtLink to="/signup" class="-my-2 inline-block py-2 font-medium text-foreground underline underline-offset-4 transition hover:text-primary">
           Sign up
         </NuxtLink>
       </p>

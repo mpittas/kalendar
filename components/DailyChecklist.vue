@@ -2,12 +2,13 @@
 import { ref, computed } from "vue";
 import type { ChecklistItem, DayChecklist, DayChecklistItem } from "~/lib/types";
 import { api } from "~/lib/api";
+import ChecklistHeader from "~/components/daily-checklist/ChecklistHeader.vue";
+import ChecklistItemRow from "~/components/daily-checklist/ChecklistItemRow.vue";
+import ChecklistQuickAdd from "~/components/daily-checklist/ChecklistQuickAdd.vue";
 
 const props = defineProps<{
   day: string;
-  /** What is on this day's list: the default items not skipped today, plus one-offs. */
   items: DayChecklistItem[];
-  /** Default items skipped on this day only. */
   skippedItems: ChecklistItem[];
   completedIds: string[];
 }>();
@@ -25,13 +26,7 @@ const HABIT_EMOJIS = [
   "📚", "🧹", "☀️", "🌙", "🦷", "🛌", "🚶", "☕", "✨",
 ];
 
-const newTitle = ref("");
-const newEmoji = ref("💊");
-const showEmojiPicker = ref(false);
 const adding = ref(false);
-// Where a newly added item goes: the default list (every day) or just this day.
-const newScope = ref<"default" | "day">("default");
-
 const editingItem = ref<ChecklistItem | null>(null);
 const editTitle = ref("");
 const editEmoji = ref("");
@@ -57,28 +52,20 @@ const toggle = (itemId: string) => {
   emit("toggle", itemId, nextCompleted);
 };
 
-const submitNew = async () => {
-  const title = newTitle.value.trim();
-  if (!title) return;
+const handleAddSubmitted = async (payload: { title: string; emoji: string; scope: "default" | "day" }) => {
   adding.value = true;
   try {
-    if (newScope.value === "day") {
-      const dayChecklist = await api.addDayChecklistExtra(props.day, { title, emoji: newEmoji.value });
-      emit("day-changed", dayChecklist, `Added "${title}" for this day`);
+    if (payload.scope === "day") {
+      const dayChecklist = await api.addDayChecklistExtra(props.day, { title: payload.title, emoji: payload.emoji });
+      emit("day-changed", dayChecklist, `Added "${payload.title}" for this day`);
     } else {
       const item = await api.createChecklistItem({
-        title,
-        emoji: newEmoji.value,
+        title: payload.title,
+        emoji: payload.emoji,
         order: props.items.filter((i) => i.scope === "default").length + props.skippedItems.length + 1,
       });
       emit("created", item);
     }
-    newTitle.value = "";
-    const currentIndex = HABIT_EMOJIS.indexOf(newEmoji.value);
-    if (currentIndex >= 0 && currentIndex < HABIT_EMOJIS.length - 1) {
-      newEmoji.value = HABIT_EMOJIS[currentIndex + 1];
-    }
-    showEmojiPicker.value = false;
   } catch (err: any) {
     alert(err?.message || "Failed to add item");
   } finally {
@@ -86,7 +73,7 @@ const submitNew = async () => {
   }
 };
 
-const startEdit = (item: ChecklistItem) => {
+const startEdit = (item: DayChecklistItem) => {
   editingItem.value = item;
   editTitle.value = item.title;
   editEmoji.value = item.emoji;
@@ -133,7 +120,7 @@ const removeExtra = async (item: DayChecklistItem) => {
   }
 };
 
-const removeItem = async (item: ChecklistItem) => {
+const removeItem = async (item: DayChecklistItem) => {
   if (!confirm(`Delete "${item.title}" from your daily checklist?`)) return;
   try {
     await api.deleteChecklistItem(item.id);
@@ -150,31 +137,16 @@ const removeItem = async (item: ChecklistItem) => {
 <template>
   <div class="flex h-full flex-col bg-background">
     <!-- Progress banner -->
-    <div class="px-4 pt-3 pb-3 border-b border-border">
-      <div class="rounded-xl border border-border bg-card p-3 shadow-xs">
-        <div class="flex items-center justify-between text-xs">
-          <span class="font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">Progress</span>
-          <span class="font-mono font-semibold text-foreground tabular-nums">
-            {{ completedCount }} / {{ totalCount }}
-            <span class="text-muted-foreground font-normal">({{ percentage }}%)</span>
-          </span>
-        </div>
-        <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            class="h-full rounded-full transition-all duration-300"
-            :class="allDone ? 'bg-emerald-500' : 'bg-primary'"
-            :style="{ width: `${percentage}%` }"
-          />
-        </div>
-        <p v-if="allDone" class="mt-2 text-center text-xs font-medium text-emerald-700 dark:text-emerald-400">
-          🎉 Everything on this list is done!
-        </p>
-      </div>
-    </div>
+    <ChecklistHeader
+      :completed-count="completedCount"
+      :total-count="totalCount"
+      :percentage="percentage"
+      :all-done="allDone"
+    />
 
     <!-- Items list -->
-    <div class="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
-      <p v-if="items.length > 0 || skippedItems.length > 0" class="px-2 pb-1 text-[11px] text-muted-foreground">
+    <div class="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-4 py-3">
+      <p v-if="items.length > 0 || skippedItems.length > 0" class="px-2 pb-1 text-xs text-muted-foreground">
         Your default checklist repeats every day. Skip items or add one-offs for just this day.
       </p>
 
@@ -185,94 +157,20 @@ const removeItem = async (item: ChecklistItem) => {
         Everything is skipped for this day.
       </p>
 
-      <div
+      <ChecklistItemRow
         v-for="item in items"
         :key="item.id"
-        class="group relative flex items-center gap-2.5 rounded-lg border border-transparent p-2 transition hover:border-border hover:bg-accent/40"
-        :class="{ 'opacity-60': isCompleted(item.id) }"
-      >
-        <!-- Toggle checkbox -->
-        <button
-          type="button"
-          @click="toggle(item.id)"
-          class="flex h-5 w-5 shrink-0 items-center justify-center rounded-xs border transition shadow-2xs cursor-pointer"
-          :class="isCompleted(item.id)
-            ? 'border-emerald-600 bg-emerald-600 text-white'
-            : 'border-input bg-background hover:border-foreground/50 text-transparent'"
-          :aria-label="isCompleted(item.id) ? `Mark ${item.title} as pending` : `Mark ${item.title} as completed`"
-        >
-          <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M5 10l3.5 3.5L15 6" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </button>
-
-        <!-- Emoji -->
-        <span
-          class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/60 text-sm shadow-2xs select-none"
-        >
-          {{ item.emoji }}
-        </span>
-
-        <!-- Title -->
-        <span
-          @click="toggle(item.id)"
-          class="min-w-0 flex-1 cursor-pointer select-none text-sm transition"
-          :class="isCompleted(item.id)
-            ? 'text-muted-foreground line-through'
-            : 'font-medium text-foreground hover:text-foreground/90'"
-        >
-          {{ item.title }}
-        </span>
-
-        <span
-          v-if="item.scope === 'day'"
-          class="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
-        >
-          This day
-        </span>
-
-        <!-- Actions: one-offs can only be removed; default items can be edited, skipped today, or deleted everywhere.
-             Always visible on touch screens, where there is no hover. -->
-        <div class="flex items-center gap-1 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
-          <button
-            v-if="item.scope === 'default'"
-            type="button"
-            @click="startEdit(item)"
-            class="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer"
-            title="Edit item (all days)"
-          >
-            <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-            </svg>
-          </button>
-          <button
-            v-if="item.scope === 'default'"
-            type="button"
-            @click="skipForDay(item, true)"
-            class="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer"
-            title="Skip on this day only"
-          >
-            <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="10" cy="10" r="7" />
-              <path d="M5 15L15 5" stroke-linecap="round" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            @click="item.scope === 'day' ? removeExtra(item) : removeItem(item)"
-            class="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer"
-            :title="item.scope === 'day' ? 'Remove from this day' : 'Delete from all days'"
-          >
-            <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M6 7v9a2 2 0 002 2h4a2 2 0 002-2V7M4 7h12M9 4h2a1 1 0 011 1v1H8V5a1 1 0 011-1z" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </button>
-        </div>
-      </div>
+        :item="item"
+        :completed="isCompleted(item.id)"
+        @toggle="toggle"
+        @edit="startEdit"
+        @skip="skipForDay"
+        @remove="(it) => it.scope === 'day' ? removeExtra(it) : removeItem(it)"
+      />
 
       <!-- Default items skipped on this day only -->
       <details v-if="skippedItems.length > 0" class="pt-2">
-        <summary class="cursor-pointer select-none text-xs font-medium text-muted-foreground hover:text-foreground">
+        <summary class="flex min-h-11 cursor-pointer select-none items-center text-xs font-medium text-muted-foreground hover:text-foreground touch:text-sm">
           Skipped on this day ({{ skippedItems.length }})
         </summary>
         <div class="mt-1.5 space-y-1">
@@ -286,7 +184,7 @@ const removeItem = async (item: ChecklistItem) => {
             <button
               type="button"
               @click="skipForDay(item, false)"
-              class="shrink-0 rounded-md border border-input bg-background px-2 py-1 text-xs font-medium text-foreground shadow-xs hover:bg-accent cursor-pointer"
+              class="shrink-0 cursor-pointer rounded-md border border-input bg-background px-2 py-1 text-xs font-medium text-foreground shadow-xs hover:bg-accent touch:h-10 touch:px-4 touch:text-sm"
             >
               Restore
             </button>
@@ -296,142 +194,65 @@ const removeItem = async (item: ChecklistItem) => {
     </div>
 
     <!-- Quick add footer -->
-    <div class="border-t border-border bg-card p-3 space-y-2">
-      <!-- Scope: the default list applies to every day, a one-off only to this one -->
-      <div class="inline-flex h-8 w-full items-center rounded-lg bg-muted p-0.5 text-xs text-muted-foreground" role="group" aria-label="Where to add the item">
-        <button
-          type="button"
-          @click="newScope = 'default'"
-          class="inline-flex h-7 flex-1 items-center justify-center rounded-md px-2 font-medium transition cursor-pointer"
-          :class="newScope === 'default' ? 'bg-background text-foreground shadow-xs font-semibold' : 'hover:text-foreground'"
-          :aria-pressed="newScope === 'default'"
-        >
-          Every day
-        </button>
-        <button
-          type="button"
-          @click="newScope = 'day'"
-          class="inline-flex h-7 flex-1 items-center justify-center rounded-md px-2 font-medium transition cursor-pointer"
-          :class="newScope === 'day' ? 'bg-background text-foreground shadow-xs font-semibold' : 'hover:text-foreground'"
-          :aria-pressed="newScope === 'day'"
-        >
-          Only this day
-        </button>
-      </div>
-      <form @submit.prevent="submitNew" class="space-y-2">
-        <div class="flex items-center gap-1.5">
-          <!-- Emoji picker button -->
-          <div class="relative">
+    <ChecklistQuickAdd
+      :adding="adding"
+      @submit="handleAddSubmitted"
+    />
+
+    <!-- Edit item (applies to every day) -->
+    <Modal :open="Boolean(editingItem)" title="Edit checklist item" subtitle="Changes apply across all days." @close="cancelEdit">
+      <form id="checklist-edit-form" class="space-y-4" @submit.prevent="saveEdit">
+        <div role="group" aria-labelledby="checklist-edit-emoji">
+          <span id="checklist-edit-emoji" class="block text-xs font-medium text-foreground">Emoji</span>
+          <div class="mt-1.5 flex flex-wrap gap-1.5 touch:gap-2">
             <button
+              v-for="e in HABIT_EMOJIS"
+              :key="e"
               type="button"
-              @click="showEmojiPicker = !showEmojiPicker"
-              class="flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-base shadow-xs hover:bg-accent cursor-pointer"
-              title="Pick emoji"
+              :aria-pressed="editEmoji === e"
+              @click="editEmoji = e"
+              class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border text-base transition touch:h-11 touch:w-11 touch:text-xl"
+              :class="editEmoji === e ? 'border-primary bg-primary text-primary-foreground shadow-xs' : 'border-input bg-background hover:bg-accent'"
             >
-              {{ newEmoji }}
+              {{ e }}
             </button>
-
-            <!-- Emoji dropdown -->
-            <div
-              v-if="showEmojiPicker"
-              class="fixed inset-0 z-30"
-              @click="showEmojiPicker = false"
-            />
-            <div
-              v-if="showEmojiPicker"
-              class="absolute bottom-11 left-0 z-40 grid w-48 grid-cols-6 gap-1 rounded-xl border border-border bg-popover p-2 shadow-lg"
-            >
-              <button
-                v-for="e in HABIT_EMOJIS"
-                :key="e"
-                type="button"
-                @click="newEmoji = e; showEmojiPicker = false"
-                class="flex h-7 w-7 items-center justify-center rounded-md text-base hover:bg-accent cursor-pointer"
-              >
-                {{ e }}
-              </button>
-            </div>
           </div>
+        </div>
 
-          <!-- Input -->
+        <div>
+          <label for="checklist-edit-title" class="block text-xs font-medium text-foreground">Title</label>
           <input
-            v-model="newTitle"
+            id="checklist-edit-title"
+            v-model="editTitle"
             type="text"
-            :placeholder="newScope === 'day' ? 'Add for this day only…' : 'Add habit (e.g. pills, shake)…'"
+            required
             maxlength="100"
-            class="min-w-0 flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            autocomplete="off"
+            enterkeyhint="done"
+            class="mt-1.5 flex h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-9"
           />
-
-          <!-- Submit -->
-          <button
-            type="submit"
-            :disabled="!newTitle.trim() || adding"
-            class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 disabled:opacity-40 cursor-pointer"
-          >
-            {{ adding ? "..." : "Add" }}
-          </button>
         </div>
       </form>
-    </div>
 
-    <!-- Edit modal -->
-    <div
-      v-if="editingItem"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
-      @click.self="cancelEdit"
-    >
-      <div class="w-full max-w-sm rounded-xl border border-border bg-background p-5 shadow-lg">
-        <h3 class="text-base font-semibold leading-none tracking-tight text-foreground">Edit Checklist Item</h3>
-        <p class="mt-1.5 text-xs text-muted-foreground">
-          Changes will apply across all days.
-        </p>
-
-        <form @submit.prevent="saveEdit" class="mt-4 space-y-4">
-          <div>
-            <label class="block text-xs font-medium text-foreground">Emoji</label>
-            <div class="mt-1.5 flex flex-wrap gap-1.5">
-              <button
-                v-for="e in HABIT_EMOJIS"
-                :key="e"
-                type="button"
-                @click="editEmoji = e"
-                class="flex h-8 w-8 items-center justify-center rounded-md border text-base transition cursor-pointer"
-                :class="editEmoji === e ? 'border-primary bg-primary text-primary-foreground shadow-xs' : 'border-input bg-background hover:bg-accent'"
-              >
-                {{ e }}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-foreground">Title</label>
-            <input
-              v-model="editTitle"
-              type="text"
-              required
-              maxlength="100"
-              class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            />
-          </div>
-
-          <div class="flex items-center justify-end gap-2 pt-3 border-t border-border">
-            <button
-              type="button"
-              @click="cancelEdit"
-              class="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              :disabled="!editTitle.trim() || saving"
-              class="inline-flex items-center justify-center rounded-md bg-primary px-3.5 py-1.5 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-40 cursor-pointer"
-            >
-              {{ saving ? "Saving…" : "Save changes" }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      <template #footer>
+        <div class="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            @click="cancelEdit"
+            class="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-md border border-input bg-background px-3.5 text-sm font-medium text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground sm:h-9 sm:flex-none sm:text-xs"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="checklist-edit-form"
+            :disabled="!editTitle.trim() || saving"
+            class="inline-flex h-11 flex-[1.6] cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 disabled:opacity-40 sm:h-9 sm:flex-none sm:text-xs"
+          >
+            {{ saving ? "Saving…" : "Save changes" }}
+          </button>
+        </div>
+      </template>
+    </Modal>
   </div>
 </template>

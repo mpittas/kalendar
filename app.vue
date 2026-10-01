@@ -1,7 +1,26 @@
+<script setup lang="ts">
+import { computed, onMounted, onBeforeUnmount } from "vue";
+
+const { init } = useTheme();
+const route = useRoute();
+let stop: (() => void) | undefined;
+
+// The day planner is an app-like screen: the page itself never scrolls, only the timeline does.
+const isDayView = computed(() => route.path.startsWith("/day"));
+
+onMounted(() => {
+  stop = init();
+});
+onBeforeUnmount(() => stop?.());
+</script>
+
 <template>
-  <div class="min-h-screen bg-slate-100 text-slate-900 antialiased font-sans flex flex-col">
+  <div
+    class="flex flex-col bg-canvas font-sans text-foreground antialiased"
+    :class="isDayView ? 'h-dvh overflow-hidden' : 'min-h-dvh'"
+  >
     <AppHeader />
-    <main class="flex-1 min-h-0 flex flex-col">
+    <main class="flex min-h-0 flex-1 flex-col">
       <NuxtPage />
     </main>
   </div>

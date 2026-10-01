@@ -13,6 +13,9 @@ rules_version = '2';
 //   users/{uid}/meta/checklistSeed  one-time marker: default checklist created
 //   users/{uid}/checklist_items/{id}  the default checklist, applied to every day
 //   users/{uid}/checklist_days/{day}  per-day ticks, skipped defaults and one-off items
+//   users/{uid}/day_notes/{day}       quick notes for one day (one markdown text)
+//   users/{uid}/meta/categorySeed   one-time marker: categories created from existing templates
+//   users/{uid}/categories/{id}     activity categories (name, color)
 //   users/{uid}/templates/{id}      activity templates
 //   users/{uid}/tasks/{id}          scheduled tasks
 //
@@ -110,6 +113,34 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(['seededAt'])
           && request.resource.data.seededAt == request.time;
         allow update, delete: if false;
+      }
+
+      // ---------- one-time categories marker ----------
+      match /meta/categorySeed {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['seededAt'])
+          && request.resource.data.seededAt == request.time;
+        allow update, delete: if false;
+      }
+
+      // ---------- categories ----------
+      function validCategory(d) {
+        return d.keys().hasOnly(['name', 'color', 'createdAt'])
+          && d.keys().hasAll(['name', 'color', 'createdAt'])
+          && str(d.name, 1, 40)
+          && isColor(d.color);
+      }
+
+      match /categories/{categoryId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && validCategory(request.resource.data)
+          && request.resource.data.createdAt == request.time;
+        allow update: if isOwner(uid)
+          && validCategory(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(uid);
       }
 
       // ---------- activity templates ----------
@@ -224,6 +255,24 @@ service cloud.firestore {
         allow read: if isOwner(uid);
         allow create, update: if isOwner(uid)
           && validChecklistDay(request.resource.data);
+        allow delete: if isOwner(uid);
+      }
+
+      // ---------- day notes ----------
+      function validDayNotes(d) {
+        return d.keys().hasOnly(['day', 'text', 'updatedAt'])
+          && d.keys().hasAll(['day', 'text', 'updatedAt'])
+          && d.day is string
+          && d.day.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+          && d.text is string
+          && d.text.size() <= 20000
+          && d.updatedAt == request.time;
+      }
+
+      match /day_notes/{dayId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && validDayNotes(request.resource.data);
         allow delete: if isOwner(uid);
       }
     }

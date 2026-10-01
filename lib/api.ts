@@ -1,4 +1,4 @@
-import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist } from "~/lib/types";
+import type { ActivityTemplate, Category, ScheduledTask, ChecklistItem, DayChecklist, DayNotes } from "~/lib/types";
 import { getIdToken } from "~/composables/useAuth";
 
 async function request<T>(url: string, init: RequestInit): Promise<T> {
@@ -14,8 +14,10 @@ async function request<T>(url: string, init: RequestInit): Promise<T> {
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
     try {
-      const body = (await response.json()) as { error?: string };
-      if (body?.error) message = body.error;
+      // Our own errors carry `error: "…"`; the framework's carry `statusMessage` (and `error: true`).
+      const body = (await response.json()) as { error?: unknown; statusMessage?: string; message?: string };
+      const text = typeof body?.error === "string" ? body.error : body?.statusMessage || body?.message;
+      if (text) message = text;
     } catch {
       /* ignore */
     }
@@ -97,6 +99,29 @@ export const api = {
   async deleteTemplate(id: string): Promise<void> {
     await request<{ ok: true }>(`/api/templates/${id}`, { method: "DELETE" });
   },
+  async getCategories(): Promise<Category[]> {
+    const data = await request<{ categories: Category[] }>("/api/categories", { method: "GET" });
+    return data.categories;
+  },
+  async createCategory(draft: Omit<Category, "id">): Promise<Category> {
+    const data = await request<{ category: Category }>("/api/categories", {
+      method: "POST",
+      body: JSON.stringify(draft),
+    });
+    return data.category;
+  },
+  async updateCategory(id: string, patch: Partial<Omit<Category, "id">>): Promise<Category> {
+    const data = await request<{ category: Category }>(`/api/categories/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    return data.category;
+  },
+  /** `moveTo` is the name of the category that takes over the deleted one's activities. */
+  async deleteCategory(id: string, moveTo?: string): Promise<void> {
+    const query = moveTo ? `?moveTo=${encodeURIComponent(moveTo)}` : "";
+    await request<{ ok: true }>(`/api/categories/${id}${query}`, { method: "DELETE" });
+  },
   async getChecklistItems(): Promise<ChecklistItem[]> {
     const data = await request<{ items: ChecklistItem[] }>("/api/checklist/items", {
       method: "GET",
@@ -155,5 +180,16 @@ export const api = {
       method: "DELETE",
     });
     return data.dayChecklist;
+  },
+  async getDayNotes(day: string): Promise<DayNotes> {
+    const data = await request<{ dayNotes: DayNotes }>(`/api/notes?day=${day}`, { method: "GET" });
+    return data.dayNotes;
+  },
+  async saveDayNotes(day: string, text: string): Promise<DayNotes> {
+    const data = await request<{ dayNotes: DayNotes }>("/api/notes", {
+      method: "PUT",
+      body: JSON.stringify({ day, text }),
+    });
+    return data.dayNotes;
   },
 };

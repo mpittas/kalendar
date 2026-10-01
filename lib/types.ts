@@ -9,6 +9,13 @@ export type ActivityTemplate = {
   archived: boolean;
 };
 
+/** A named group of activities, with the color shown beside it. */
+export type Category = {
+  id: string;
+  name: string;
+  color: string;
+};
+
 export type ScheduledTask = {
   id: string;
   templateId: string | null;
@@ -49,11 +56,15 @@ export type DayChecklist = {
   extraItems: DayExtraItem[];
 };
 
+/** The quick notes for one day: a single markdown document. */
+export type DayNotes = { day: string; text: string };
+
 /** An item as shown on one day: a default item (every day) or a one-off (this day only). */
 export type DayChecklistItem = ChecklistItem & { scope: "default" | "day" };
 
 export const DAY_START_MINUTES = 0;
 export const DAY_END_MINUTES = 24 * 60;
 export const SLOT_MINUTES = 30;
-export const SLOT_HEIGHT = 42; // px per half hour row
+export const SNAP_MINUTES = 15; // blocks move and resize in quarter-hour steps
+export const SLOT_HEIGHT = 48; // px per half hour row
 
