@@ -23,6 +23,8 @@ export default defineEventHandler(async (event) => {
     durationMinutes: clampDuration(body.durationMinutes),
     notes: cleanNotes(body.notes),
     completed: body.completed === true,
+    // Set when a deleted block is brought back by undo, so it returns to its column.
+    ...(isNumeric(body.lane) ? { lane: clampLane(body.lane) } : {}),
   });
 
   setResponseStatus(event, 201);

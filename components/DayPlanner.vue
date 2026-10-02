@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist, DayChecklistItem, DayExtraItem, DayNotes } from "~/lib/types";
 import { SLOT_HEIGHT, SLOT_MINUTES, SNAP_MINUTES } from "~/lib/types";
 import { paletteOf } from "~/lib/colors";
+import { boxOf, layoutDay } from "~/lib/layout";
 import { api } from "~/lib/api";
 import {
   floorMinutes,
@@ -17,7 +18,6 @@ import DayPlannerHeader from "~/components/day-planner/DayPlannerHeader.vue";
 import DayRoutinesShelf from "~/components/day-planner/DayRoutinesShelf.vue";
 import DayTimelineGrid from "~/components/day-planner/DayTimelineGrid.vue";
 import DayMobileNav from "~/components/day-planner/DayMobileNav.vue";
-import DayMobileActivitiesSheet from "~/components/day-planner/DayMobileActivitiesSheet.vue";
 
 const props = defineProps<{
   day: string;
@@ -41,9 +41,9 @@ const hiddenChecklistIds = ref<string[]>([...(props.initialDayChecklist?.hiddenI
 const dayExtraItems = ref<DayExtraItem[]>([...(props.initialDayChecklist?.extraItems ?? [])]);
 const notesText = ref(props.initialNotesText ?? "");
 const activeSidebarTab = ref<"activities" | "checklist" | "notes">("activities");
-const mobileSheet = ref<"checklist" | "activities" | "notes" | null>(null);
+const mobileSheet = ref<"checklist" | "notes" | null>(null);
 const editor = ref<EditorRequest | null>(null);
-const { show: showLibrary } = useLibrary();
+const { show: showLibrary, open: libraryOpen } = useLibrary();
 const preview = ref<{ start: number; duration: number; color: string; label: string; emoji: string } | null>(null);
 const resizing = ref<string | null>(null);
 const flash = ref<string | null>(null);
@@ -141,49 +141,39 @@ onUnmounted(() => {
 
 watch(
   () => props.day,
-  () => { scrollToUsefulPosition(); },
+  () => {
+    scrollToUsefulPosition();
+    history.clear(); // undo only reaches back over the day on screen
+  },
 );
 
+// ---- Undo / redo of timeline changes ----
+const history = useTimelineHistory({ tasks, day: () => props.day, notify });
+
+// Ctrl+Z undoes; Ctrl+Shift+Z or Ctrl+Y redoes (Cmd on a Mac). Left alone while typing or in a dialog.
+const onUndoKeys = (event: KeyboardEvent) => {
+  if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+  // By letter where the layout has Latin letters, otherwise by key position (e.g. a Greek layout).
+  const key = /^[a-z]$/i.test(event.key) ? event.key.toLowerCase() : event.code.replace(/^Key/, "").toLowerCase();
+  const undo = key === "z" && !event.shiftKey;
+  const redo = (key === "z" && event.shiftKey) || (key === "y" && !event.shiftKey);
+  if (!undo && !redo) return;
+  const target = event.target as HTMLElement | null;
+  if (target?.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])")) return;
+  if (editor.value || mobileSheet.value || libraryOpen.value || resizing.value) return;
+  event.preventDefault();
+  if (undo) history.undo();
+  else history.redo();
+};
+
+onMounted(() => window.addEventListener("keydown", onUndoKeys));
+onUnmounted(() => window.removeEventListener("keydown", onUndoKeys));
+
+// Blocks that share time sit side by side; a block moved by hand keeps its column (see lib/layout.ts).
 const layout = computed(() => {
-  const map = new Map<string, { left: number; width: number }>();
-  const sorted = [...tasks.value].sort(
-    (a, b) => a.startMinutes - b.startMinutes || b.durationMinutes - a.durationMinutes,
-  );
-  let cluster: ScheduledTask[] = [];
-  let clusterEnd = -1;
-
-  const flush = () => {
-    if (!cluster.length) return;
-    const columns: ScheduledTask[][] = [];
-    for (const task of cluster) {
-      let placed = false;
-      for (const col of columns) {
-        const last = col[col.length - 1];
-        if (last.startMinutes + last.durationMinutes <= task.startMinutes) {
-          col.push(task);
-          placed = true;
-          break;
-        }
-      }
-      if (!placed) columns.push([task]);
-    }
-    const width = 1 / columns.length;
-    columns.forEach((col, colIdx) => {
-      col.forEach((task) => {
-        map.set(task.id, { left: colIdx * width, width });
-      });
-    });
-    cluster = [];
-    clusterEnd = -1;
-  };
-
-  for (const task of sorted) {
-    if (cluster.length && task.startMinutes >= clusterEnd) flush();
-    cluster.push(task);
-    clusterEnd = Math.max(clusterEnd, task.startMinutes + task.durationMinutes);
-  }
-  flush();
-  return map;
+  const boxes = new Map<string, { left: number; width: number }>();
+  for (const [id, placement] of layoutDay(tasks.value)) boxes.set(id, boxOf(placement));
+  return boxes;
 });
 
 const stats = computed(() => {
@@ -263,6 +253,7 @@ const createFromTemplate = async (template: ActivityTemplate, startMinutes: numb
   try {
     const created = await api.createTask(draft);
     tasks.value = tasks.value.map((item) => (item.id === tempId ? created : item)).sort(bySlot);
+    history.record(`Add ${created.title}`, [[null, created]]);
     notify(`Added ${template.name}`);
   } catch {
     tasks.value = tasks.value.filter((item) => item.id !== tempId);
@@ -270,18 +261,30 @@ const createFromTemplate = async (template: ActivityTemplate, startMinutes: numb
   }
 };
 
-const moveTask = async (task: ScheduledTask, start: number) => {
-  const previous = task.startMinutes;
-  if (previous === start) return;
-  tasks.value = tasks.value.map((item) => (item.id === task.id ? { ...item, startMinutes: start } : item));
+// `lanes` is set when the move also put the block in another column, which can shift its neighbours.
+const moveTask = async (task: ScheduledTask, start: number, lanes?: Map<string, number>) => {
+  const before = tasks.value;
+  const changes = new Map<string, { startMinutes?: number; lane?: number }>();
+  if (start !== task.startMinutes) changes.set(task.id, { startMinutes: start });
+  for (const [id, lane] of lanes ?? []) {
+    if (before.find((item) => item.id === id)?.lane !== lane) changes.set(id, { ...changes.get(id), lane });
+  }
+  if (!changes.size) return;
+  const after = before.map((item) => (changes.has(item.id) ? { ...item, ...changes.get(item.id) } : item));
+  tasks.value = after;
   try {
-    await api.updateTask(task.id, { startMinutes: start });
-    notify(`${task.title} → ${formatTime(start)}`);
+    await Promise.all([...changes].map(([id, patch]) => api.updateTask(id, patch)));
+    const pick = (list: ScheduledTask[], id: string) => list.find((item) => item.id === id);
+    history.record(`Move ${task.title}`, [...changes.keys()].map((id) => [pick(before, id), pick(after, id)]));
+    notify(start !== task.startMinutes ? `${task.title} → ${formatTime(start)}` : `Moved ${task.title}`);
   } catch {
-    tasks.value = tasks.value.map((item) =>
-      item.id === task.id ? { ...item, startMinutes: previous } : item,
-    );
+    // Some of the changes may have saved, so show what the server has rather than guessing.
     notify("Could not move that block");
+    try {
+      tasks.value = await api.getTasksForDay(props.day);
+    } catch {
+      tasks.value = before;
+    }
   }
 };
 
@@ -331,6 +334,8 @@ const startResize = (task: ScheduledTask, event: PointerEvent) => {
     }
     try {
       await api.updateTask(task.id, { durationMinutes: next });
+      const now = tasks.value.find((item) => item.id === task.id);
+      if (now) history.record(`Resize ${task.title}`, [[{ ...now, durationMinutes: startDuration }, now]]);
     } catch {
       tasks.value = tasks.value.map((item) =>
         item.id === task.id ? { ...item, durationMinutes: startDuration } : item,
@@ -352,6 +357,7 @@ const toggleComplete = async (task: ScheduledTask) => {
   tasks.value = tasks.value.map((item) => (item.id === task.id ? { ...item, completed: next } : item));
   try {
     await api.updateTask(task.id, { completed: next });
+    history.record(`${next ? "Complete" : "Reopen"} ${task.title}`, [[task, { ...task, completed: next }]]);
   } catch {
     tasks.value = tasks.value.map((item) => (item.id === task.id ? { ...item, completed: !next } : item));
   }
@@ -362,6 +368,7 @@ const deleteTask = async (task: ScheduledTask) => {
   tasks.value = tasks.value.filter((item) => item.id !== task.id);
   try {
     await api.deleteTask(task.id);
+    history.record(`Delete ${task.title}`, [[task, null]]);
     notify(`Deleted ${task.title}`);
   } catch {
     tasks.value = previous;
@@ -370,6 +377,8 @@ const deleteTask = async (task: ScheduledTask) => {
 };
 
 const onTaskDeleted = (id: string) => {
+  const task = tasks.value.find((item) => item.id === id);
+  if (task) history.record(`Delete ${task.title}`, [[task, null]]);
   tasks.value = tasks.value.filter((item) => item.id !== id);
 };
 
@@ -403,7 +412,9 @@ const moveTemplate = async (template: ActivityTemplate, category: string) => {
 };
 
 const onTaskSaved = (task: ScheduledTask) => {
-  const exists = tasks.value.some((item) => item.id === task.id);
+  const previous = tasks.value.find((item) => item.id === task.id);
+  history.record(`${previous ? "Edit" : "Add"} ${task.title}`, [[previous, task]]);
+  const exists = Boolean(previous);
   if (exists && task.day !== props.day) {
     tasks.value = tasks.value.filter((item) => item.id !== task.id);
     return;
@@ -594,6 +605,7 @@ const openChecklistManager = () => {
         :stats="stats"
         :flash="flash"
         @create-block="editor = { mode: 'create', day, startMinutes: snapMinutes(nowMinutes(), 30), template: null }"
+        @customize="showLibrary()"
       />
 
       <div ref="scrollRef" class="relative min-h-0 flex-1 overflow-y-auto overscroll-contain bg-background scroll-pt-6">
@@ -653,14 +665,6 @@ const openChecklistManager = () => {
       @saved="onTemplateSaved"
       @deleted="(id) => { templates = templates.filter((item) => item.id !== id) }"
       @categories-changed="onCategoriesChanged"
-    />
-
-    <DayMobileActivitiesSheet
-      :open="mobileSheet === 'activities'"
-      :templates="templates"
-      @close="mobileSheet = null"
-      @pick-template="(template) => { mobileSheet = null; createFromTemplate(template, snapMinutes(nowMinutes(), 30)); }"
-      @open-manager="showLibrary()"
     />
 
     <Modal

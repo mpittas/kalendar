@@ -37,9 +37,11 @@ export type TaskDraft = {
   notes?: string | null;
   completed?: boolean;
   templateId?: string | null;
+  lane?: number;
 };
 
-export type TaskPatch = Partial<Omit<TaskDraft, "day">> & { day?: string; lane?: number };
+/** `lane: null` clears a block's column, so it is placed automatically again. */
+export type TaskPatch = Partial<Omit<TaskDraft, "day" | "lane">> & { day?: string; lane?: number | null };
 
 export const api = {
   async getTasksForDay(day: string): Promise<ScheduledTask[]> {

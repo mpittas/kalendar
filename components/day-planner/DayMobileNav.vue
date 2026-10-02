@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlignLeft, Check, FileText, Plus } from "lucide-vue-next";
+import { Check, FileText, Plus } from "lucide-vue-next";
 const props = defineProps<{
   checklistStats: {
     total: number;
@@ -9,7 +9,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "open-sheet", sheet: "activities" | "checklist" | "notes"): void;
+  (e: "open-sheet", sheet: "checklist" | "notes"): void;
   (e: "create-block"): void;
 }>();
 
@@ -22,18 +22,13 @@ const tab =
     aria-label="Day tools"
     class="z-30 flex shrink-0 items-center justify-around gap-1 border-t border-border bg-background pb-[max(0.25rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] pt-1 short:pt-0.5 lg:hidden"
   >
-    <button type="button" :class="tab" @click="emit('open-sheet', 'activities')">
-      <AlignLeft class="h-5 w-5 text-foreground short:h-4 short:w-4" aria-hidden="true" />
-      <span class="text-[10px] font-medium">Activities</span>
-    </button>
-
     <button
       type="button"
       class="flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-primary px-4 text-xs font-semibold short:h-8 text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-95"
       @click="emit('create-block')"
     >
       <Plus class="h-3.5 w-3.5" aria-hidden="true" />
-      <span>Schedule</span>
+      <span>Task</span>
     </button>
 
     <button type="button" :class="tab" @click="emit('open-sheet', 'checklist')">

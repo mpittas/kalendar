@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { ScheduledTask } from "~/lib/types";
 import { SLOT_HEIGHT, SLOT_MINUTES, SNAP_MINUTES } from "~/lib/types";
 import { paletteOf } from "~/lib/colors";
+import { boxOf, columnsBeside, lanesFor, layoutDay, withLanes } from "~/lib/layout";
 import { formatDuration, formatTime, formatTimeRange, gutterLabel, floorMinutes, HOUR_OPTIONS, snapMinutes } from "~/lib/time";
 import TimeBlock from "~/components/day-planner/TimeBlock.vue";
 
@@ -26,7 +27,8 @@ const emit = defineEmits<{
   (e: "drag-over", event: DragEvent): void;
   (e: "drag-leave", event: DragEvent): void;
   (e: "drop", event: DragEvent): void;
-  (e: "move-task", task: ScheduledTask, startMinutes: number): void;
+  /** `lanes` is set when the move also changed who sits where beside it. */
+  (e: "move-task", task: ScheduledTask, startMinutes: number, lanes?: Map<string, number>): void;
   (e: "refresh"): void;
 }>();
 
@@ -93,17 +95,24 @@ type DragState = {
   rawStart: number;
   /** Where the block will land once released, after snapping. */
   snappedStart: number;
+  /** How far across the timeline the pointer is (0 to 1): which column it is held over. */
+  fraction: number;
 };
 
 const drag = ref<DragState | null>(null);
 let pending: {
   task: ScheduledTask;
   pointerType: string;
+  pointerId: number;
+  target: HTMLElement;
   startX: number;
   startY: number;
   timer: number | null;
 } | null = null;
 let active: { task: ScheduledTask; grabMinutes: number } | null = null;
+/** The pointer that pressed the block; any other finger or pen is ignored until it lets go. */
+let trackedPointer: number | null = null;
+let lastX = 0;
 let lastY = 0;
 let scroller: HTMLElement | null = null;
 let rafId: number | null = null;
@@ -131,7 +140,9 @@ const updateDrag = () => {
     Math.floor(maxStart / SNAP_MINUTES) * SNAP_MINUTES,
     snapMinutes(rawStart, SNAP_MINUTES),
   );
-  drag.value = { id: task.id, rawStart, snappedStart };
+  const rect = gridRef.value!.getBoundingClientRect();
+  const fraction = Math.max(0, Math.min(1, (lastX - rect.left) / rect.width));
+  drag.value = { id: task.id, rawStart, snappedStart, fraction };
 };
 
 const edgeScrollTick = () => {
@@ -156,11 +167,16 @@ const edgeScrollTick = () => {
 
 const beginDrag = () => {
   if (!pending || !gridRef.value) return;
-  const { task, pointerType } = pending;
+  const { task, pointerType, pointerId, target } = pending;
   if (pending.timer) window.clearTimeout(pending.timer);
   pending = null;
+  // Keeps moves and the release coming to us even outside the window or over other elements.
+  try {
+    target.setPointerCapture(pointerId);
+  } catch {
+    // The pointer is already gone; the window listeners still end the drag.
+  }
   scroller = findScroller(gridRef.value);
-  lastY = lastY || 0;
   active = { task, grabMinutes: pointerMinutes() - task.startMinutes };
   document.body.style.userSelect = "none";
   document.body.style.webkitUserSelect = "none";
@@ -174,6 +190,7 @@ const endTracking = () => {
   if (pending?.timer) window.clearTimeout(pending.timer);
   pending = null;
   active = null;
+  trackedPointer = null;
   drag.value = null;
   if (rafId !== null) cancelAnimationFrame(rafId);
   rafId = null;
@@ -182,9 +199,12 @@ const endTracking = () => {
   window.removeEventListener("pointermove", onWindowPointerMove);
   window.removeEventListener("pointerup", onWindowPointerUp);
   window.removeEventListener("pointercancel", onWindowPointerCancel);
+  window.removeEventListener("blur", endTracking);
 };
 
 const onWindowPointerMove = (event: PointerEvent) => {
+  if (event.pointerId !== trackedPointer) return;
+  lastX = event.clientX;
   lastY = event.clientY;
   if (pending) {
     const moved = Math.hypot(event.clientX - pending.startX, event.clientY - pending.startY);
@@ -198,18 +218,21 @@ const onWindowPointerMove = (event: PointerEvent) => {
   updateDrag();
 };
 
-const onWindowPointerUp = () => {
+const onWindowPointerUp = (event: PointerEvent) => {
+  if (event.pointerId !== trackedPointer) return;
   if (active && drag.value) {
     suppressClick = true;
     window.setTimeout(() => { suppressClick = false; }, 80);
     const { task } = active;
     const start = drag.value.snappedStart;
-    if (start !== task.startMinutes) emit("move-task", task, start);
+    const lanes = changedLanes();
+    if (start !== task.startMinutes || lanes) emit("move-task", task, start, lanes);
   }
   endTracking();
 };
 
-const onWindowPointerCancel = () => {
+const onWindowPointerCancel = (event: PointerEvent) => {
+  if (event.pointerId !== trackedPointer) return;
   endTracking();
 };
 
@@ -217,10 +240,14 @@ const onBlockPointerDown = (task: ScheduledTask, event: PointerEvent) => {
   if (event.pointerType === "mouse" && event.button !== 0) return;
   if (props.resizing || pending || active) return;
   if ((event.target as HTMLElement).closest("button, [data-resize-handle]")) return;
+  lastX = event.clientX;
   lastY = event.clientY;
+  trackedPointer = event.pointerId;
   pending = {
     task,
     pointerType: event.pointerType,
+    pointerId: event.pointerId,
+    target: event.currentTarget as HTMLElement,
     startX: event.clientX,
     startY: event.clientY,
     timer: event.pointerType === "mouse" ? null : window.setTimeout(beginDrag, TOUCH_HOLD_MS),
@@ -228,6 +255,8 @@ const onBlockPointerDown = (task: ScheduledTask, event: PointerEvent) => {
   window.addEventListener("pointermove", onWindowPointerMove);
   window.addEventListener("pointerup", onWindowPointerUp);
   window.addEventListener("pointercancel", onWindowPointerCancel);
+  // Switching away mid-drag never sends the release; drop the drag rather than leave it stuck.
+  window.addEventListener("blur", endTracking);
 };
 
 // Once a block is picked up, stop the browser from scrolling the page under the finger.
@@ -259,10 +288,40 @@ const hasGrip = (durationMinutes: number) => durationMinutes >= 45;
 
 const durationOf = (id: string) => props.tasks.find((item) => item.id === id)?.durationMinutes ?? SLOT_MINUTES;
 
+// While a block is held, the others make room: it sits in whichever column the pointer is over,
+// among the blocks it would share time with where it would land.
+const dragPlan = computed(() => {
+  if (!drag.value) return null;
+  const { id, snappedStart, fraction } = drag.value;
+  const beside = columnsBeside(props.tasks, id, snappedStart);
+  const index = Math.floor(fraction * (beside.length + 1));
+  const lanes = lanesFor(beside, id, index);
+  const moved = props.tasks.map((task) => (task.id === id ? { ...task, startMinutes: snappedStart } : task));
+  return { lanes, placements: layoutDay(withLanes(moved, lanes)) };
+});
+
+const layoutBox = (id: string) => {
+  const placement = dragPlan.value?.placements.get(id);
+  return placement ? boxOf(placement) : props.layout.get(id);
+};
+
+// The lanes to save when a block is dropped, or nothing if no one ended up in a different column.
+const changedLanes = () => {
+  const plan = dragPlan.value;
+  if (!plan || !plan.lanes.size) return undefined;
+  const before = layoutDay(props.tasks);
+  const moved = [...plan.lanes.keys()].some((id) => {
+    const was = before.get(id);
+    const now = plan.placements.get(id);
+    return was?.column !== now?.column || was?.columns !== now?.columns;
+  });
+  return moved ? plan.lanes : undefined;
+};
+
 const dragGhostStyle = computed(() => {
   if (!drag.value) return undefined;
   const { id, snappedStart } = drag.value;
-  const lane = props.layout.get(id);
+  const lane = layoutBox(id);
   return {
     top: `${blockTop(snappedStart)}px`,
     height: `${blockHeight(durationOf(id))}px`,
@@ -462,16 +521,17 @@ const toneOf = (task: { category: string; color: string }) => paletteOf(colorOf(
         @keydown="(e: KeyboardEvent) => onBlockKeydown(task, e)"
         @pointerdown="(e: PointerEvent) => onBlockPointerDown(task, e)"
         @contextmenu="(e: MouseEvent) => { if (drag || pending) e.preventDefault(); }"
+        @dragstart.prevent
         @click.stop="onBlockClick(task)"
         :style="{
           top: `${blockTop(task.startMinutes)}px`,
           height: `${blockHeight(task.durationMinutes)}px`,
-          left: `${(layout.get(task.id)?.left ?? 0) * 100 + 1}%`,
-          width: `${(layout.get(task.id)?.width ?? 1) * 100 - 2}%`,
+          left: `${(layoutBox(task.id)?.left ?? 0) * 100 + 1}%`,
+          width: `${(layoutBox(task.id)?.width ?? 1) * 100 - 2}%`,
           transform: drag?.id === task.id ? `translateY(${dragOffsetPx(task)}px)` : undefined,
         }"
         :class="[
-          'group absolute cursor-grab select-none transition-[color,background-color,border-color,scale,box-shadow] duration-150 [-webkit-touch-callout:none]',
+          'group absolute cursor-grab select-none transition-[color,background-color,border-color,scale,box-shadow,left,width] duration-150 [-webkit-touch-callout:none]',
           drag?.id === task.id ? 'z-40 scale-[1.02] cursor-grabbing opacity-95 shadow-xl' : 'z-10 hover:z-20',
         ]"
       >
@@ -505,8 +565,8 @@ const toneOf = (task: { category: string; color: string }) => paletteOf(colorOf(
           :aria-label="`Delete ${task.title}`"
           title="Delete"
           :class="[
-            'absolute right-1 z-[2] flex h-5 w-5 cursor-pointer items-center justify-center rounded-md bg-black/5 text-current opacity-0 transition hover:bg-black/15 hover:!opacity-100 focus-visible:opacity-100 group-hover:opacity-70 dark:bg-white/10 dark:hover:bg-white/20 touch:h-7 touch:w-7 touch:opacity-60',
-            isShort(task.durationMinutes) ? 'top-1/2 -translate-y-1/2' : 'top-0.5 touch:top-0',
+            'absolute right-1 z-[2] flex touch:hidden max-sm:hidden h-5 w-5 cursor-pointer items-center justify-center rounded-md bg-black/5 text-current opacity-0 transition hover:bg-black/15 hover:!opacity-100 focus-visible:opacity-100 group-hover:opacity-70 dark:bg-white/10 dark:hover:bg-white/20',
+            isShort(task.durationMinutes) ? 'top-1/2 -translate-y-1/2' : 'top-0.5',
           ]"
           @pointerdown.stop
           @click.stop="emit('delete-task', task)"

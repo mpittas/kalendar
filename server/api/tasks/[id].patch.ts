@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
   if (body.notes !== undefined) patch.notes = cleanNotes(body.notes);
   if (typeof body.completed === "boolean") patch.completed = body.completed;
   if (isNumeric(body.lane)) patch.lane = clampLane(body.lane);
+  else if (body.lane === null) patch.lane = undefined; // back to being placed automatically
 
   const task = await storeOf(event).updateTask(id, patch);
   if (!task) {
