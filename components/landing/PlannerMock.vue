@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import { paletteOf } from "~/lib/colors";
-import { formatDuration, formatTime, gutterLabel } from "~/lib/time";
+import { formatDuration, formatTime, formatTimeRange, gutterLabel } from "~/lib/time";
 import MockBlock from "~/components/landing/MockBlock.vue";
 
 /**
@@ -17,19 +17,11 @@ const NOW = 10 * 60 + 20;
 const top = (minutes: number) => ((minutes - START) / 30) * SLOT;
 const height = (duration: number) => (duration / 30) * SLOT - 4;
 const rows = Array.from({ length: (END - START) / 30 }, (_, i) => START + i * 30);
-const span = (start: number, duration: number) =>
-  `${formatTime(start)} – ${formatTime(start + duration)} · ${formatDuration(duration)}`;
+const span = (start: number, duration: number) => formatTimeRange(start, start + duration);
 
 const blocks = [
   { emoji: "☀️", title: "Morning routine", color: "amber", start: 8 * 60, duration: 45, done: true },
-  {
-    emoji: "🛠️",
-    title: "Working on projects",
-    color: "indigo",
-    start: 9 * 60,
-    duration: 120,
-    note: "Focused maker time on the current project.",
-  },
+  { emoji: "🛠️", title: "Working on projects", color: "indigo", start: 9 * 60, duration: 120 },
   { emoji: "📬", title: "Emails & admin", color: "slate", start: 11 * 60, duration: 30 },
   { emoji: "🍽️", title: "Lunch", color: "orange", start: 12 * 60, duration: 45 },
 ];
@@ -332,8 +324,7 @@ onBeforeUnmount(() => {
                 :title="block.title"
                 :color="block.color"
                 :done="block.done"
-                :meta="block.duration >= 90 ? span(block.start, block.duration) : undefined"
-                :note="block.note"
+                :meta="span(block.start, block.duration)"
               />
             </div>
 
@@ -352,7 +343,7 @@ onBeforeUnmount(() => {
               class="mock-drop absolute left-[1%] z-10 w-[98%]"
               :style="{ top: `${top(dropped.start) + 2}px`, height: `${height(dropped.duration)}px` }"
             >
-              <MockBlock :emoji="dropped.emoji" :title="dropped.title" :color="dropped.color" />
+              <MockBlock :emoji="dropped.emoji" :title="dropped.title" :color="dropped.color" :meta="span(dropped.start, dropped.duration)" />
             </div>
           </div>
         </div>

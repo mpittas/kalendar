@@ -25,7 +25,8 @@ const filteredTemplates = computed(() => {
   );
 });
 
-const toneOf = (color: string) => paletteOf(color);
+const { colorOf } = useCategories();
+const toneOf = (item: ActivityTemplate) => paletteOf(colorOf(item));
 </script>
 
 <template>
@@ -63,7 +64,7 @@ const toneOf = (color: string) => paletteOf(color);
           class="group flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-card p-2.5 text-left shadow-2xs transition hover:border-foreground/20 hover:bg-accent/50 active:bg-accent/60"
         >
           <div class="flex items-center gap-2.5 min-w-0">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg shadow-2xs" :class="toneOf(template.color).dot">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg shadow-2xs" :class="toneOf(template).dot">
               {{ template.emoji }}
             </span>
             <div class="min-w-0">

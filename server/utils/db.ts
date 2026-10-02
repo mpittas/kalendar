@@ -514,6 +514,7 @@ const toTask = ({ id, data }: FsDoc): ScheduledTask => ({
   durationMinutes: Number(data.durationMinutes ?? 60),
   notes: (data.notes as string | null) ?? null,
   completed: data.completed === true,
+  lane: typeof data.lane === "number" ? data.lane : undefined,
 });
 
 const toCategory = ({ id, data }: FsDoc): Category => ({

@@ -20,7 +20,9 @@ const props = defineProps<{
   days: DayCell[];
 }>();
 
-const toneOf = (color: string) => paletteOf(color);
+const { colorOf } = useCategories();
+// A block shows the color of its category.
+const toneOf = (task: { category: string; color: string }) => paletteOf(colorOf(task));
 </script>
 
 <template>
@@ -68,7 +70,7 @@ const toneOf = (color: string) => paletteOf(color);
           <span
             v-for="task in day.visible"
             :key="task.id"
-            :class="['h-2 w-2 rounded-full', toneOf(task.color).dot]"
+            :class="['h-2 w-2 rounded-full', toneOf(task).dot]"
           />
           <span v-if="day.hidden" class="font-mono text-[10px] font-semibold text-muted-foreground leading-none">
             +{{ day.hidden }}
@@ -82,10 +84,10 @@ const toneOf = (color: string) => paletteOf(color);
             :key="task.id"
             :class="[
               'flex items-center gap-1.5 truncate rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums shadow-2xs transition',
-              task.completed ? 'bg-muted/70 border-border text-muted-foreground line-through opacity-75' : toneOf(task.color).chip,
+              task.completed ? 'bg-muted/70 border-border text-muted-foreground line-through opacity-75' : toneOf(task).chip,
             ]"
           >
-            <span :class="['h-1.5 w-1.5 shrink-0 rounded-full', task.completed ? 'bg-muted-foreground' : toneOf(task.color).dot]" />
+            <span :class="['h-1.5 w-1.5 shrink-0 rounded-full', task.completed ? 'bg-muted-foreground' : toneOf(task).dot]" />
             <span class="font-mono text-[11px] opacity-75">{{ formatTime(task.startMinutes) }}</span>
             <span class="truncate">{{ task.title }}</span>
           </span>

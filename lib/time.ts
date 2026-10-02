@@ -173,6 +173,13 @@ export function formatTime(minutes: number): string {
   return `${h12}:${`${m}`.padStart(2, "0")} ${suffix}`;
 }
 
+/** 540, 660 -> "9:00 – 11:00 AM"; AM/PM is written once when both ends share it. */
+export function formatTimeRange(start: number, end: number): string {
+  const from = formatTime(start);
+  const to = formatTime(end);
+  return from.slice(-2) === to.slice(-2) ? `${from.slice(0, -3)} – ${to}` : `${from} – ${to}`;
+}
+
 /** Gutter label: hours only get a label, half hours stay blank. */
 export function gutterLabel(minutes: number): string | null {
   if (minutes % 60 !== 0) return null;

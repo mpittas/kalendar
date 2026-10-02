@@ -51,7 +51,16 @@ export const useCategories = () => {
     return COLOR_KEYS.find((key) => !used.has(key)) ?? COLOR_KEYS[categories.value.length % COLOR_KEYS.length];
   };
 
-  return { categories, loaded, loadError, load, create, update, remove, nextColor };
+  /**
+   * The color of an activity or block is its category's. The color saved with the item is only a
+   * fallback while the category isn't known, e.g. before the list has loaded.
+   */
+  const colorOf = (item: { category: string; color?: string }) => {
+    const name = item.category?.trim().toLowerCase();
+    return categories.value.find((c) => c.name.toLowerCase() === name)?.color ?? item.color ?? "slate";
+  };
+
+  return { categories, loaded, loadError, load, create, update, remove, nextColor, colorOf };
 };
 
 /**

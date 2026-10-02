@@ -7,7 +7,9 @@ const props = defineProps<{
   upcoming: ScheduledTask[];
 }>();
 
-const toneOf = (color: string) => paletteOf(color);
+const { colorOf } = useCategories();
+// A block shows the color of its category.
+const toneOf = (task: { category: string; color: string }) => paletteOf(colorOf(task));
 </script>
 
 <template>
@@ -29,7 +31,7 @@ const toneOf = (color: string) => paletteOf(color);
             class="group flex min-h-12 items-start gap-2.5 rounded-lg border border-border bg-card p-3 transition active:bg-muted/60 sm:p-2.5 hover:border-foreground/20 hover:bg-muted/40 shadow-2xs hover:shadow-xs"
           >
             <span
-              :class="['mt-1.5 h-2 w-2 shrink-0 rounded-full', toneOf(task.color).dot]"
+              :class="['mt-1.5 h-2 w-2 shrink-0 rounded-full', toneOf(task).dot]"
             />
             <span class="min-w-0 flex-1">
               <span class="block truncate text-sm font-medium text-foreground group-hover:text-primary transition-colors">

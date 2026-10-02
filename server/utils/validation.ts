@@ -70,6 +70,10 @@ export function clampDuration(value: unknown, fallback = 60): number {
   return Math.max(15, Math.min(MAX_DURATION, Math.round(num / 15) * 15));
 }
 
+/** A block's preferred column among blocks that share its time (see `ScheduledTask.lane`). */
+const MAX_LANE = 50;
+export const clampLane = (value: unknown) => Math.max(0, Math.min(MAX_LANE, Math.round(Number(value))));
+
 /** Round to the nearest 15 minutes and keep the block inside the day. */
 export function clampStart(value: unknown, fallback = 540): number {
   const num = Number(value);

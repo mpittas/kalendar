@@ -8,10 +8,10 @@ defineProps<{
 
 // A loose stack of tomorrow's blocks beside the closing pitch.
 const stack = [
-  { emoji: "☀️", title: "Morning routine", color: "amber", meta: "7:00 AM – 7:45 AM · 45m", style: "top: 0; left: 8%; rotate: -4deg" },
-  { emoji: "🛠️", title: "Working on projects", color: "indigo", meta: "9:00 AM – 11:00 AM · 2h", style: "top: 26%; left: 22%; rotate: 2deg" },
-  { emoji: "🏋️", title: "Workout", color: "emerald", meta: "6:00 PM – 7:00 PM · 1h", style: "top: 52%; left: 4%; rotate: -1.5deg" },
-  { emoji: "🌙", title: "Evening wind-down", color: "violet", meta: "10:00 PM – 10:30 PM · 30m", style: "top: 76%; left: 18%; rotate: 3deg" },
+  { emoji: "☀️", title: "Morning routine", color: "amber", meta: "7:00 – 7:45 AM", style: "top: 0; left: 8%; rotate: -4deg" },
+  { emoji: "🛠️", title: "Working on projects", color: "indigo", meta: "9:00 – 11:00 AM", style: "top: 26%; left: 22%; rotate: 2deg" },
+  { emoji: "🏋️", title: "Workout", color: "emerald", meta: "6:00 – 7:00 PM", style: "top: 52%; left: 4%; rotate: -1.5deg" },
+  { emoji: "🌙", title: "Evening wind-down", color: "violet", meta: "10:00 – 10:30 PM", style: "top: 76%; left: 18%; rotate: 3deg" },
 ];
 </script>
 
@@ -63,7 +63,7 @@ const stack = [
           class="cta-card absolute h-16 w-72"
           :style="`${block.style}; --i: ${index}`"
         >
-          <div class="h-full rounded-lg bg-white shadow-[0_16px_40px_-12px_rgb(0_0_0/0.65)] dark:bg-card">
+          <div class="h-full rounded-md bg-white shadow-[0_16px_40px_-12px_rgb(0_0_0/0.65)] dark:bg-card">
             <MockBlock :emoji="block.emoji" :title="block.title" :color="block.color" :meta="block.meta" />
           </div>
         </div>

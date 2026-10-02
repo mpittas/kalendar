@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { paletteOf } from "~/lib/colors";
 import { DURATION_CHOICES, formatDuration } from "~/lib/time";
 import type { ActivityTemplate } from "~/lib/types";
-import ColorSwatches from "~/components/category/ColorSwatches.vue";
 
 export type ActivityDraft = {
   name: string;
   emoji: string;
-  color: string;
   category: string;
   defaultDuration: number;
   notes: string;
@@ -20,8 +18,6 @@ const props = defineProps<{
   submitLabel: string;
   busy?: boolean;
   error?: string | null;
-  /** Picking a category also picks its color (for new activities; editing keeps the color). */
-  followCategoryColor?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -33,14 +29,10 @@ const draft = ref<ActivityDraft>({ ...props.initial });
 const nameRef = ref<HTMLInputElement | null>(null);
 const nameError = ref(false);
 
-const { categories } = useCategories();
+const { colorOf } = useCategories();
 
-const onCategory = (name: string) => {
-  draft.value.category = name;
-  if (!props.followCategoryColor) return;
-  const match = categories.value.find((c) => c.name.toLowerCase() === name.trim().toLowerCase());
-  if (match) draft.value.color = match.color;
-};
+// An activity has no color of its own: it takes the one of its category.
+const color = computed(() => colorOf({ category: draft.value.category }));
 
 const submit = async () => {
   if (!draft.value.name.trim()) {
@@ -62,10 +54,10 @@ onMounted(async () => {
     <!-- Live preview: looks like the block will on the timeline -->
     <div
       class="flex items-center gap-3 rounded-xl border px-3.5 py-3 transition-colors"
-      :class="paletteOf(draft.color).chip"
+      :class="paletteOf(color).chip"
       aria-hidden="true"
     >
-      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl" :class="paletteOf(draft.color).icon">
+      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl" :class="paletteOf(color).icon">
         {{ draft.emoji || "📌" }}
       </span>
       <div class="min-w-0 flex-1">
@@ -102,7 +94,7 @@ onMounted(async () => {
     <!-- Category -->
     <div>
       <span class="text-xs font-medium text-foreground">Category</span>
-      <CategorySelect :model-value="draft.category" :templates="templates" class="mt-1.5" @update:model-value="onCategory" />
+      <CategorySelect :model-value="draft.category" :templates="templates" class="mt-1.5" @update:model-value="(name: string) => (draft.category = name)" />
     </div>
 
     <!-- Duration -->
@@ -123,14 +115,6 @@ onMounted(async () => {
         >
           {{ formatDuration(minutes) }}
         </button>
-      </div>
-    </div>
-
-    <!-- Color -->
-    <div>
-      <span class="text-xs font-medium text-foreground">Color</span>
-      <div class="mt-2">
-        <ColorSwatches v-model="draft.color" />
       </div>
     </div>
 

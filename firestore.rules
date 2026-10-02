@@ -175,7 +175,7 @@ service cloud.firestore {
       function validTask(d) {
         return d.keys().hasOnly([
             'templateId', 'title', 'emoji', 'color', 'category', 'day',
-            'startMinutes', 'durationMinutes', 'notes', 'completed',
+            'startMinutes', 'durationMinutes', 'notes', 'completed', 'lane',
             'createdAt', 'updatedAt'
           ])
           && d.keys().hasAll(['title', 'emoji', 'color', 'category', 'day',
@@ -191,6 +191,7 @@ service cloud.firestore {
           && intIn(d.durationMinutes, 15, 1440)
           && optStr(d.get('notes', null), 500)
           && d.completed is bool
+          && (d.get('lane', null) == null || intIn(d.lane, 0, 50))
           && d.updatedAt == request.time
           && (d.get('templateId', null) == null || validDocId(d.templateId));
       }

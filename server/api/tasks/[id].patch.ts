@@ -16,6 +16,7 @@ export default defineEventHandler(async (event) => {
   if (isNumeric(body.durationMinutes)) patch.durationMinutes = clampDuration(body.durationMinutes);
   if (body.notes !== undefined) patch.notes = cleanNotes(body.notes);
   if (typeof body.completed === "boolean") patch.completed = body.completed;
+  if (isNumeric(body.lane)) patch.lane = clampLane(body.lane);
 
   const task = await storeOf(event).updateTask(id, patch);
   if (!task) {

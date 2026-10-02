@@ -3,14 +3,15 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { ScheduledTask } from "~/lib/types";
 import { SLOT_HEIGHT, SLOT_MINUTES, SNAP_MINUTES } from "~/lib/types";
 import { paletteOf } from "~/lib/colors";
-import { formatDuration, formatTime, gutterLabel, floorMinutes, HOUR_OPTIONS, snapMinutes } from "~/lib/time";
+import { formatDuration, formatTime, formatTimeRange, gutterLabel, floorMinutes, HOUR_OPTIONS, snapMinutes } from "~/lib/time";
+import TimeBlock from "~/components/day-planner/TimeBlock.vue";
 
 const props = defineProps<{
   day: string;
   tasks: ScheduledTask[];
   nowMinute: number | null;
   resizing: string | null;
-  preview: { start: number; duration: number; color: string; label: string } | null;
+  preview: { start: number; duration: number; color: string; label: string; emoji: string } | null;
   layout: Map<string, { left: number; width: number }>;
   gridHeight: number;
 }>();
@@ -19,7 +20,6 @@ const emit = defineEmits<{
   (e: "task-click", task: ScheduledTask): void;
   (e: "grid-click", event: MouseEvent): void;
   (e: "toggle-complete", task: ScheduledTask): void;
-  (e: "delete-task", id: string): void;
   (e: "start-resize", task: ScheduledTask, event: PointerEvent): void;
   (e: "drag-over", event: DragEvent): void;
   (e: "drag-leave", event: DragEvent): void;
@@ -32,6 +32,8 @@ const gridRef = ref<HTMLDivElement | null>(null);
 const hoverMinutes = ref<number | null>(null);
 const HOVER_DURATION = 30; // matches the default duration of a block created by clicking the grid
 const DAY_MINUTES = 24 * 60;
+// Cut short when the hovered slot is too close to midnight.
+const hoverDuration = computed(() => Math.min(HOVER_DURATION, DAY_MINUTES - (hoverMinutes.value ?? 0)));
 
 let lastPointer: { x: number; y: number } | null = null;
 
@@ -62,11 +64,7 @@ const handlePointerMove = (event: PointerEvent) => {
   updateHover();
 };
 
-// Hovering a block marks where it starts and ends in the gutter and across the grid.
 const hoveredTaskId = ref<string | null>(null);
-const hoveredTask = computed(() =>
-  drag.value ? null : (props.tasks.find((item) => item.id === hoveredTaskId.value) ?? null),
-);
 const onBlockPointerEnter = (task: ScheduledTask, event: PointerEvent) => {
   if (event.pointerType === "mouse") hoveredTaskId.value = task.id;
 };
@@ -245,34 +243,44 @@ const onBlockKeydown = (task: ScheduledTask, event: KeyboardEvent) => {
   if (next !== task.startMinutes) emit("move-task", task, next);
 };
 
-// Block height is proportional to duration (minus a 4px gutter) so a 15 minute block is visibly
-// half the height of a 30 minute one. Blocks shorter than a slot use a single-row compact layout.
+// Blocks sit 2px inside their slot so back-to-back blocks keep a gap. Height is proportional to
+// duration, so a 15 minute block is visibly half the height of a 30 minute one.
 const MIN_BLOCK_HEIGHT = 16;
+const blockTop = (minutes: number) => (minutes / SLOT_MINUTES) * SLOT_HEIGHT + 2;
 const blockHeight = (durationMinutes: number) =>
   Math.max(MIN_BLOCK_HEIGHT, (durationMinutes / SLOT_MINUTES) * SLOT_HEIGHT - 4);
-const isCompact = (durationMinutes: number) => durationMinutes < SLOT_MINUTES;
-// Two-line blocks (45 min and up) put the time under the title; 30 minute blocks fit it beside the title.
-const hasMetaLine = (durationMinutes: number) => blockHeight(durationMinutes) >= 64;
-const hasNotes = (durationMinutes: number) => blockHeight(durationMinutes) >= 88;
+// Every block shows the same things. Blocks shorter than a slot fit them on one line; taller ones
+// put the time under the title, which may wrap once there is room for it.
+const isShort = (durationMinutes: number) => durationMinutes < SLOT_MINUTES;
+const titleLines = (durationMinutes: number) => (durationMinutes >= 45 ? 2 : 1);
+// The resize grip needs a free strip under the text; shorter blocks still resize from their bottom edge.
+const hasGrip = (durationMinutes: number) => durationMinutes >= 45;
 
-// The block happening right now fills from the top as time passes.
-const progressOf = (task: ScheduledTask) => {
-  if (props.nowMinute === null || task.completed) return null;
-  const elapsed = props.nowMinute - task.startMinutes;
-  return elapsed >= 0 && elapsed < task.durationMinutes ? elapsed / task.durationMinutes : null;
-};
+const durationOf = (id: string) => props.tasks.find((item) => item.id === id)?.durationMinutes ?? SLOT_MINUTES;
 
 const dragGhostStyle = computed(() => {
   if (!drag.value) return undefined;
   const { id, snappedStart } = drag.value;
-  const duration = props.tasks.find((item) => item.id === id)?.durationMinutes ?? SLOT_MINUTES;
   const lane = props.layout.get(id);
   return {
-    top: `${(snappedStart / SLOT_MINUTES) * SLOT_HEIGHT + 2}px`,
-    height: `${blockHeight(duration)}px`,
+    top: `${blockTop(snappedStart)}px`,
+    height: `${blockHeight(durationOf(id))}px`,
     left: `${(lane?.left ?? 0) * 100 + 1}%`,
     width: `${(lane?.width ?? 1) * 100 - 2}%`,
   };
+});
+
+// A block being moved shows the time it will land at.
+const shownStart = (task: ScheduledTask) => (drag.value?.id === task.id ? drag.value.snappedStart : task.startMinutes);
+
+// Start and end marked in the gutter and across the grid: where a moved block or dragged-in
+// activity will land, the block being resized, or the hovered block.
+const guideMinutes = computed(() => {
+  const span = (start: number, duration: number) => [start, Math.min(start + duration, DAY_MINUTES)];
+  if (drag.value) return span(drag.value.snappedStart, durationOf(drag.value.id));
+  if (props.preview) return span(props.preview.start, props.preview.duration);
+  const task = props.tasks.find((item) => item.id === (props.resizing ?? hoveredTaskId.value));
+  return task ? span(task.startMinutes, task.durationMinutes) : null;
 });
 
 const onBlockClick = (task: ScheduledTask) => {
@@ -297,7 +305,9 @@ onBeforeUnmount(() => {
   endTracking();
 });
 
-const toneOf = (color: string) => paletteOf(color);
+const { colorOf } = useCategories();
+// A block shows the color of its category.
+const toneOf = (task: { category: string; color: string }) => paletteOf(colorOf(task));
 
 </script>
 
@@ -319,10 +329,10 @@ const toneOf = (color: string) => paletteOf(color);
         </span>
       </div>
 
-      <!-- Start and end times of the hovered block -->
-      <template v-if="hoveredTask">
+      <!-- Start and end times of the hovered, moving or resizing block -->
+      <template v-if="guideMinutes">
         <div
-          v-for="minute in [hoveredTask.startMinutes, Math.min(hoveredTask.startMinutes + hoveredTask.durationMinutes, DAY_MINUTES)]"
+          v-for="minute in guideMinutes"
           :key="`edge-${minute}`"
           class="pointer-events-none absolute right-0.5 sm:right-1 z-20 -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-muted px-1 sm:px-1.5 py-0.5 font-mono text-[10px] font-medium leading-none text-foreground/70"
           :style="{ top: `${(minute / SLOT_MINUTES) * SLOT_HEIGHT}px` }"
@@ -330,15 +340,6 @@ const toneOf = (color: string) => paletteOf(color);
           {{ formatTime(minute) }}
         </div>
       </template>
-
-      <!-- Hover time pill in gutter -->
-      <div
-        v-if="hoverMinutes !== null && !preview && !resizing"
-        class="pointer-events-none absolute right-0.5 sm:right-1 z-20 -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-muted px-1 sm:px-1.5 py-0.5 font-mono text-[10px] font-medium leading-none text-foreground/70"
-        :style="{ top: `${(hoverMinutes / SLOT_MINUTES) * SLOT_HEIGHT}px` }"
-      >
-        {{ formatTime(hoverMinutes) }}
-      </div>
 
       <!-- Live time pill in gutter -->
       <div
@@ -373,10 +374,10 @@ const toneOf = (color: string) => paletteOf(color);
         ]"
       />
 
-      <!-- Guides across the grid at the hovered block's start and end -->
-      <template v-if="hoveredTask">
+      <!-- The same start and end, across the grid -->
+      <template v-if="guideMinutes">
         <span
-          v-for="minute in [hoveredTask.startMinutes, Math.min(hoveredTask.startMinutes + hoveredTask.durationMinutes, DAY_MINUTES)]"
+          v-for="minute in guideMinutes"
           :key="`guide-${minute}`"
           class="pointer-events-none absolute inset-x-0 z-[5] border-t border-dashed border-foreground/15"
           :style="{ top: `${(minute / SLOT_MINUTES) * SLOT_HEIGHT}px` }"
@@ -398,234 +399,122 @@ const toneOf = (color: string) => paletteOf(color);
         </div>
       </div>
 
-      <!-- Hover Placement Indicator (default-length block following cursor) -->
+      <!-- Where a click would create a block (default length, following the cursor) -->
       <div
         v-if="hoverMinutes !== null && !preview && !resizing"
-        class="pointer-events-none absolute z-20 flex items-start justify-between overflow-hidden rounded-lg border border-primary/20 bg-primary/5 py-1.5 pl-3.5 pr-2.5"
+        :class="[
+          'pointer-events-none absolute z-20 flex gap-1 overflow-hidden rounded-md border border-dashed border-foreground/20 pl-2 text-xs leading-4 tabular-nums text-muted-foreground',
+          isShort(hoverDuration) ? 'items-center' : 'items-start pt-1',
+        ]"
         :style="{
-          top: `${(hoverMinutes / SLOT_MINUTES) * SLOT_HEIGHT + 2}px`,
-          height: `${(Math.min(HOVER_DURATION, DAY_MINUTES - hoverMinutes) / SLOT_MINUTES) * SLOT_HEIGHT - 4}px`,
+          top: `${blockTop(hoverMinutes)}px`,
+          height: `${blockHeight(hoverDuration)}px`,
           left: '1%',
           width: '98%',
         }"
       >
-        <span class="absolute inset-y-1.5 left-1 w-0.5 rounded-full bg-primary/30" />
-        <svg viewBox="0 0 20 20" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/50" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M10 4v12M4 10h12" stroke-linecap="round" />
+        <svg viewBox="0 0 20 20" class="h-4 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <path d="M10 5v10M5 10h10" stroke-linecap="round" />
         </svg>
-        <span class="font-mono text-[11px] font-medium text-primary/60 tabular-nums">
-          {{ formatTime(hoverMinutes) }} – {{ formatTime(Math.min(hoverMinutes + HOVER_DURATION, DAY_MINUTES)) }}
-        </span>
+        {{ formatTimeRange(hoverMinutes, hoverMinutes + hoverDuration) }}
       </div>
 
-      <!-- Drag preview placeholder -->
-      <div
+      <!-- Where a dragged-in activity will land, drawn as the block it becomes -->
+      <TimeBlock
         v-if="preview"
-        :class="[
-          'pointer-events-none absolute z-30 flex items-center justify-center rounded-lg border border-dashed shadow-2xs backdrop-blur-xs',
-          toneOf(preview.color).ghost
-        ]"
+        :emoji="preview.emoji"
+        :title="preview.label"
+        :time="formatTimeRange(preview.start, Math.min(preview.start + preview.duration, DAY_MINUTES))"
+        :color="preview.color"
+        :short="isShort(preview.duration)"
+        :lines="titleLines(preview.duration)"
+        class="pointer-events-none absolute z-30 border-dashed opacity-80"
         :style="{
-          top: `${(preview.start / SLOT_MINUTES) * SLOT_HEIGHT}px`,
-          height: `${Math.max(
-            MIN_BLOCK_HEIGHT,
-            ((Math.min(preview.start + preview.duration, 24 * 60) - preview.start) /
-              SLOT_MINUTES) *
-              SLOT_HEIGHT,
-          )}px`,
-          left: '2%',
-          width: '96%',
+          top: `${blockTop(preview.start)}px`,
+          height: `${blockHeight(Math.min(preview.duration, DAY_MINUTES - preview.start))}px`,
+          left: '1%',
+          width: '98%',
         }"
-      >
-        <span class="rounded-full bg-background px-3 py-1 font-mono text-xs font-semibold text-foreground shadow-2xs border border-border">
-          {{ preview.label }} · {{ formatTime(preview.start) }}
-        </span>
-      </div>
+      />
 
-      <!-- Landing slot while moving a block -->
+      <!-- Landing slot while moving a block; its times show in the gutter -->
       <div
         v-if="drag"
-        class="pointer-events-none absolute z-30 rounded-lg border-2 border-dashed border-primary/50 bg-primary/10"
+        class="pointer-events-none absolute z-30 rounded-md border border-dashed border-foreground/30 bg-foreground/[0.03]"
         :style="dragGhostStyle"
-      >
-        <span class="absolute -top-2.5 right-2 rounded-md bg-primary px-1.5 py-0.5 font-mono text-[10px] font-semibold leading-none text-primary-foreground shadow-xs">
-          {{ formatTime(drag.snappedStart) }}
-        </span>
-      </div>
+      />
 
       <!-- Scheduled task blocks -->
-      <div
+      <TimeBlock
         v-for="task in tasks"
         :key="task.id"
+        :emoji="task.emoji"
+        :title="task.title"
+        :time="formatTimeRange(shownStart(task), shownStart(task) + task.durationMinutes)"
+        :color="colorOf(task)"
+        :done="task.completed"
+        :short="isShort(task.durationMinutes)"
+        :lines="titleLines(task.durationMinutes)"
         data-task-block
         role="button"
         tabindex="0"
         :aria-label="`${task.title}, ${formatTime(task.startMinutes)} to ${formatTime(task.startMinutes + task.durationMinutes)}. Press Enter to edit.`"
         @keydown.enter.self.prevent="emit('task-click', task)"
-        @keydown="(e) => onBlockKeydown(task, e)"
-        @pointerdown="(e) => onBlockPointerDown(task, e)"
-        @pointerenter="(e) => onBlockPointerEnter(task, e)"
+        @keydown="(e: KeyboardEvent) => onBlockKeydown(task, e)"
+        @pointerdown="(e: PointerEvent) => onBlockPointerDown(task, e)"
+        @pointerenter="(e: PointerEvent) => onBlockPointerEnter(task, e)"
         @pointerleave="hoveredTaskId = null"
-        @contextmenu="(e) => { if (drag || pending) e.preventDefault(); }"
+        @contextmenu="(e: MouseEvent) => { if (drag || pending) e.preventDefault(); }"
         @click.stop="onBlockClick(task)"
         :style="{
-          top: `${(task.startMinutes / SLOT_MINUTES) * SLOT_HEIGHT + 2}px`,
+          top: `${blockTop(task.startMinutes)}px`,
           height: `${blockHeight(task.durationMinutes)}px`,
           left: `${(layout.get(task.id)?.left ?? 0) * 100 + 1}%`,
           width: `${(layout.get(task.id)?.width ?? 1) * 100 - 2}%`,
           transform: drag?.id === task.id ? `translateY(${dragOffsetPx(task)}px)` : undefined,
         }"
         :class="[
-          '@container group absolute flex cursor-grab select-none flex-col overflow-hidden rounded-lg border px-2.5 [-webkit-touch-callout:none]',
-          isCompact(task.durationMinutes) ? 'justify-center py-0' : 'py-1.5',
-          drag?.id === task.id
-            ? 'z-40 cursor-grabbing opacity-90 shadow-lg ring-2 ring-primary/30'
-            : 'z-10 shadow-2xs transition-shadow hover:z-20 hover:shadow-xs',
-          task.completed ? toneOf(task.color).blockDone : toneOf(task.color).block
+          'group absolute cursor-grab select-none transition-colors [-webkit-touch-callout:none]',
+          drag?.id === task.id ? 'z-40 cursor-grabbing opacity-90 shadow-lg' : 'z-10 hover:z-20',
         ]"
       >
-        <!-- Elapsed share of the block that is happening now -->
+        <!-- Length while resizing, beside the title -->
         <span
-          v-if="progressOf(task) !== null"
-          aria-hidden="true"
-          :class="['pointer-events-none absolute inset-x-0 top-0 opacity-[0.09]', toneOf(task.color).accent]"
-          :style="{ height: `${progressOf(task)! * 100}%` }"
-        />
-
-        <!-- Vertical accent line -->
-        <span
-          class="absolute left-1 w-0.5 rounded-full transition-opacity"
-          :class="[
-            isCompact(task.durationMinutes) ? 'inset-y-1' : 'inset-y-1.5',
-            toneOf(task.color).accent,
-            task.completed ? 'opacity-40' : 'opacity-100',
-          ]"
-        />
-
-        <div class="relative flex items-center gap-2 pl-1.5">
-          <button
-            type="button"
-            :aria-label="task.completed ? 'Mark as not done' : 'Mark as done'"
-            @click.stop="emit('toggle-complete', task)"
-            :class="[
-              'relative flex shrink-0 items-center justify-center rounded-xs border transition-colors cursor-pointer after:absolute after:-inset-1.5 touch:after:-inset-2.5',
-              isCompact(task.durationMinutes) ? 'h-3.5 w-3.5 touch:h-4 touch:w-4' : 'h-4 w-4 touch:h-5 touch:w-5',
-              task.completed
-                ? 'border-emerald-600 bg-emerald-600 text-white shadow-2xs'
-                : 'border-input bg-background text-transparent hover:border-foreground/60'
-            ]"
-          >
-            <svg viewBox="0 0 16 16" class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3.5 8.5l3 3 6-6" />
-            </svg>
-          </button>
-
-          <!-- Emoji tile, dropped when the block is too narrow or too short for it -->
-          <span
-            v-if="!isCompact(task.durationMinutes)"
-            aria-hidden="true"
-            :class="[
-              'hidden shrink-0 items-center justify-center leading-none @[9rem]:flex',
-              hasMetaLine(task.durationMinutes) ? 'h-8 w-8 rounded-lg text-base' : 'h-[22px] w-[22px] rounded-md text-xs',
-              task.completed
-                ? 'bg-foreground/5 opacity-60 grayscale'
-                : 'bg-white/75 ring-1 ring-inset ring-black/[0.06] dark:bg-white/10 dark:ring-white/10',
-            ]"
-          >
-            {{ task.emoji }}
-          </span>
-
-          <div class="min-w-0 flex-1">
-            <p
-              :class="[
-                'truncate font-semibold leading-tight tracking-[-0.01em] text-foreground',
-                isCompact(task.durationMinutes) ? 'text-xs' : 'text-sm',
-                task.completed ? 'line-through text-muted-foreground font-normal' : ''
-              ]"
-            >
-              <span :class="isCompact(task.durationMinutes) ? '' : '@[9rem]:hidden'">{{ task.emoji }} </span>{{ task.title }}
-            </p>
-
-            <!-- Time and length under the title -->
-            <p
-              v-if="hasMetaLine(task.durationMinutes)"
-              :class="['mt-0.5 truncate text-[12.5px] font-medium leading-4 tabular-nums', task.completed ? 'text-muted-foreground' : toneOf(task.color).meta]"
-            >
-              {{ formatTime(task.startMinutes) }} – {{ formatTime(task.startMinutes + task.durationMinutes) }}
-              <span class="mx-0.5 opacity-50">·</span>
-              <span class="font-normal opacity-85">{{ formatDuration(task.durationMinutes) }}</span>
-            </p>
-          </div>
-
-          <!-- Time beside the title when there is no room for a second line -->
-          <span
-            v-if="!isCompact(task.durationMinutes) && !hasMetaLine(task.durationMinutes)"
-            :class="['hidden shrink-0 text-[11.5px] font-medium tabular-nums @[17rem]:inline', task.completed ? 'text-muted-foreground' : toneOf(task.color).meta]"
-          >
-            {{ formatTime(task.startMinutes) }} – {{ formatTime(task.startMinutes + task.durationMinutes) }}
-          </span>
-
-          <!-- Marks the block that is happening now -->
-          <span
-            v-if="progressOf(task) !== null && resizing !== task.id"
-            class="flex shrink-0 items-center gap-1.5 rounded-full bg-background/70 px-1.5 py-1 @[22rem]:px-2 @[22rem]:py-0.5 text-[11px] font-semibold leading-4 text-foreground/80 ring-1 ring-inset ring-border"
-          >
-            <span class="relative flex h-1.5 w-1.5">
-              <span :class="['absolute inline-flex h-full w-full animate-ping rounded-full opacity-60', toneOf(task.color).accent]" />
-              <span :class="['relative inline-flex h-1.5 w-1.5 rounded-full', toneOf(task.color).accent]" />
-            </span>
-            <span class="hidden @[22rem]:inline">Now</span>
-          </span>
-
-          <button
-            v-if="resizing !== task.id"
-            type="button"
-            aria-label="Remove block"
-            title="Remove block"
-            @click.stop="emit('delete-task', task.id)"
-            @pointerdown.stop
-            @mousedown.stop
-            :class="isCompact(task.durationMinutes) ? 'h-4 w-4' : 'h-4.5 w-4.5'"
-            class="flex shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-75 hover:opacity-100 focus-visible:opacity-100 touch:hidden"
-          >
-            <svg
-              viewBox="0 0 20 20"
-              class="h-3 w-3"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M5 5l10 10M15 5L5 15" stroke-linecap="round" />
-            </svg>
-          </button>
-        </div>
-
-        <!-- Notes snippet for tall blocks, lined up with the title text -->
-        <p
-          v-if="hasNotes(task.durationMinutes) && task.notes"
-          :class="['relative mt-1 line-clamp-1 pl-[1.875rem] text-[13px] leading-5 @[9rem]:pl-[4.375rem]', task.completed ? 'text-muted-foreground/80' : toneOf(task.color).meta]"
+          v-if="resizing === task.id"
+          class="shrink-0 rounded bg-primary px-1.5 text-[11px] font-medium leading-4 tabular-nums text-primary-foreground"
         >
-          {{ task.notes }}
-        </p>
+          {{ formatDuration(task.durationMinutes) }}
+        </span>
+
+        <!-- Completion ring; left out of very narrow blocks (several side by side), where the title needs the room -->
+        <button
+          type="button"
+          :aria-label="task.completed ? 'Mark as not done' : 'Mark as done'"
+          @click.stop="emit('toggle-complete', task)"
+          :class="[
+            'relative z-[1] hidden h-3.5 w-3.5 shrink-0 cursor-pointer items-center justify-center rounded-full border-[1.5px] transition-colors after:absolute after:-inset-1.5 touch:after:-inset-2.5 @[8rem]:flex',
+            !isShort(task.durationMinutes) && 'mt-px',
+            task.completed ? [toneOf(task).accent, 'border-transparent text-white'] : [toneOf(task).check, 'text-transparent'],
+          ]"
+        >
+          <svg viewBox="0 0 16 16" class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3.5 8.5l3 3 6-6" />
+          </svg>
+        </button>
 
         <!-- Resize handle at bottom -->
         <div
           data-resize-handle
           @pointerdown="(e) => emit('start-resize', task, e)"
-          :class="isCompact(task.durationMinutes) ? 'h-2 touch:h-3' : 'h-3.5 sm:h-2 touch:h-5'"
-          class="absolute inset-x-0 bottom-0 flex touch-none cursor-ns-resize items-center justify-center"
+          :class="isShort(task.durationMinutes) ? 'h-2 touch:h-3' : 'h-3.5 sm:h-2 touch:h-5'"
+          class="absolute inset-x-0 bottom-0 flex touch-none cursor-ns-resize items-end justify-center pb-[3px]"
         >
-          <span class="h-0.5 w-6 rounded-full bg-foreground/20 opacity-0 transition group-hover:opacity-100 touch:opacity-70" />
+          <span
+            v-if="hasGrip(task.durationMinutes)"
+            class="h-0.5 w-5 rounded-full bg-current opacity-0 transition-opacity group-hover:opacity-25 touch:opacity-20"
+          />
         </div>
-
-        <!-- Active resizing duration badge -->
-        <span
-          v-if="resizing === task.id"
-          class="absolute right-1.5 top-1.5 rounded-md bg-primary px-2 py-0.5 font-mono text-xs font-semibold text-primary-foreground shadow-xs"
-        >
-          {{ formatDuration(task.durationMinutes) }}
-        </span>
-      </div>
+      </TimeBlock>
     </div>
   </div>
 </template>

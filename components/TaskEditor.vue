@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { canonicalColor, COLOR_KEYS, PALETTE, paletteOf } from "~/lib/colors";
+import { paletteOf } from "~/lib/colors";
 import { api } from "~/lib/api";
 import {
   DURATION_CHOICES,
@@ -33,7 +33,6 @@ const emit = defineEmits<{
 
 const title = ref("");
 const emoji = ref("📌");
-const color = ref("indigo");
 const category = ref("General");
 const day = ref("");
 const start = ref("09:00");
@@ -46,6 +45,9 @@ const error = ref<string | null>(null);
 const confirmingTemplateDelete = ref(false);
 
 const isEdit = computed(() => props.request?.mode === "edit");
+const { colorOf } = useCategories();
+// Blocks take their category's color; there is no separate color to pick.
+const color = computed(() => colorOf({ category: category.value.trim() || "General" }));
 const tone = computed(() => paletteOf(color.value));
 
 const durationOptions = computed(() => {
@@ -64,7 +66,6 @@ watch(
       const task = req.task;
       title.value = task.title;
       emoji.value = task.emoji;
-      color.value = task.color;
       category.value = task.category;
       day.value = task.day;
       start.value = timeInputValue(task.startMinutes);
@@ -76,7 +77,6 @@ watch(
       const template = req.template ?? null;
       title.value = template?.name ?? "";
       emoji.value = template?.emoji ?? "📌";
-      color.value = template?.color ?? "indigo";
       category.value = template?.category ?? "General";
       day.value = req.day;
       start.value = timeInputValue(req.startMinutes);
@@ -98,7 +98,6 @@ const applyTemplate = (idStr: string) => {
   if (!template) return;
   title.value = template.name;
   emoji.value = template.emoji;
-  color.value = template.color;
   category.value = template.category;
   duration.value = template.defaultDuration;
   if (!notes.value) notes.value = template.notes ?? "";
@@ -262,29 +261,6 @@ const remove = async () => {
             class="mt-1.5 w-full"
           />
         </label>
-      </div>
-
-      <div>
-        <span id="task-color-label" class="text-xs font-medium text-foreground">
-          Color
-        </span>
-        <div role="radiogroup" aria-labelledby="task-color-label" class="mt-1.5 flex flex-wrap gap-2 touch:gap-2.5">
-          <button
-            v-for="key in COLOR_KEYS"
-            :key="key"
-            type="button"
-            role="radio"
-            :aria-checked="canonicalColor(color) === key"
-            :aria-label="PALETTE[key].label"
-            :title="PALETTE[key].label"
-            @click="color = key"
-            :class="[
-              'h-6 w-6 rounded-full transition shadow-xs cursor-pointer touch:h-10 touch:w-10',
-              PALETTE[key].swatch,
-              canonicalColor(color) === key ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : 'opacity-70 hover:opacity-100 hover:scale-105'
-            ]"
-          />
-        </div>
       </div>
 
       <label class="block">

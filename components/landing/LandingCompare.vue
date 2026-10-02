@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatDuration, formatTime, gutterLabel } from "~/lib/time";
+import { formatDuration, formatTimeRange, gutterLabel } from "~/lib/time";
 import MockBlock from "~/components/landing/MockBlock.vue";
 
 const START = 9 * 60;
@@ -110,7 +110,7 @@ const planned = tasks.reduce((sum, task) => sum + task.duration, 0);
                     :title="task.title"
                     :color="task.color"
                     :compact="task.duration < 60"
-                    :meta="task.duration >= 120 ? `${formatTime(task.start)} – ${formatTime(task.start + task.duration)}` : undefined"
+                    :meta="task.duration >= 120 ? formatTimeRange(task.start, task.start + task.duration) : undefined"
                   />
                 </div>
               </div>

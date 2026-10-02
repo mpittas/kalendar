@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import type { ScheduledTask } from "~/lib/types";
 import {
   addDaysISO,
@@ -21,6 +21,9 @@ const props = defineProps<{
   month: string;
   tasks: ScheduledTask[];
 }>();
+
+const { load: loadCategories } = useCategories();
+onMounted(() => loadCategories());
 
 const today = todayISO();
 const MAX_VISIBLE = 3;

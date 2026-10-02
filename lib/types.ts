@@ -28,6 +28,11 @@ export type ScheduledTask = {
   durationMinutes: number;
   notes: string | null;
   completed: boolean;
+  /**
+   * Preferred column among the blocks it shares time with, set by dragging it sideways.
+   * Absent until the block has been placed by hand; then it takes the first free column.
+   */
+  lane?: number;
 };
 
 export type ChecklistItem = {

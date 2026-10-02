@@ -19,7 +19,7 @@ const emit = defineEmits<{
   (e: "deleted", id: string): void;
 }>();
 
-const { categories, load: loadCategories } = useCategories();
+const { categories, load: loadCategories, colorOf } = useCategories();
 
 // "list" is the library; "create" and "edit" swap it for the form.
 const mode = ref<{ kind: "list" } | { kind: "create" } | { kind: "edit"; template: ActivityTemplate }>({ kind: "list" });
@@ -44,7 +44,6 @@ const blankDraft = (): ActivityDraft => {
   return {
     name: "",
     emoji: "📌",
-    color: first?.color ?? "indigo",
     category: first?.name ?? "General",
     defaultDuration: 60,
     notes: "",
@@ -54,7 +53,6 @@ const blankDraft = (): ActivityDraft => {
 const draftOf = (t: ActivityTemplate): ActivityDraft => ({
   name: t.name,
   emoji: t.emoji,
-  color: t.color,
   category: t.category,
   defaultDuration: t.defaultDuration,
   notes: t.notes ?? "",
@@ -93,7 +91,7 @@ const backToList = () => {
 const payload = (d: ActivityDraft) => ({
   name: d.name.trim(),
   emoji: d.emoji,
-  color: d.color,
+  color: colorOf({ category: d.category.trim() || "General" }),
   category: d.category.trim() || "General",
   defaultDuration: d.defaultDuration,
   notes: d.notes.trim() || null,
@@ -155,7 +153,6 @@ const confirmDelete = async (id: string) => {
       :initial="mode.kind === 'edit' ? draftOf(mode.template) : blankDraft()"
       :templates="templates"
       :submit-label="mode.kind === 'edit' ? 'Save changes' : 'Add activity'"
-      :follow-category-color="mode.kind === 'create'"
       :busy="busy"
       :error="error"
       @submit="submit"
@@ -218,7 +215,7 @@ const confirmDelete = async (id: string) => {
         <ul class="space-y-1.5">
           <li v-for="template in group.items" :key="template.id" class="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
             <div class="group flex items-center gap-2 p-2.5 sm:gap-3">
-              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl" :class="paletteOf(template.color).icon">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl" :class="paletteOf(colorOf(template)).icon">
                 {{ template.emoji }}
               </span>
               <button type="button" class="min-w-0 flex-1 cursor-pointer text-left focus-visible:outline-none" :aria-label="`Edit ${template.name}`" @click="startEdit(template)">

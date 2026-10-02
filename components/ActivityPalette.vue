@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, nextTick } from "vue";
 import type { ActivityTemplate } from "~/lib/types";
 import { paletteOf } from "~/lib/colors";
-import { formatDuration } from "~/lib/time";
+import { DURATION_CHOICES, formatDuration } from "~/lib/time";
+import { api } from "~/lib/api";
 import { withImplicitCategories } from "~/composables/useCategories";
 
 const props = defineProps<{
@@ -15,9 +16,10 @@ const emit = defineEmits<{
   (e: "drag-end"): void;
   (e: "move", template: ActivityTemplate, category: string): void;
   (e: "manage"): void;
+  (e: "saved", template: ActivityTemplate): void;
 }>();
 
-const { categories } = useCategories();
+const { categories, colorOf, load: loadCategories } = useCategories();
 const { show: showLibrary } = useLibrary();
 
 const search = ref("");
@@ -119,6 +121,65 @@ const onDragEnd = () => {
   emit("drag-end");
 };
 
+// Quick add: a short form at the bottom of a category. It stays open after each add, so several
+// activities can be entered in a row. Name and length are all that is needed; the color is the
+// category's.
+const adding = ref<string | null>(null);
+const addName = ref("");
+const addEmoji = ref("📌");
+const addDuration = ref(60);
+// Saves in flight. Several can overlap when names are typed in quick succession.
+const addPending = ref(0);
+const addError = ref<string | null>(null);
+const addInput = ref<HTMLInputElement | null>(null);
+
+const startAdd = async (category: string) => {
+  adding.value = category;
+  addName.value = "";
+  addError.value = null;
+  collapsed.value = collapsed.value.filter((c) => c !== category);
+  await nextTick();
+  addInput.value?.focus();
+  addInput.value?.scrollIntoView({ block: "nearest" });
+};
+
+const stopAdd = () => {
+  adding.value = null;
+  addError.value = null;
+};
+
+const submitAdd = async (category: string) => {
+  const name = addName.value.trim();
+  if (!name) {
+    addInput.value?.focus();
+    return;
+  }
+  addPending.value++;
+  addError.value = null;
+  // Cleared at once so the next name can be typed while this one saves; put back if saving fails.
+  addName.value = "";
+  try {
+    const created = await api.createTemplate({
+      name,
+      emoji: addEmoji.value || "📌",
+      color: colorOf({ category }),
+      category,
+      defaultDuration: addDuration.value,
+      notes: null,
+    });
+    emit("saved", created);
+    // The server may have created the category just now; pick it up for the lists.
+    loadCategories(true);
+  } catch (err) {
+    if (!addName.value) addName.value = name;
+    addError.value = err instanceof Error ? err.message : "Could not add that activity";
+  } finally {
+    addPending.value--;
+    await nextTick();
+    addInput.value?.focus();
+  }
+};
+
 const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
   dragging.value = template;
   emit("drag-start", template);
@@ -215,39 +276,35 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
         @dragleave="onGroupDragLeave($event, group.category)"
         @drop.prevent="onGroupDrop(group.category)"
       >
-        <button
-          type="button"
-          class="flex w-full items-center justify-between gap-2 bg-muted/40 px-2.5 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-muted/70 cursor-pointer"
-          :aria-expanded="isOpen(group.category)"
-          @click="toggleGroup(group.category)"
-        >
-          <div class="flex items-center gap-2 min-w-0">
-            <svg
-              viewBox="0 0 20 20"
-              class="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200"
-              :class="isOpen(group.category) ? 'rotate-90 text-foreground' : ''"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path d="M7.5 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            <span class="h-2.5 w-2.5 shrink-0 rounded-full shadow-2xs" :class="paletteOf(group.color).dot" />
-            <span class="truncate font-semibold tracking-tight text-foreground">{{ group.category }}</span>
-          </div>
-          <span class="inline-flex items-center rounded-full border border-border bg-background px-2 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground tabular-nums">
-            {{ group.items.length }}
-          </span>
-        </button>
+        <div class="bg-muted/40">
+          <button
+            type="button"
+            class="flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left text-xs font-semibold text-foreground transition hover:bg-muted/70 cursor-pointer"
+            :aria-expanded="isOpen(group.category)"
+            @click="toggleGroup(group.category)"
+          >
+            <div class="flex items-center gap-2 min-w-0">
+              <svg
+                viewBox="0 0 20 20"
+                class="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200"
+                :class="isOpen(group.category) ? 'rotate-90 text-foreground' : ''"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path d="M7.5 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span class="h-2.5 w-2.5 shrink-0 rounded-full shadow-2xs" :class="paletteOf(group.color).dot" />
+              <span class="truncate font-semibold tracking-tight text-foreground">{{ group.category }}</span>
+            </div>
+            <span class="inline-flex items-center rounded-full border border-border bg-background px-2 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground tabular-nums">
+              {{ group.items.length }}
+            </span>
+          </button>
+        </div>
 
-        <p
-          v-if="group.items.length === 0 && isOpen(group.category)"
-          class="border-t border-border/40 px-3 py-3 text-center text-[11px] text-muted-foreground"
-        >
-          No activities yet
-        </p>
-        <ul v-else v-show="isOpen(group.category)" class="p-1 space-y-0.5 border-t border-border/40">
+        <ul v-show="isOpen(group.category)" class="p-1 space-y-0.5 border-t border-border/40">
           <li
             v-for="template in group.items"
             :key="template.id"
@@ -265,7 +322,7 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
           >
             <span
               class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs leading-none"
-              :class="paletteOf(template.color).icon"
+              :class="paletteOf(colorOf(template)).icon"
             >
               {{ template.emoji }}
             </span>
@@ -283,6 +340,60 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
               <circle cx="7" cy="10" r="1.4" /><circle cx="13" cy="10" r="1.4" />
               <circle cx="7" cy="15" r="1.4" /><circle cx="13" cy="15" r="1.4" />
             </svg>
+          </li>
+
+          <!-- Quick add: a subtle row at the end of the category, which turns into the form -->
+          <li v-if="adding === group.category" class="rounded-md border border-ring/60 bg-background p-1.5 shadow-2xs">
+            <form class="space-y-1.5" @submit.prevent="submitAdd(group.category)" @keydown.esc.stop.prevent="stopAdd">
+              <div class="flex h-8 items-center rounded-md border border-input bg-background transition-colors focus-within:ring-1 focus-within:ring-ring">
+                <EmojiPicker v-model="addEmoji" />
+                <span class="h-4 w-px shrink-0 bg-border" />
+                <input
+                  :ref="(el) => { if (adding === group.category) addInput = el as HTMLInputElement | null; }"
+                  v-model="addName"
+                  maxlength="80"
+                  autocomplete="off"
+                  enterkeyhint="done"
+                  :aria-label="`New activity in ${group.category}`"
+                  placeholder="New activity, press Enter"
+                  class="h-full min-w-0 flex-1 bg-transparent px-2 text-xs placeholder:text-muted-foreground focus-visible:outline-none"
+                />
+              </div>
+              <div class="flex items-center gap-1.5">
+                <select
+                  v-model.number="addDuration"
+                  aria-label="Default length"
+                  class="h-7 min-w-0 flex-1 cursor-pointer rounded-md border border-input bg-background px-2 text-xs tabular-nums focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option v-for="minutes in DURATION_CHOICES" :key="minutes" :value="minutes">{{ formatDuration(minutes) }}</option>
+                </select>
+                <button
+                  type="button"
+                  class="h-7 cursor-pointer rounded-md px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  @click="stopAdd"
+                >
+                  Done
+                </button>
+                <button
+                  type="submit"
+                  :disabled="!addName.trim()"
+                  class="h-7 cursor-pointer rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {{ addPending > 0 ? "Adding…" : "Add" }}
+                </button>
+              </div>
+              <p v-if="addError" class="text-[11px] font-medium text-destructive" role="alert">{{ addError }}</p>
+            </form>
+          </li>
+          <li v-else>
+            <button
+              type="button"
+              class="flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium text-muted-foreground/80 transition hover:bg-accent/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              @click="startAdd(group.category)"
+            >
+              <svg viewBox="0 0 20 20" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+              Add new activity
+            </button>
           </li>
         </ul>
       </section>

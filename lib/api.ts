@@ -39,7 +39,7 @@ export type TaskDraft = {
   templateId?: string | null;
 };
 
-export type TaskPatch = Partial<Omit<TaskDraft, "day">> & { day?: string };
+export type TaskPatch = Partial<Omit<TaskDraft, "day">> & { day?: string; lane?: number };
 
 export const api = {
   async getTasksForDay(day: string): Promise<ScheduledTask[]> {

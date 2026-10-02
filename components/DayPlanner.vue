@@ -44,7 +44,7 @@ const activeSidebarTab = ref<"activities" | "checklist" | "notes">("activities")
 const mobileSheet = ref<"checklist" | "activities" | "notes" | null>(null);
 const editor = ref<EditorRequest | null>(null);
 const { show: showLibrary } = useLibrary();
-const preview = ref<{ start: number; duration: number; color: string; label: string } | null>(null);
+const preview = ref<{ start: number; duration: number; color: string; label: string; emoji: string } | null>(null);
 const resizing = ref<string | null>(null);
 const flash = ref<string | null>(null);
 
@@ -124,7 +124,7 @@ const scrollToUsefulPosition = () => {
   el.scrollTop = Math.max(0, (target / SLOT_MINUTES) * SLOT_HEIGHT - 96);
 };
 
-const { load: loadCategories } = useCategories();
+const { load: loadCategories, colorOf } = useCategories();
 
 onMounted(() => {
   loadCategories();
@@ -227,8 +227,9 @@ const handleDragOver = (event: DragEvent) => {
   preview.value = {
     start,
     duration: template?.defaultDuration ?? 60,
-    color: template?.color ?? "indigo",
+    color: template ? colorOf(template) : "indigo",
     label: template?.name ?? "New Block",
+    emoji: template?.emoji ?? "",
   };
 };
 
@@ -249,7 +250,7 @@ const createFromTemplate = async (template: ActivityTemplate, startMinutes: numb
     templateId: template.id,
     title: template.name,
     category: template.category,
-    color: template.color,
+    color: colorOf(template),
     emoji: template.emoji,
     startMinutes,
     durationMinutes: template.defaultDuration,
@@ -339,20 +340,6 @@ const toggleComplete = async (task: ScheduledTask) => {
     await api.updateTask(task.id, { completed: next });
   } catch {
     tasks.value = tasks.value.map((item) => (item.id === task.id ? { ...item, completed: !next } : item));
-  }
-};
-
-const deleteTask = async (id: string) => {
-  const taskToDelete = tasks.value.find((item) => item.id === id);
-  tasks.value = tasks.value.filter((item) => item.id !== id);
-  try {
-    await api.deleteTask(id);
-    notify(taskToDelete ? `Removed ${taskToDelete.title}` : "Removed block");
-  } catch {
-    if (taskToDelete) {
-      tasks.value = [...tasks.value, taskToDelete].sort((a, b) => a.startMinutes - b.startMinutes);
-    }
-    notify("Could not delete that block");
   }
 };
 
@@ -570,6 +557,7 @@ const openChecklistManager = () => {
         @drag-end="() => { dragSource = null; preview = null; }"
         @manage="showLibrary('activities')"
         @move="moveTemplate"
+        @saved="onTemplateSaved"
       />
     </aside>
 
@@ -607,7 +595,6 @@ const openChecklistManager = () => {
             editor = { mode: 'create', day, startMinutes: minutesFromEvent(event.currentTarget as HTMLDivElement, event.clientY), template: null };
           }"
           @toggle-complete="toggleComplete"
-          @delete-task="deleteTask"
           @start-resize="startResize"
           @drag-over="handleDragOver"
           @drag-leave="(event) => { if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) preview = null; }"
