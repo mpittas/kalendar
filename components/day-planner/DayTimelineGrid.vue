@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, Plus } from "lucide-vue-next";
+import { Check, Plus, X } from "lucide-vue-next";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { ScheduledTask } from "~/lib/types";
 import { SLOT_HEIGHT, SLOT_MINUTES, SNAP_MINUTES } from "~/lib/types";
@@ -21,6 +21,7 @@ const emit = defineEmits<{
   (e: "task-click", task: ScheduledTask): void;
   (e: "grid-click", event: MouseEvent): void;
   (e: "toggle-complete", task: ScheduledTask): void;
+  (e: "delete-task", task: ScheduledTask): void;
   (e: "start-resize", task: ScheduledTask, event: PointerEvent): void;
   (e: "drag-over", event: DragEvent): void;
   (e: "drag-leave", event: DragEvent): void;
@@ -80,8 +81,8 @@ onBeforeUnmount(() => window.removeEventListener("scroll", updateHover, { captur
 watch(() => [props.preview, props.resizing], updateHover);
 
 // ---- Moving blocks (pointer based, so it works with mouse, touch and pen) ----
-const TOUCH_HOLD_MS = 220; // touch must press and hold, otherwise the gesture scrolls the page
-const TOUCH_SLOP = 8;
+const TOUCH_HOLD_MS = 300; // touch must press and hold, otherwise the gesture scrolls the timeline
+const TOUCH_SLOP = 10;
 const MOUSE_SLOP = 4;
 const EDGE_SCROLL_ZONE = 72;
 const EDGE_SCROLL_MAX = 16;
@@ -470,10 +471,26 @@ const toneOf = (task: { category: string; color: string }) => paletteOf(colorOf(
           transform: drag?.id === task.id ? `translateY(${dragOffsetPx(task)}px)` : undefined,
         }"
         :class="[
-          'group absolute cursor-grab select-none transition-colors [-webkit-touch-callout:none]',
-          drag?.id === task.id ? 'z-40 cursor-grabbing opacity-90 shadow-lg' : 'z-10 hover:z-20',
+          'group absolute cursor-grab select-none transition-[color,background-color,border-color,scale,box-shadow] duration-150 [-webkit-touch-callout:none]',
+          drag?.id === task.id ? 'z-40 scale-[1.02] cursor-grabbing opacity-95 shadow-xl' : 'z-10 hover:z-20',
         ]"
       >
+        <template #leading>
+        <!-- Completion ring, before the title; left out of very narrow blocks (several side by side), where the title needs the room -->
+          <button
+            type="button"
+            :aria-label="task.completed ? 'Mark as not done' : 'Mark as done'"
+            @click.stop="emit('toggle-complete', task)"
+            :class="[
+              'relative z-[1] hidden h-3.5 w-3.5 shrink-0 cursor-pointer items-center justify-center rounded-full border-[1.5px] transition-colors after:absolute after:-inset-1.5 touch:after:-inset-2.5 @[8rem]:flex',
+              !isShort(task.durationMinutes) && 'mt-px',
+              task.completed ? [toneOf(task).accent, 'border-transparent text-white'] : [toneOf(task).check, 'text-transparent'],
+            ]"
+          >
+            <Check class="h-2.5 w-2.5" aria-hidden="true" :stroke-width="3" />
+          </button>
+        </template>
+
         <!-- Length while resizing, beside the title -->
         <span
           v-if="resizing === task.id"
@@ -482,18 +499,19 @@ const toneOf = (task: { category: string; color: string }) => paletteOf(colorOf(
           {{ formatDuration(task.durationMinutes) }}
         </span>
 
-        <!-- Completion ring; left out of very narrow blocks (several side by side), where the title needs the room -->
+        <!-- Delete: top-right corner. Shows on hover or focus; faintly always on touch. -->
         <button
           type="button"
-          :aria-label="task.completed ? 'Mark as not done' : 'Mark as done'"
-          @click.stop="emit('toggle-complete', task)"
+          :aria-label="`Delete ${task.title}`"
+          title="Delete"
           :class="[
-            'relative z-[1] hidden h-3.5 w-3.5 shrink-0 cursor-pointer items-center justify-center rounded-full border-[1.5px] transition-colors after:absolute after:-inset-1.5 touch:after:-inset-2.5 @[8rem]:flex',
-            !isShort(task.durationMinutes) && 'mt-px',
-            task.completed ? [toneOf(task).accent, 'border-transparent text-white'] : [toneOf(task).check, 'text-transparent'],
+            'absolute right-1 z-[2] flex h-5 w-5 cursor-pointer items-center justify-center rounded-md bg-black/5 text-current opacity-0 transition hover:bg-black/15 hover:!opacity-100 focus-visible:opacity-100 group-hover:opacity-70 dark:bg-white/10 dark:hover:bg-white/20 touch:h-7 touch:w-7 touch:opacity-60',
+            isShort(task.durationMinutes) ? 'top-1/2 -translate-y-1/2' : 'top-0.5 touch:top-0',
           ]"
+          @pointerdown.stop
+          @click.stop="emit('delete-task', task)"
         >
-          <Check class="h-2.5 w-2.5" aria-hidden="true" :stroke-width="3" />
+          <X class="h-3.5 w-3.5" aria-hidden="true" />
         </button>
 
         <!-- Resize handle at bottom -->

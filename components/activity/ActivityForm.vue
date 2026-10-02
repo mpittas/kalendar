@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from "vue";
-import { paletteOf } from "~/lib/colors";
+import { nextTick, onMounted, ref } from "vue";
 import { DURATION_CHOICES, formatDuration } from "~/lib/time";
 import type { ActivityTemplate } from "~/lib/types";
 
@@ -29,11 +28,6 @@ const draft = ref<ActivityDraft>({ ...props.initial });
 const nameRef = ref<HTMLInputElement | null>(null);
 const nameError = ref(false);
 
-const { colorOf } = useCategories();
-
-// An activity has no color of its own: it takes the one of its category.
-const color = computed(() => colorOf({ category: draft.value.category }));
-
 const submit = async () => {
   if (!draft.value.name.trim()) {
     nameError.value = true;
@@ -50,29 +44,12 @@ onMounted(async () => {
 </script>
 
 <template>
-  <form class="space-y-4" @submit.prevent="submit" @keydown.esc.stop.prevent="emit('cancel')">
-    <!-- Live preview: looks like the block will on the timeline -->
-    <div
-      class="flex items-center gap-3 rounded-xl border px-3.5 py-3 transition-colors"
-      :class="paletteOf(color).chip"
-      aria-hidden="true"
-    >
-      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl" :class="paletteOf(color).icon">
-        {{ draft.emoji || "📌" }}
-      </span>
-      <div class="min-w-0 flex-1">
-        <p class="truncate text-sm font-semibold text-foreground">{{ draft.name.trim() || "Untitled activity" }}</p>
-        <p class="truncate text-xs text-muted-foreground tabular-nums">
-          {{ formatDuration(draft.defaultDuration) }} · {{ draft.category || "No category" }}
-        </p>
-      </div>
-    </div>
-
+  <form class="space-y-3" @submit.prevent="submit" @keydown.esc.stop.prevent="emit('cancel')">
     <!-- Name + emoji -->
     <div>
       <label for="activity-name" class="text-xs font-medium text-foreground">Name</label>
       <div
-        class="mt-1.5 flex h-11 w-full items-center rounded-md border bg-background shadow-xs transition-colors focus-within:ring-1 focus-within:ring-ring sm:h-10"
+        class="mt-1 flex h-11 w-full items-center rounded-md border bg-background shadow-xs transition-colors focus-within:ring-1 focus-within:ring-ring sm:h-9"
         :class="nameError ? 'border-destructive' : 'border-input'"
       >
         <EmojiPicker v-model="draft.emoji" />
@@ -88,26 +65,26 @@ onMounted(async () => {
           @input="nameError = false"
         />
       </div>
-      <p v-if="nameError" class="mt-1.5 text-xs font-medium text-destructive" role="alert">Give your activity a name.</p>
+      <p v-if="nameError" class="mt-1 text-xs font-medium text-destructive" role="alert">Give your activity a name.</p>
     </div>
 
     <!-- Category -->
     <div>
       <span class="text-xs font-medium text-foreground">Category</span>
-      <CategorySelect :model-value="draft.category" :templates="templates" class="mt-1.5" @update:model-value="(name: string) => (draft.category = name)" />
+      <CategorySelect :model-value="draft.category" :templates="templates" class="mt-1" @update:model-value="(name: string) => (draft.category = name)" />
     </div>
 
     <!-- Duration -->
     <div>
       <span class="text-xs font-medium text-foreground">Default length</span>
-      <div role="radiogroup" aria-label="Default length" class="mt-1.5 flex flex-wrap gap-2 sm:gap-1.5">
+      <div role="radiogroup" aria-label="Default length" class="mt-1 flex flex-wrap gap-2 sm:gap-1.5">
         <button
           v-for="minutes in DURATION_CHOICES"
           :key="minutes"
           type="button"
           role="radio"
           :aria-checked="draft.defaultDuration === minutes"
-          class="h-10 min-w-14 cursor-pointer rounded-md border px-3 text-sm font-medium tabular-nums transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-8 sm:min-w-12 sm:px-2.5 sm:text-xs"
+          class="h-10 min-w-14 cursor-pointer rounded-md border px-3 text-sm font-medium tabular-nums transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-7 sm:min-w-11 sm:px-2 sm:text-xs"
           :class="draft.defaultDuration === minutes
             ? 'border-primary bg-primary text-primary-foreground shadow-xs'
             : 'border-input bg-background text-foreground hover:bg-accent'"
@@ -126,10 +103,10 @@ onMounted(async () => {
       <textarea
         id="activity-notes"
         v-model="draft.notes"
-        rows="2"
+        rows="1"
         maxlength="500"
         placeholder="A short description or intention"
-        class="mt-1.5 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        class="mt-1 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:py-1.5"
       />
     </div>
 
@@ -137,10 +114,10 @@ onMounted(async () => {
       {{ error }}
     </p>
 
-    <div class="sticky -bottom-[max(1rem,env(safe-area-inset-bottom))] -mx-4 -mb-[max(1rem,env(safe-area-inset-bottom))] flex gap-2 border-t border-border bg-background px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:static sm:mx-0 sm:mb-0 sm:justify-end sm:px-0 sm:pb-0 sm:pt-4">
+    <div class="sticky -bottom-[max(1rem,env(safe-area-inset-bottom))] -mx-4 -mb-[max(1rem,env(safe-area-inset-bottom))] flex gap-2 border-t border-border bg-background px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:static sm:mx-0 sm:mb-0 sm:justify-end sm:border-t-0 sm:px-0 sm:pb-0 sm:pt-1">
       <button
         type="button"
-        class="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent sm:h-9 sm:flex-none"
+        class="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent sm:h-8 sm:flex-none"
         @click="emit('cancel')"
       >
         Cancel
@@ -148,7 +125,7 @@ onMounted(async () => {
       <button
         type="submit"
         :disabled="busy"
-        class="inline-flex h-11 flex-[1.6] cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:flex-none"
+        class="inline-flex h-11 flex-[1.6] cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 sm:flex-none"
       >
         {{ busy ? "Saving…" : submitLabel }}
       </button>

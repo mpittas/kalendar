@@ -40,8 +40,8 @@ export const useCategories = () => {
     return updated;
   };
 
-  const remove = async (id: string, moveTo?: string) => {
-    await api.deleteCategory(id, moveTo);
+  const remove = async (id: string, target?: { moveTo: string } | { deleteActivities: true }) => {
+    await api.deleteCategory(id, target);
     categories.value = categories.value.filter((c) => c.id !== id);
   };
 

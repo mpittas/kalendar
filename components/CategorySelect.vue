@@ -126,7 +126,7 @@ const submitNew = async () => {
 
 const manage = () => {
   hide();
-  showLibrary("categories");
+  showLibrary({ kind: "new-category" });
 };
 
 // Arrow keys move through the options.

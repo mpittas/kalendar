@@ -7,7 +7,7 @@ import { paletteOf } from "~/lib/colors";
  * block is too short for two lines. The time is dropped when the block is too narrow for it
  * (under 8rem, e.g. several blocks side by side). The planner, its drop preview and the landing
  * page mockups all draw blocks with this, so they look alike. Controls such as the completion
- * ring go in the slot.
+ * ring go in the slots: `leading` before the text, the default one after it.
  */
 const props = defineProps<{
   emoji: string;
@@ -33,6 +33,7 @@ const tone = computed(() => paletteOf(props.color));
       done ? tone.blockDone : tone.block,
     ]"
   >
+    <slot name="leading" />
     <div :class="['min-w-0 flex-1', short && 'flex items-baseline gap-2']">
       <p
         :class="[

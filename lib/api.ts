@@ -117,9 +117,14 @@ export const api = {
     });
     return data.category;
   },
-  /** `moveTo` is the name of the category that takes over the deleted one's activities. */
-  async deleteCategory(id: string, moveTo?: string): Promise<void> {
-    const query = moveTo ? `?moveTo=${encodeURIComponent(moveTo)}` : "";
+  /** Its activities either go to the category named `moveTo`, or are deleted along with it. */
+  async deleteCategory(id: string, target?: { moveTo: string } | { deleteActivities: true }): Promise<void> {
+    const query =
+      target && "moveTo" in target
+        ? `?moveTo=${encodeURIComponent(target.moveTo)}`
+        : target
+          ? "?deleteActivities=1"
+          : "";
     await request<{ ok: true }>(`/api/categories/${id}${query}`, { method: "DELETE" });
   },
   async getChecklistItems(): Promise<ChecklistItem[]> {

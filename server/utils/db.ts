@@ -17,8 +17,11 @@ export interface Store {
   createCategory(draft: Omit<Category, "id">): Promise<Category>;
   /** Renaming also moves the category's activities and scheduled blocks to the new name. */
   updateCategory(id: string, patch: Partial<Omit<Category, "id">>): Promise<Category | null>;
-  /** Activities in the category must be moved elsewhere via `moveTo` (another category's name). */
-  deleteCategory(id: string, moveTo: string | null): Promise<boolean>;
+  /**
+   * Activities in the category must go somewhere: moved to another category via `moveTo` (its name),
+   * or deleted with the category when `deleteActivities` is set. Scheduled blocks always stay.
+   */
+  deleteCategory(id: string, moveTo: string | null, deleteActivities?: boolean): Promise<boolean>;
   /** Make sure a category with this name exists; returns its canonical spelling. */
   ensureCategory(name: string): Promise<string>;
   listTasksForDay(day: string): Promise<ScheduledTask[]>;
@@ -352,12 +355,16 @@ class MemoryStore implements Store {
     return next;
   }
 
-  async deleteCategory(id: string, moveTo: string | null) {
+  async deleteCategory(id: string, moveTo: string | null, deleteActivities = false) {
     const doomed = this.categories.find((c) => c.id === id);
     if (!doomed) return false;
-    const inUse = this.templates.some((t) => t.category === doomed.name);
-    const target = resolveMoveTarget(this.categories, doomed, moveTo, inUse);
-    if (target) this.recategorize(doomed.name, target);
+    if (deleteActivities) {
+      for (const t of this.templates.filter((t) => t.category === doomed.name)) await this.deleteTemplate(t.id);
+    } else {
+      const inUse = this.templates.some((t) => t.category === doomed.name);
+      const target = resolveMoveTarget(this.categories, doomed, moveTo, inUse);
+      if (target) this.recategorize(doomed.name, target);
+    }
     this.categories = this.categories.filter((c) => c.id !== id);
     return true;
   }
@@ -827,15 +834,19 @@ class FirestoreStore implements Store {
     }
   }
 
-  async deleteCategory(id: string, moveTo: string | null) {
+  async deleteCategory(id: string, moveTo: string | null, deleteActivities = false) {
     try {
       const doc = await this.fs.get(`${this.base}/categories/${id}`);
       if (!doc) return false;
       const doomed = toCategory(doc);
-      const inUse =
-        (await this.fs.query(this.base, "templates", [{ field: "category", op: "EQUAL", value: doomed.name }], 1)).length > 0;
-      const target = resolveMoveTarget(await this.listCategories(), doomed, moveTo, inUse);
-      if (target) await this.recategorize(doomed.name, target);
+      const where = [{ field: "category", op: "EQUAL" as const, value: doomed.name }];
+      if (deleteActivities) {
+        for (const t of await this.fs.query(this.base, "templates", where)) await this.deleteTemplate(t.id);
+      } else {
+        const inUse = (await this.fs.query(this.base, "templates", where, 1)).length > 0;
+        const target = resolveMoveTarget(await this.listCategories(), doomed, moveTo, inUse);
+        if (target) await this.recategorize(doomed.name, target);
+      }
       await this.fs.commit([{ op: "delete", path: `${this.base}/categories/${id}` }]);
       return true;
     } catch (err) {

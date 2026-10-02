@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, ChevronsDownUp, ChevronsUpDown, Folder, GripVertical, Plus, Search, Settings, X } from "lucide-vue-next";
+import { ChevronRight, ChevronsDownUp, ChevronsUpDown, Pencil, Plus, Search, SquarePen, X } from "lucide-vue-next";
 import { ref, computed, watch, onMounted, nextTick } from "vue";
 import type { ActivityTemplate } from "~/lib/types";
 import { paletteOf } from "~/lib/colors";
@@ -228,15 +228,6 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
           <ChevronsUpDown v-if="allCollapsed" class="h-4 w-4" aria-hidden="true" />
           <ChevronsDownUp v-else class="h-4 w-4" aria-hidden="true" />
         </button>
-        <button
-          type="button"
-          class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-input bg-background text-muted-foreground shadow-xs transition hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          title="Manage categories"
-          aria-label="Manage categories"
-          @click="showLibrary('categories')"
-        >
-          <Folder class="h-4 w-4" aria-hidden="true" />
-        </button>
       </div>
     </div>
 
@@ -310,7 +301,18 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
             <span class="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
               {{ formatDuration(template.defaultDuration) }}
             </span>
-            <GripVertical class="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-60 group-focus-visible:opacity-60" aria-hidden="true" />
+            <button
+              type="button"
+              :aria-label="`Edit ${template.name}`"
+              title="Edit"
+              draggable="false"
+              class="-mr-1 flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring group-hover:opacity-100 touch:h-9 touch:w-9 touch:opacity-70"
+              @click.stop="showLibrary({ kind: 'edit', id: template.id })"
+              @keydown.enter.stop
+              @keydown.space.stop
+            >
+              <Pencil class="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
           </li>
 
           <!-- Quick add: a subtle row at the end of the category, which turns into the form -->
@@ -370,20 +372,16 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
       </section>
     </div>
 
-    <!-- Footer -->
-    <div class="flex items-center justify-between gap-2 border-t border-border px-3 py-2.5">
-      <span v-if="query" class="text-[11px] text-muted-foreground tabular-nums">
-        {{ matchCount }} of {{ templates.length }}
-      </span>
-      <span v-else class="text-[11px] text-muted-foreground tabular-nums">{{ templates.length }} activities</span>
+    <!-- Footer: where to edit the library -->
+    <div class="border-t border-border px-3 py-2.5">
+      <p v-if="query" class="mb-2 text-[11px] tabular-nums text-muted-foreground">{{ matchCount }} of {{ templates.length }} activities</p>
       <button
         type="button"
-        class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-muted-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground cursor-pointer"
-        title="Customize"
-        aria-label="Customize activities"
-        @click="emit('manage')"
+        class="inline-flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-md border border-input bg-background text-xs font-medium text-foreground shadow-xs transition hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        @click="showLibrary()"
       >
-        <Settings class="h-4 w-4" aria-hidden="true" />
+        <SquarePen class="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+        Edit activities &amp; categories
       </button>
     </div>
   </div>

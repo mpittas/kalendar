@@ -307,11 +307,23 @@ const startResize = (task: ScheduledTask, event: PointerEvent) => {
     );
   };
 
-  const finish = async (moveEvent: PointerEvent) => {
+  const cancel = () => {
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerup", finish);
+    window.removeEventListener("pointercancel", cancel);
     resizing.value = null;
-    const delta = ((moveEvent.clientY - startY) / SLOT_HEIGHT) * SLOT_MINUTES;
+    tasks.value = tasks.value.map((item) =>
+      item.id === task.id ? { ...item, durationMinutes: startDuration } : item,
+    );
+    resizedJustHappened = false;
+  };
+
+  const finish = async (upEvent: PointerEvent) => {
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", finish);
+    window.removeEventListener("pointercancel", cancel);
+    resizing.value = null;
+    const delta = ((upEvent.clientY - startY) / SLOT_HEIGHT) * SLOT_MINUTES;
     const next = snapDuration(startDuration + delta);
     if (next === startDuration) {
       resizedJustHappened = false;
@@ -331,6 +343,8 @@ const startResize = (task: ScheduledTask, event: PointerEvent) => {
 
   window.addEventListener("pointermove", onMove);
   window.addEventListener("pointerup", finish);
+  // The browser took the gesture over (e.g. started scrolling): put the block back as it was.
+  window.addEventListener("pointercancel", cancel);
 };
 
 const toggleComplete = async (task: ScheduledTask) => {
@@ -340,6 +354,18 @@ const toggleComplete = async (task: ScheduledTask) => {
     await api.updateTask(task.id, { completed: next });
   } catch {
     tasks.value = tasks.value.map((item) => (item.id === task.id ? { ...item, completed: !next } : item));
+  }
+};
+
+const deleteTask = async (task: ScheduledTask) => {
+  const previous = tasks.value;
+  tasks.value = tasks.value.filter((item) => item.id !== task.id);
+  try {
+    await api.deleteTask(task.id);
+    notify(`Deleted ${task.title}`);
+  } catch {
+    tasks.value = previous;
+    notify("Could not delete that block");
   }
 };
 
@@ -553,7 +579,7 @@ const openChecklistManager = () => {
         @pick="(template) => createFromTemplate(template, snapMinutes(nowMinutes(), 30))"
         @drag-start="(template) => { dragSource = { kind: 'template', template }; }"
         @drag-end="() => { dragSource = null; preview = null; }"
-        @manage="showLibrary('activities')"
+        @manage="showLibrary()"
         @move="moveTemplate"
         @saved="onTemplateSaved"
       />
@@ -593,6 +619,7 @@ const openChecklistManager = () => {
             editor = { mode: 'create', day, startMinutes: minutesFromEvent(event.currentTarget as HTMLDivElement, event.clientY), template: null };
           }"
           @toggle-complete="toggleComplete"
+          @delete-task="deleteTask"
           @start-resize="startResize"
           @drag-over="handleDragOver"
           @drag-leave="(event) => { if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) preview = null; }"
@@ -633,7 +660,7 @@ const openChecklistManager = () => {
       :templates="templates"
       @close="mobileSheet = null"
       @pick-template="(template) => { mobileSheet = null; createFromTemplate(template, snapMinutes(nowMinutes(), 30)); }"
-      @open-manager="showLibrary('activities')"
+      @open-manager="showLibrary()"
     />
 
     <Modal
