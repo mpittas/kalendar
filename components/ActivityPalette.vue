@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, ChevronsDownUp, ChevronsUpDown, Folder, GripVertical, Plus, Search, X } from "lucide-vue-next";
+import { ChevronRight, ChevronsDownUp, ChevronsUpDown, Folder, GripVertical, Plus, Search, Settings, X } from "lucide-vue-next";
 import { ref, computed, watch, onMounted, nextTick } from "vue";
 import type { ActivityTemplate } from "~/lib/types";
 import { paletteOf } from "~/lib/colors";
@@ -378,11 +378,12 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
       <span v-else class="text-[11px] text-muted-foreground tabular-nums">{{ templates.length }} activities</span>
       <button
         type="button"
-        class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-medium text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground cursor-pointer"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-muted-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground cursor-pointer"
+        title="Customize"
+        aria-label="Customize activities"
         @click="emit('manage')"
       >
-        <Plus class="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-        Customize
+        <Settings class="h-4 w-4" aria-hidden="true" />
       </button>
     </div>
   </div>
