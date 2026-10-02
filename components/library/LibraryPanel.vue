@@ -17,13 +17,13 @@ const props = defineProps<{
   active: boolean;
   focus: LibraryFocus;
   templates: ActivityTemplate[];
-}>();
-
-const emit = defineEmits<{
-  (e: "saved", template: ActivityTemplate): void;
-  (e: "deleted", id: string): void;
+  // Callbacks rather than emits (still bound with @saved etc.): closing the dialog unmounts this
+  // panel, and Vue drops emits from an unmounted component. A save that finishes after the dialog
+  // closed (e.g. a rename committed by clicking outside it) must still reach the planner.
+  onSaved?: (template: ActivityTemplate) => void;
+  onDeleted?: (id: string) => void;
   // Renaming or deleting a category rewrites its activities and blocks, so the parent reloads them.
-  (e: "categories-changed"): void;
+  onCategoriesChanged?: () => void;
 }>();
 
 const { categories, loaded, loadError, load, create, update, remove, nextColor, colorOf } = useCategories();
@@ -108,7 +108,7 @@ const submitActivity = async (d: ActivityDraft) => {
   error.value = null;
   try {
     const saved = form.kind === "edit" ? await api.updateTemplate(form.id, body) : await api.createTemplate(body);
-    emit("saved", saved);
+    props.onSaved?.(saved);
     // The server may have created the category just now.
     load(true);
     activityForm.value = null;
@@ -124,7 +124,7 @@ const confirmDeleteActivity = async (id: string) => {
   error.value = null;
   try {
     await api.deleteTemplate(id);
-    emit("deleted", id);
+    props.onDeleted?.(id);
     deletingId.value = null;
   } catch (err) {
     error.value = err instanceof Error ? err.message : "Could not delete";
@@ -194,8 +194,13 @@ const patchCategory = async (entry: CategoryEntry, patch: { name?: string; color
   const key = keyOf(entry);
   setRowError(key, null);
   try {
-    await update(entry.id, patch);
-    if (patch.name !== undefined) emit("categories-changed");
+    const renamed = patch.name !== undefined && patch.name !== entry.name;
+    const affected = renamed ? props.templates.filter((t) => t.category === entry.name) : [];
+    // The server renamed these activities too; relabel them here as the list changes.
+    await update(entry.id, patch, (updated) => {
+      for (const t of affected) props.onSaved?.({ ...t, category: updated.name });
+    });
+    if (renamed) props.onCategoriesChanged?.();
   } catch (err) {
     setRowError(key, err instanceof Error ? err.message : "Could not save");
   }
@@ -208,10 +213,14 @@ const commitName = async (entry: CategoryEntry) => {
   const draft = nameDrafts.value[key];
   if (draft === undefined) return;
   const name = draft.trim();
-  const { [key]: _discard, ...rest } = nameDrafts.value;
-  nameDrafts.value = rest;
-  if (!name || name === entry.name) return;
+  const clearDraft = () => {
+    const { [key]: _discard, ...rest } = nameDrafts.value;
+    nameDrafts.value = rest;
+  };
+  if (!name || name === entry.name) return clearDraft();
+  // Keep showing the typed name while it saves, so the field doesn't flip back to the old one.
   await patchCategory(entry, { name });
+  clearDraft();
 };
 
 const revertName = (entry: CategoryEntry) => {
@@ -250,9 +259,18 @@ const confirmDeleteCategory = async (entry: CategoryEntry) => {
   removing.value = true;
   setRowError(key, null);
   try {
+    if (n === 0) {
+      // The list here can be out of date (it isn't shared across days), so ask the server before treating the category as empty.
+      const fresh = (await api.getTemplates()).filter((t) => t.category === entry.name).length;
+      if (fresh > 0) {
+        props.onCategoriesChanged?.();
+        setRowError(key, "This category has activities now. Choose what should happen to them.");
+        return;
+      }
+    }
     await remove(entry.id, n === 0 ? undefined : deleteMode.value === "delete" ? { deleteActivities: true } : { moveTo: moveTo.value });
     deleting.value = null;
-    emit("categories-changed");
+    props.onCategoriesChanged?.();
   } catch (err) {
     setRowError(key, err instanceof Error ? err.message : "Could not delete");
   } finally {

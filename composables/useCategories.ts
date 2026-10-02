@@ -34,8 +34,14 @@ export const useCategories = () => {
     return created;
   };
 
-  const update = async (id: string, patch: Partial<Omit<Category, "id">>) => {
+  /**
+   * `apply` runs in the same tick the list changes, so a caller can relabel the activities of a
+   * renamed category before anything renders. Otherwise, for one frame, the new name shows up empty
+   * and the activities under the old name show up as a second, unsaved category.
+   */
+  const update = async (id: string, patch: Partial<Omit<Category, "id">>, apply?: (updated: Category) => void) => {
     const updated = await api.updateCategory(id, patch);
+    apply?.(updated);
     categories.value = categories.value.map((c) => (c.id === id ? updated : c)).sort(byName);
     return updated;
   };
