@@ -23,6 +23,8 @@ export type PaletteEntry = {
   selected: string;
   ghost: string;
   icon: string;
+  /** Secondary text on a block (times, notes), tinted toward the block's hue. */
+  meta: string;
 };
 
 export const PALETTE: Record<ColorKey, PaletteEntry> = {
@@ -37,6 +39,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     selected: "bg-indigo-600 border-indigo-600 text-white",
     ghost: "bg-indigo-50/90 border-indigo-300 dark:bg-indigo-500/15 dark:border-indigo-400/50",
     icon: "bg-indigo-100 text-indigo-950 dark:bg-indigo-500/25 dark:text-indigo-100",
+    meta: "text-indigo-900/70 dark:text-indigo-100/65",
   },
   emerald: {
     label: "Emerald",
@@ -49,6 +52,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     selected: "bg-emerald-600 border-emerald-600 text-white",
     ghost: "bg-emerald-50/90 border-emerald-300 dark:bg-emerald-500/15 dark:border-emerald-400/50",
     icon: "bg-emerald-100 text-emerald-950 dark:bg-emerald-500/25 dark:text-emerald-100",
+    meta: "text-emerald-900/70 dark:text-emerald-100/65",
   },
   amber: {
     label: "Amber",
@@ -61,6 +65,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     selected: "bg-amber-600 border-amber-600 text-white",
     ghost: "bg-amber-50/90 border-amber-300 dark:bg-amber-500/15 dark:border-amber-400/50",
     icon: "bg-amber-100 text-amber-950 dark:bg-amber-500/25 dark:text-amber-100",
+    meta: "text-amber-900/70 dark:text-amber-100/65",
   },
   rose: {
     label: "Rose",
@@ -73,6 +78,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     selected: "bg-rose-600 border-rose-600 text-white",
     ghost: "bg-rose-50/90 border-rose-300 dark:bg-rose-500/15 dark:border-rose-400/50",
     icon: "bg-rose-100 text-rose-950 dark:bg-rose-500/25 dark:text-rose-100",
+    meta: "text-rose-900/70 dark:text-rose-100/65",
   },
   sky: {
     label: "Sky",
@@ -85,6 +91,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     selected: "bg-sky-600 border-sky-600 text-white",
     ghost: "bg-sky-50/90 border-sky-300 dark:bg-sky-500/15 dark:border-sky-400/50",
     icon: "bg-sky-100 text-sky-950 dark:bg-sky-500/25 dark:text-sky-100",
+    meta: "text-sky-900/70 dark:text-sky-100/65",
   },
   violet: {
     label: "Violet",
@@ -97,6 +104,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     selected: "bg-violet-600 border-violet-600 text-white",
     ghost: "bg-violet-50/90 border-violet-300 dark:bg-violet-500/15 dark:border-violet-400/50",
     icon: "bg-violet-100 text-violet-950 dark:bg-violet-500/25 dark:text-violet-100",
+    meta: "text-violet-900/70 dark:text-violet-100/65",
   },
   teal: {
     label: "Teal",
@@ -109,6 +117,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     selected: "bg-teal-600 border-teal-600 text-white",
     ghost: "bg-teal-50/90 border-teal-300 dark:bg-teal-500/15 dark:border-teal-400/50",
     icon: "bg-teal-100 text-teal-950 dark:bg-teal-500/25 dark:text-teal-100",
+    meta: "text-teal-900/70 dark:text-teal-100/65",
   },
   orange: {
     label: "Orange",
@@ -121,6 +130,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     selected: "bg-orange-600 border-orange-600 text-white",
     ghost: "bg-orange-50/90 border-orange-300 dark:bg-orange-500/15 dark:border-orange-400/50",
     icon: "bg-orange-100 text-orange-950 dark:bg-orange-500/25 dark:text-orange-100",
+    meta: "text-orange-900/70 dark:text-orange-100/65",
   },
   pink: {
     label: "Pink",
@@ -133,6 +143,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     selected: "bg-pink-600 border-pink-600 text-white",
     ghost: "bg-pink-50/90 border-pink-300 dark:bg-pink-500/15 dark:border-pink-400/50",
     icon: "bg-pink-100 text-pink-950 dark:bg-pink-500/25 dark:text-pink-100",
+    meta: "text-pink-900/70 dark:text-pink-100/65",
   },
   lime: {
     label: "Lime",
@@ -145,6 +156,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     selected: "bg-lime-600 border-lime-600 text-white",
     ghost: "bg-lime-50/90 border-lime-300 dark:bg-lime-500/15 dark:border-lime-400/50",
     icon: "bg-lime-100 text-lime-950 dark:bg-lime-500/25 dark:text-lime-100",
+    meta: "text-lime-900/70 dark:text-lime-100/65",
   },
   cyan: {
     label: "Cyan",
@@ -157,6 +169,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     selected: "bg-cyan-600 border-cyan-600 text-white",
     ghost: "bg-cyan-50/90 border-cyan-300 dark:bg-cyan-500/15 dark:border-cyan-400/50",
     icon: "bg-cyan-100 text-cyan-950 dark:bg-cyan-500/25 dark:text-cyan-100",
+    meta: "text-cyan-900/70 dark:text-cyan-100/65",
   },
   slate: {
     label: "Slate",
@@ -169,6 +182,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     selected: "bg-slate-800 border-slate-800 text-white dark:bg-slate-600 dark:border-slate-600",
     ghost: "bg-slate-50/90 border-slate-300 dark:bg-slate-500/15 dark:border-slate-400/50",
     icon: "bg-slate-200 text-slate-900 dark:bg-slate-500/25 dark:text-slate-100",
+    meta: "text-slate-900/70 dark:text-slate-100/65",
   },
 };
 

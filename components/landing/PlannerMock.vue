@@ -144,7 +144,7 @@ onBeforeUnmount(() => {
   <div
     role="img"
     aria-label="The klndr. day planner: an activity library beside an hour-by-hour timeline, with a walk being dragged into an open slot at 11:30 AM."
-    class="overflow-hidden rounded-2xl border border-border bg-background text-left shadow-[0_1px_2px_rgb(15_23_42/0.04),0_32px_72px_-32px_rgb(15_23_42/0.35)] dark:shadow-[0_32px_72px_-32px_rgb(0_0_0/0.7)]"
+    class="overflow-hidden rounded-2xl border border-border bg-background text-left shadow-xs"
   >
     <!-- App bar -->
     <div class="flex h-11 items-center justify-between border-b border-border px-3 sm:px-4">

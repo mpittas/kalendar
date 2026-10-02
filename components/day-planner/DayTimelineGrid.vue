@@ -251,6 +251,16 @@ const MIN_BLOCK_HEIGHT = 16;
 const blockHeight = (durationMinutes: number) =>
   Math.max(MIN_BLOCK_HEIGHT, (durationMinutes / SLOT_MINUTES) * SLOT_HEIGHT - 4);
 const isCompact = (durationMinutes: number) => durationMinutes < SLOT_MINUTES;
+// Two-line blocks (45 min and up) put the time under the title; 30 minute blocks fit it beside the title.
+const hasMetaLine = (durationMinutes: number) => blockHeight(durationMinutes) >= 64;
+const hasNotes = (durationMinutes: number) => blockHeight(durationMinutes) >= 88;
+
+// The block happening right now fills from the top as time passes.
+const progressOf = (task: ScheduledTask) => {
+  if (props.nowMinute === null || task.completed) return null;
+  const elapsed = props.nowMinute - task.startMinutes;
+  return elapsed >= 0 && elapsed < task.durationMinutes ? elapsed / task.durationMinutes : null;
+};
 
 const dragGhostStyle = computed(() => {
   if (!drag.value) return undefined;
@@ -466,7 +476,7 @@ const toneOf = (color: string) => paletteOf(color);
           transform: drag?.id === task.id ? `translateY(${dragOffsetPx(task)}px)` : undefined,
         }"
         :class="[
-          'group absolute flex cursor-grab select-none flex-col overflow-hidden rounded-lg border px-2.5 [-webkit-touch-callout:none]',
+          '@container group absolute flex cursor-grab select-none flex-col overflow-hidden rounded-lg border px-2.5 [-webkit-touch-callout:none]',
           isCompact(task.durationMinutes) ? 'justify-center py-0' : 'py-1.5',
           drag?.id === task.id
             ? 'z-40 cursor-grabbing opacity-90 shadow-lg ring-2 ring-primary/30'
@@ -474,6 +484,14 @@ const toneOf = (color: string) => paletteOf(color);
           task.completed ? toneOf(task.color).blockDone : toneOf(task.color).block
         ]"
       >
+        <!-- Elapsed share of the block that is happening now -->
+        <span
+          v-if="progressOf(task) !== null"
+          aria-hidden="true"
+          :class="['pointer-events-none absolute inset-x-0 top-0 opacity-[0.09]', toneOf(task.color).accent]"
+          :style="{ height: `${progressOf(task)! * 100}%` }"
+        />
+
         <!-- Vertical accent line -->
         <span
           class="absolute left-1 w-0.5 rounded-full transition-opacity"
@@ -484,14 +502,14 @@ const toneOf = (color: string) => paletteOf(color);
           ]"
         />
 
-        <div :class="['flex gap-2 pl-1.5', isCompact(task.durationMinutes) ? 'items-center' : 'items-start']">
+        <div class="relative flex items-center gap-2 pl-1.5">
           <button
             type="button"
             :aria-label="task.completed ? 'Mark as not done' : 'Mark as done'"
             @click.stop="emit('toggle-complete', task)"
             :class="[
               'relative flex shrink-0 items-center justify-center rounded-xs border transition-colors cursor-pointer after:absolute after:-inset-1.5 touch:after:-inset-2.5',
-              isCompact(task.durationMinutes) ? 'h-3.5 w-3.5 touch:h-4 touch:w-4' : 'mt-0.5 h-4 w-4 touch:h-5 touch:w-5',
+              isCompact(task.durationMinutes) ? 'h-3.5 w-3.5 touch:h-4 touch:w-4' : 'h-4 w-4 touch:h-5 touch:w-5',
               task.completed
                 ? 'border-emerald-600 bg-emerald-600 text-white shadow-2xs'
                 : 'border-input bg-background text-transparent hover:border-foreground/60'
@@ -501,15 +519,64 @@ const toneOf = (color: string) => paletteOf(color);
               <path d="M3.5 8.5l3 3 6-6" />
             </svg>
           </button>
-          <p
+
+          <!-- Emoji tile, dropped when the block is too narrow or too short for it -->
+          <span
+            v-if="!isCompact(task.durationMinutes)"
+            aria-hidden="true"
             :class="[
-              'min-w-0 flex-1 truncate font-semibold leading-tight text-foreground',
-              isCompact(task.durationMinutes) ? 'text-xs' : 'text-sm',
-              task.completed ? 'line-through text-muted-foreground font-normal' : ''
+              'hidden shrink-0 items-center justify-center leading-none @[9rem]:flex',
+              hasMetaLine(task.durationMinutes) ? 'h-8 w-8 rounded-lg text-base' : 'h-[22px] w-[22px] rounded-md text-xs',
+              task.completed
+                ? 'bg-foreground/5 opacity-60 grayscale'
+                : 'bg-white/75 ring-1 ring-inset ring-black/[0.06] dark:bg-white/10 dark:ring-white/10',
             ]"
           >
-            {{ task.emoji }} {{ task.title }}
-          </p>
+            {{ task.emoji }}
+          </span>
+
+          <div class="min-w-0 flex-1">
+            <p
+              :class="[
+                'truncate font-semibold leading-tight tracking-[-0.01em] text-foreground',
+                isCompact(task.durationMinutes) ? 'text-xs' : 'text-sm',
+                task.completed ? 'line-through text-muted-foreground font-normal' : ''
+              ]"
+            >
+              <span :class="isCompact(task.durationMinutes) ? '' : '@[9rem]:hidden'">{{ task.emoji }} </span>{{ task.title }}
+            </p>
+
+            <!-- Time and length under the title -->
+            <p
+              v-if="hasMetaLine(task.durationMinutes)"
+              :class="['mt-0.5 truncate text-[12.5px] font-medium leading-4 tabular-nums', task.completed ? 'text-muted-foreground' : toneOf(task.color).meta]"
+            >
+              {{ formatTime(task.startMinutes) }} – {{ formatTime(task.startMinutes + task.durationMinutes) }}
+              <span class="mx-0.5 opacity-50">·</span>
+              <span class="font-normal opacity-85">{{ formatDuration(task.durationMinutes) }}</span>
+            </p>
+          </div>
+
+          <!-- Time beside the title when there is no room for a second line -->
+          <span
+            v-if="!isCompact(task.durationMinutes) && !hasMetaLine(task.durationMinutes)"
+            :class="['hidden shrink-0 text-[11.5px] font-medium tabular-nums @[17rem]:inline', task.completed ? 'text-muted-foreground' : toneOf(task.color).meta]"
+          >
+            {{ formatTime(task.startMinutes) }} – {{ formatTime(task.startMinutes + task.durationMinutes) }}
+          </span>
+
+          <!-- Marks the block that is happening now -->
+          <span
+            v-if="progressOf(task) !== null && resizing !== task.id"
+            class="flex shrink-0 items-center gap-1.5 rounded-full bg-background/70 px-1.5 py-1 @[22rem]:px-2 @[22rem]:py-0.5 text-[11px] font-semibold leading-4 text-foreground/80 ring-1 ring-inset ring-border"
+          >
+            <span class="relative flex h-1.5 w-1.5">
+              <span :class="['absolute inline-flex h-full w-full animate-ping rounded-full opacity-60', toneOf(task.color).accent]" />
+              <span :class="['relative inline-flex h-1.5 w-1.5 rounded-full', toneOf(task.color).accent]" />
+            </span>
+            <span class="hidden @[22rem]:inline">Now</span>
+          </span>
+
           <button
             v-if="resizing !== task.id"
             type="button"
@@ -518,7 +585,7 @@ const toneOf = (color: string) => paletteOf(color);
             @click.stop="emit('delete-task', task.id)"
             @pointerdown.stop
             @mousedown.stop
-            :class="isCompact(task.durationMinutes) ? 'h-4 w-4' : 'mt-0.5 h-4.5 w-4.5'"
+            :class="isCompact(task.durationMinutes) ? 'h-4 w-4' : 'h-4.5 w-4.5'"
             class="flex shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-75 hover:opacity-100 focus-visible:opacity-100 touch:hidden"
           >
             <svg
@@ -533,20 +600,10 @@ const toneOf = (color: string) => paletteOf(color);
           </button>
         </div>
 
-        <!-- Time display for non-compact tasks -->
+        <!-- Notes snippet for tall blocks, lined up with the title text -->
         <p
-          v-if="blockHeight(task.durationMinutes) >= SLOT_HEIGHT * 1.5"
-          class="mt-1 pl-6 text-[12.5px] font-medium leading-4 tabular-nums text-foreground/70"
-        >
-          {{ formatTime(task.startMinutes) }} – {{ formatTime(task.startMinutes + task.durationMinutes) }}
-          <span class="mx-0.5 text-foreground/35">·</span>
-          <span class="font-normal text-foreground/55">{{ formatDuration(task.durationMinutes) }}</span>
-        </p>
-
-        <!-- Notes snippet for non-compact tasks -->
-        <p
-          v-if="blockHeight(task.durationMinutes) >= SLOT_HEIGHT * 2.2 && task.notes"
-          class="mt-1 line-clamp-1 pl-6 text-[13px] leading-5 text-foreground/60"
+          v-if="hasNotes(task.durationMinutes) && task.notes"
+          :class="['relative mt-1 line-clamp-1 pl-[1.875rem] text-[13px] leading-5 @[9rem]:pl-[4.375rem]', task.completed ? 'text-muted-foreground/80' : toneOf(task.color).meta]"
         >
           {{ task.notes }}
         </p>

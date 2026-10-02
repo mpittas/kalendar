@@ -16,6 +16,7 @@ const props = defineProps<{
 }>();
 
 const tone = computed(() => paletteOf(props.color));
+const showTile = computed(() => !props.compact && !!props.meta);
 </script>
 
 <template>
@@ -27,11 +28,11 @@ const tone = computed(() => paletteOf(props.color));
     ]"
   >
     <span :class="['absolute left-1 w-0.5 rounded-full', compact ? 'inset-y-1' : 'inset-y-1.5', tone.accent, done ? 'opacity-40' : '']" />
-    <div :class="['flex gap-2 pl-1.5', compact ? 'items-center' : 'items-start']">
+    <div class="relative flex items-center gap-2 pl-1.5">
       <span
         :class="[
           'flex shrink-0 items-center justify-center rounded-xs border',
-          compact ? 'h-3.5 w-3.5' : 'mt-0.5 h-4 w-4',
+          compact ? 'h-3.5 w-3.5' : 'h-4 w-4',
           done ? 'border-emerald-600 bg-emerald-600 text-white shadow-2xs' : 'border-input bg-background text-transparent',
         ]"
       >
@@ -39,20 +40,32 @@ const tone = computed(() => paletteOf(props.color));
           <path d="M3.5 8.5l3 3 6-6" />
         </svg>
       </span>
-      <p
+      <span
+        v-if="showTile"
+        aria-hidden="true"
         :class="[
-          'min-w-0 flex-1 truncate leading-tight',
-          compact ? 'text-xs' : 'text-sm',
-          done ? 'font-normal text-muted-foreground line-through' : 'font-semibold text-foreground',
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base leading-none',
+          done ? 'bg-foreground/5 opacity-60 grayscale' : 'bg-white/75 ring-1 ring-inset ring-black/[0.06] dark:bg-white/10 dark:ring-white/10',
         ]"
       >
-        {{ emoji }} {{ title }}
-      </p>
+        {{ emoji }}
+      </span>
+      <div class="min-w-0 flex-1">
+        <p
+          :class="[
+            'truncate leading-tight tracking-[-0.01em]',
+            compact ? 'text-xs' : 'text-sm',
+            done ? 'font-normal text-muted-foreground line-through' : 'font-semibold text-foreground',
+          ]"
+        >
+          <template v-if="!showTile">{{ emoji }} </template>{{ title }}
+        </p>
+        <p v-if="meta" :class="['mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums', done ? 'text-muted-foreground' : tone.meta]">
+          {{ meta }}
+        </p>
+      </div>
     </div>
-    <p v-if="meta" class="mt-1 truncate pl-7 text-[12px] font-medium leading-4 tabular-nums text-foreground/70">
-      {{ meta }}
-    </p>
-    <p v-if="note" class="mt-1 line-clamp-1 pl-7 text-[12.5px] leading-5 text-foreground/60">
+    <p v-if="note" :class="['relative mt-1 line-clamp-1 text-[12.5px] leading-5', showTile ? 'pl-[4.375rem]' : 'pl-7', tone.meta]">
       {{ note }}
     </p>
     <slot />

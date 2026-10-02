@@ -105,17 +105,17 @@ const details = [
   <section id="features" class="scroll-mt-16 border-t border-border/60 bg-background py-20 sm:py-28">
     <div class="mx-auto max-w-6xl px-5 sm:px-8">
       <div data-reveal class="mx-auto max-w-2xl text-center">
-        <h2 class="text-balance text-3xl font-semibold tracking-[-0.035em] text-foreground sm:text-5xl">
-          Everything a day needs. Nothing it doesn't.
+        <h2 class="text-balance text-4xl font-semibold tracking-[-0.04em] text-foreground sm:text-5xl lg:text-[3.5rem] lg:leading-[1.04]">
+          Everything a day needs. <span class="block text-muted-foreground">Nothing it doesn't.</span>
         </h2>
-        <p class="mx-auto mt-4 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+        <p class="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
           A calendar, a timeline and the small daily things that keep you on track, together in one calm place.
         </p>
       </div>
 
       <div class="mt-14 grid gap-5 sm:mt-16 lg:grid-cols-3">
         <!-- Month view -->
-        <article data-reveal class="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xs lg:col-span-2">
+        <article data-reveal class="lift-card flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xs lg:col-span-2">
           <div class="px-6 pt-6 sm:px-7 sm:pt-7">
             <h3 class="text-lg font-semibold tracking-tight text-foreground">See the whole month</h3>
             <p class="mt-1.5 max-w-lg text-[15px] leading-relaxed text-muted-foreground">
@@ -123,7 +123,7 @@ const details = [
             </p>
           </div>
           <div aria-hidden="true" class="relative mt-6 flex-1 overflow-hidden pl-6 sm:pl-7">
-            <div class="w-[50rem] overflow-hidden rounded-tl-xl border-l border-t border-border bg-card shadow-xs [mask-image:linear-gradient(to_bottom,black_70%,transparent)] max-sm:-translate-x-[19rem]">
+            <div class="scene w-[50rem] origin-top-left overflow-hidden rounded-tl-xl border-l border-t border-border bg-card shadow-xs [mask-image:linear-gradient(to_bottom,black_70%,transparent)] max-sm:-translate-x-[19rem]">
               <div class="grid grid-cols-7 border-b border-border bg-muted/40">
                 <span
                   v-for="label in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']"
@@ -168,15 +168,15 @@ const details = [
         </article>
 
         <!-- Activity library -->
-        <article data-reveal class="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xs [--reveal-delay:80ms]">
+        <article data-reveal class="lift-card flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xs [--reveal-delay:80ms] [--tint:#8b5cf6]">
           <div class="px-6 pt-6 sm:px-7 sm:pt-7">
             <h3 class="text-lg font-semibold tracking-tight text-foreground">Activities you reuse</h3>
             <p class="mt-1.5 text-[15px] leading-relaxed text-muted-foreground">
               Save what you do with an emoji, a color and a usual length. Make it once, drag it in any day.
             </p>
           </div>
-          <div aria-hidden="true" class="flex flex-1 items-center justify-center p-6 sm:p-7">
-            <div class="w-full max-w-[18rem] space-y-3.5 rounded-xl border border-border bg-card p-4 shadow-sm">
+          <div aria-hidden="true" class="stage m-2 mt-6 flex flex-1 items-center justify-center rounded-xl p-5">
+            <div class="scene w-full max-w-[18rem] space-y-3.5 rounded-xl border border-border bg-card p-4 shadow-sm">
               <div class="flex items-center gap-2.5">
                 <span :class="['flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base', paletteOf('violet').icon]">🎹</span>
                 <span class="flex h-9 flex-1 items-center rounded-md border border-foreground/40 bg-background px-2.5 text-sm text-foreground ring-2 ring-foreground/5">
@@ -221,9 +221,9 @@ const details = [
         </article>
 
         <!-- Routines -->
-        <article data-reveal class="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xs">
-          <div aria-hidden="true" class="m-2 flex h-52 items-center justify-center rounded-xl bg-canvas px-4">
-            <div class="flex max-w-[17rem] flex-wrap justify-center gap-1.5">
+        <article data-reveal class="lift-card flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xs [--tint:#10b981]">
+          <div aria-hidden="true" class="stage m-2 flex h-52 items-center justify-center rounded-xl px-4">
+            <div class="scene flex max-w-[17rem] flex-wrap justify-center gap-1.5">
               <span
                 v-for="routine in routines"
                 :key="routine.title"
@@ -257,9 +257,9 @@ const details = [
         </article>
 
         <!-- Notes -->
-        <article data-reveal class="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xs [--reveal-delay:80ms]">
-          <div aria-hidden="true" class="m-2 flex h-52 items-center justify-center rounded-xl bg-canvas px-4">
-            <div class="w-full max-w-[16rem] -rotate-1 rounded-xl border border-border bg-card p-4 text-[13px] leading-relaxed text-foreground shadow-sm">
+        <article data-reveal class="lift-card flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xs [--reveal-delay:80ms] [--tint:#f59e0b]">
+          <div aria-hidden="true" class="stage m-2 flex h-52 items-center justify-center rounded-xl px-4">
+            <div class="scene w-full max-w-[16rem] -rotate-1 rounded-xl border border-border bg-card p-4 text-[13px] leading-relaxed text-foreground shadow-sm">
               <p class="text-[15px] font-semibold tracking-tight">Thursday</p>
               <ul class="mt-2 space-y-1">
                 <li class="flex items-center gap-2 text-muted-foreground line-through">
@@ -288,9 +288,9 @@ const details = [
         </article>
 
         <!-- Phone -->
-        <article data-reveal class="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xs [--reveal-delay:160ms]">
-          <div aria-hidden="true" class="m-2 flex h-52 justify-center overflow-hidden rounded-xl bg-canvas">
-            <div class="mt-5 h-[19rem] w-44 shrink-0 rounded-[1.9rem] border-[5px] border-zinc-900 bg-background shadow-lg dark:border-zinc-950">
+        <article data-reveal class="lift-card flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xs [--reveal-delay:160ms] [--tint:#0ea5e9]">
+          <div aria-hidden="true" class="stage m-2 flex h-52 justify-center overflow-hidden rounded-xl">
+            <div class="scene mt-5 h-[19rem] w-44 shrink-0 origin-top rounded-[1.9rem] border-[5px] border-zinc-900 bg-background shadow-lg dark:border-zinc-950">
               <div class="relative h-full overflow-hidden rounded-[1.55rem]">
                 <div class="flex items-center justify-between px-4 pt-2 font-mono text-[8px] font-semibold text-foreground">
                   <span>9:41</span>
@@ -340,10 +340,12 @@ const details = [
       <!-- Smaller details -->
       <ul data-reveal class="mt-5 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
         <li v-for="detail in details" :key="detail.title" class="bg-card p-5 sm:p-6">
-          <svg viewBox="0 0 20 20" class="h-5 w-5 text-foreground" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path :d="detail.icon" />
-          </svg>
-          <h3 class="mt-3 text-[15px] font-semibold tracking-tight text-foreground">{{ detail.title }}</h3>
+          <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-canvas text-foreground shadow-2xs">
+            <svg viewBox="0 0 20 20" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path :d="detail.icon" />
+            </svg>
+          </span>
+          <h3 class="mt-4 text-[15px] font-semibold tracking-tight text-foreground">{{ detail.title }}</h3>
           <p class="mt-1 text-sm leading-relaxed text-muted-foreground">{{ detail.text }}</p>
         </li>
       </ul>

@@ -28,16 +28,20 @@ const cells = [
 const TODAY = 1;
 const PICKED = 8;
 
+// Each step's scene is tinted with the color of what it shows.
 const steps = [
   {
+    tint: "#6366f1",
     title: "Pick a day",
     text: "Open the month view and choose any date. Every day shows what's planned, so busy and open days stand out.",
   },
   {
+    tint: "#10b981",
     title: "Drag in activities",
     text: "Drop deep work, workouts or chores onto the timeline. Blocks snap to the quarter hour and stretch to fit.",
   },
   {
+    tint: "#f59e0b",
     title: "Tick them off",
     text: "Check blocks off as you go. A live now-line shows where you are, with your daily routines up top.",
   },
@@ -48,11 +52,11 @@ const steps = [
   <section id="how-it-works" class="scroll-mt-16 border-t border-border/60 bg-background py-20 sm:py-28">
     <div class="mx-auto max-w-6xl px-5 sm:px-8">
       <div data-reveal class="mx-auto max-w-2xl text-center">
-        <h2 class="text-balance text-3xl font-semibold tracking-[-0.035em] text-foreground sm:text-5xl">
-          Three moves to a planned day.
+        <h2 class="text-balance text-4xl font-semibold tracking-[-0.04em] text-foreground sm:text-5xl lg:text-[3.5rem] lg:leading-[1.04]">
+          Three moves <span class="block text-muted-foreground">to a planned day.</span>
         </h2>
-        <p class="mx-auto mt-4 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
-          Your library starts stocked with everyday activities and routines, so you can plan tomorrow the moment you sign in.
+        <p class="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+          No setup and no learning curve. Tomorrow is planned in the time it takes to make a coffee.
         </p>
       </div>
 
@@ -61,12 +65,12 @@ const steps = [
           v-for="(step, index) in steps"
           :key="step.title"
           data-reveal
-          :style="{ '--reveal-delay': `${index * 90}ms` }"
-          class="flex flex-col rounded-2xl border border-border bg-card p-2 shadow-2xs"
+          :style="{ '--reveal-delay': `${index * 90}ms`, '--tint': step.tint }"
+          class="lift-card flex flex-col rounded-2xl border border-border bg-card p-2 shadow-2xs"
         >
-          <div aria-hidden="true" class="relative flex h-60 items-center justify-center overflow-hidden rounded-xl bg-canvas">
+          <div aria-hidden="true" class="stage relative flex h-60 items-center justify-center overflow-hidden rounded-xl">
             <!-- 1: month grid -->
-            <div v-if="index === 0" class="w-[15.5rem] rounded-xl border border-border bg-card p-3 shadow-xs">
+            <div v-if="index === 0" class="scene w-[15.5rem] rounded-xl border border-border bg-card p-3 shadow-xs">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold tracking-tight text-foreground">October 2026</span>
                 <span class="flex gap-1 text-muted-foreground">
@@ -118,7 +122,7 @@ const steps = [
             </div>
 
             <!-- 2: dragging onto the timeline -->
-            <div v-else-if="index === 1" class="relative w-[15.5rem] rounded-xl border border-border bg-card py-3 pr-3 shadow-xs">
+            <div v-else-if="index === 1" class="scene relative w-[15.5rem] rounded-xl border border-border bg-card py-3 pr-3 shadow-xs">
               <div class="flex">
                 <div class="w-11 shrink-0 border-r border-border pr-1.5 text-right font-mono text-[10px] text-muted-foreground">
                   <div v-for="(label, i) in ['9 AM', '', '10 AM', '', '11 AM', '']" :key="i" class="relative h-7">
@@ -158,7 +162,7 @@ const steps = [
             </div>
 
             <!-- 3: ticking blocks off -->
-            <div v-else class="w-[15.5rem] rounded-xl border border-border bg-card p-3 shadow-xs">
+            <div v-else class="scene w-[15.5rem] rounded-xl border border-border bg-card p-3 shadow-xs">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold tracking-tight text-foreground">Today</span>
                 <span class="font-mono text-[10px] tabular-nums text-muted-foreground">3/4 done</span>
@@ -181,7 +185,7 @@ const steps = [
 
           <div class="px-4 pb-5 pt-5 sm:px-5">
             <h3 class="flex items-center gap-2.5 text-lg font-semibold tracking-tight text-foreground">
-              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border bg-muted font-mono text-xs font-semibold text-muted-foreground">
+              <span class="step-badge flex h-6 w-6 shrink-0 items-center justify-center rounded-md border font-mono text-xs font-semibold text-foreground">
                 {{ index + 1 }}
               </span>
               {{ step.title }}
@@ -195,6 +199,11 @@ const steps = [
 </template>
 
 <style scoped>
+.step-badge {
+  background-color: color-mix(in oklab, var(--tint) 14%, var(--card));
+  border-color: color-mix(in oklab, var(--tint) 40%, transparent);
+}
+
 .step-float {
   rotate: -2deg;
   animation: step-float 3.2s ease-in-out infinite;

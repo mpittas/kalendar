@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import LandingNav from "~/components/landing/LandingNav.vue";
 import LandingHero from "~/components/landing/LandingHero.vue";
+import LandingMarquee from "~/components/landing/LandingMarquee.vue";
 import LandingSteps from "~/components/landing/LandingSteps.vue";
 import LandingCompare from "~/components/landing/LandingCompare.vue";
 import LandingFeatures from "~/components/landing/LandingFeatures.vue";
@@ -60,6 +61,7 @@ onBeforeUnmount(() => observer?.disconnect());
   <div ref="root" data-landing class="flex w-full flex-col bg-background">
     <LandingNav :start="start" />
     <LandingHero :start="start" :signed-in="signedIn" />
+    <LandingMarquee />
     <LandingSteps />
     <LandingCompare />
     <LandingFeatures />
@@ -74,13 +76,56 @@ html:has([data-landing]) {
 }
 
 .reveal-ready [data-reveal] {
+  --reveal-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   transition:
-    opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1),
-    transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
-  transition-delay: var(--reveal-delay, 0ms);
+    opacity 0.8s var(--reveal-ease) var(--reveal-delay, 0ms),
+    transform 0.8s var(--reveal-ease) var(--reveal-delay, 0ms),
+    filter 0.8s var(--reveal-ease) var(--reveal-delay, 0ms),
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
 }
 .reveal-ready [data-reveal]:not(.is-revealed) {
   opacity: 0;
   transform: translateY(18px);
+  filter: blur(6px);
+}
+
+/* The primary button's raised edge: a hairline of light along the top. */
+[data-landing] .btn-primary {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.16),
+    0 1px 2px rgb(15 23 42 / 0.14),
+    0 6px 16px -6px rgb(15 23 42 / 0.35);
+}
+.dark [data-landing] .btn-primary {
+  box-shadow:
+    inset 0 -1px 0 rgb(0 0 0 / 0.12),
+    0 6px 16px -6px rgb(0 0 0 / 0.5);
+}
+
+/* Backdrop for the small product scenes: a faint dot grid with a glow in the scene's color (--tint). */
+[data-landing] .stage {
+  background-color: var(--canvas);
+  background-image:
+    radial-gradient(80% 70% at 50% 100%, color-mix(in oklab, var(--tint, var(--canvas)) 20%, transparent), transparent),
+    radial-gradient(circle, color-mix(in oklab, var(--foreground) 11%, transparent) 0.8px, transparent 1.2px);
+  background-size:
+    100% 100%,
+    14px 14px;
+}
+
+/* Cards whose scene comes forward a little on hover. */
+[data-landing] .lift-card:hover {
+  border-color: color-mix(in oklab, var(--foreground) 16%, var(--border));
+  box-shadow: 0 18px 40px -22px rgb(15 23 42 / 0.3);
+}
+.dark [data-landing] .lift-card:hover {
+  box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.7);
+}
+[data-landing] .lift-card .scene {
+  transition: scale 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+[data-landing] .lift-card:hover .scene {
+  scale: 1.04;
 }
 </style>
