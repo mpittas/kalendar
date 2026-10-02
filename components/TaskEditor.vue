@@ -182,6 +182,35 @@ const remove = async () => {
     @close="emit('close')"
   >
     <form id="task-editor-form" class="space-y-4" @submit.prevent="submit">
+      <!-- Tap an activity to fill in the name, category and length; the time is set below -->
+      <div v-if="!isEdit && templates.length > 0">
+        <span id="task-activity-label" class="text-xs font-medium text-foreground">Start from an activity</span>
+        <div
+          role="radiogroup"
+          aria-labelledby="task-activity-label"
+          class="mt-1.5 flex max-h-[7.5rem] flex-wrap gap-1.5 overflow-y-auto overscroll-contain"
+        >
+          <button
+            v-for="choice in [null, ...templates]"
+            :key="choice?.id ?? 'custom'"
+            type="button"
+            role="radio"
+            :aria-checked="(templateId ?? null) === (choice?.id ?? null)"
+            class="inline-flex h-9 max-w-full cursor-pointer items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-7 sm:px-2.5"
+            :class="(templateId ?? null) === (choice?.id ?? null)
+              ? 'border-primary bg-primary text-primary-foreground shadow-xs'
+              : 'border-input bg-background text-foreground hover:bg-accent'"
+            @click="applyTemplate(choice?.id ?? '')"
+          >
+            <template v-if="choice">
+              <span aria-hidden="true">{{ choice.emoji }}</span>
+              <span class="truncate">{{ choice.name }}</span>
+            </template>
+            <template v-else>Custom</template>
+          </button>
+        </div>
+      </div>
+
       <div>
         <label for="task-title" class="text-xs font-medium text-foreground">
           Activity Name
@@ -200,22 +229,6 @@ const remove = async () => {
           />
         </div>
       </div>
-
-      <label v-if="!isEdit && templates.length > 0" class="block">
-        <span class="text-xs font-medium text-foreground">
-          Start from an activity
-        </span>
-        <select
-          :value="templateId ?? ''"
-          @change="applyTemplate(($event.target as HTMLSelectElement).value)"
-          class="mt-1.5 flex h-11 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-9"
-        >
-          <option value="">Custom…</option>
-          <option v-for="tpl in templates" :key="tpl.id" :value="tpl.id">
-            {{ tpl.emoji }} {{ tpl.name }}
-          </option>
-        </select>
-      </label>
 
       <div class="grid grid-cols-2 gap-3">
         <label class="block min-w-0">

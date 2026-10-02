@@ -86,3 +86,6 @@ export function lanesFor(columns: Block[][], id: string, index: number): Map<str
 export function withLanes<T extends Block>(blocks: T[], lanes: Map<string, number>): T[] {
   return lanes.size ? blocks.map((block) => (lanes.has(block.id) ? { ...block, lane: lanes.get(block.id) } : block)) : blocks;
 }
+
+/** A placement as the left edge and width of its block, as fractions of the timeline's width. */
+export const boxOf = (placement: Placement) => ({ left: placement.column / placement.columns, width: 1 / placement.columns });

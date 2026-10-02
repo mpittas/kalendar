@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight, Plus } from "lucide-vue-next";
+import { ChevronLeft, ChevronRight, Plus, Settings } from "lucide-vue-next";
 import { addDaysISO, formatDuration, longDate, mediumDate } from "~/lib/time";
 
 defineProps<{
@@ -12,6 +12,7 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: "create-block"): void;
+  (e: "customize"): void;
 }>();
 
 </script>
@@ -56,6 +57,16 @@ const emit = defineEmits<{
     </div>
 
     <div class="flex shrink-0 items-center gap-2">
+      <!-- Phones have no sidebar, so this is where activities and categories are edited -->
+      <button
+        type="button"
+        aria-label="Edit activities and categories"
+        title="Edit activities and categories"
+        @click="emit('customize')"
+        class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground active:bg-muted short:h-10 short:w-10 lg:hidden"
+      >
+        <Settings class="h-5 w-5" aria-hidden="true" />
+      </button>
       <button
         type="button"
         @click="emit('create-block')"
