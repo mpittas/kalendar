@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ArrowDown, ArrowRight, ArrowUp, Check } from "lucide-vue-next";
 import PlannerMock from "~/components/landing/PlannerMock.vue";
 
 defineProps<{
@@ -44,9 +45,7 @@ const RING = 2 * Math.PI * 15;
             class="btn-primary group inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-[15px] font-medium text-primary-foreground transition hover:bg-primary/90 active:scale-[0.98]"
           >
             {{ start.label }}
-            <svg viewBox="0 0 20 20" class="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M4 10h11M11 5.5l4.5 4.5-4.5 4.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
+            <ArrowRight class="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </NuxtLink>
           <NuxtLink
             v-if="!signedIn"
@@ -66,9 +65,7 @@ const RING = 2 * Math.PI * 15;
 
         <ul class="hero-rise mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[13px] text-muted-foreground [--d:300ms]">
           <li v-for="perk in perks" :key="perk" class="flex items-center gap-1.5">
-            <svg viewBox="0 0 20 20" class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
-              <path d="M4.5 10.5l3.5 3.5 7.5-8" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
+            <Check class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" :stroke-width="3" />
             {{ perk }}
           </li>
         </ul>
@@ -121,10 +118,8 @@ const RING = 2 * Math.PI * 15;
           class="hero-float absolute -right-20 top-[46%] z-10 hidden w-60 rounded-2xl border border-border/80 bg-card/90 p-3.5 shadow-[0_24px_48px_-20px_rgb(15_23_42/0.35)] backdrop-blur-md [--float-delay:-3s] xl:block dark:shadow-[0_24px_48px_-20px_rgb(0_0_0/0.7)]"
         >
           <div class="flex items-center gap-1.5">
-            <span v-for="d in ['M10 15V5M5.5 9.5L10 5l4.5 4.5', 'M10 5v10M5.5 10.5L10 15l4.5-4.5']" :key="d" class="keycap">
-              <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path :d="d" />
-              </svg>
+            <span v-for="icon in [ArrowUp, ArrowDown]" :key="icon.name" class="keycap">
+              <component :is="icon" class="h-3.5 w-3.5" />
             </span>
             <span class="ml-1.5 text-sm font-semibold tracking-tight text-foreground">Nudge 15 minutes</span>
           </div>
@@ -154,29 +149,6 @@ const RING = 2 * Math.PI * 15;
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 20px -12px rgb(15 23 42 / 0.25);
 }
 
-.hero-rise {
-  animation: hero-rise 1s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  animation-delay: var(--d, 0ms);
-}
-.hero-drop {
-  animation: hero-drop 0.8s cubic-bezier(0.3, 1.3, 0.5, 1) both;
-  animation-delay: calc(350ms + var(--d, 0ms));
-}
-
-@keyframes hero-rise {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-    filter: blur(8px);
-  }
-}
-@keyframes hero-drop {
-  from {
-    opacity: 0;
-    transform: translateY(-0.35em) rotate(-3deg);
-  }
-}
-
 /* The product leans back at first and straightens as it scrolls into view. */
 .hero-tilt {
   transform-origin: 50% 0;
@@ -200,15 +172,7 @@ const RING = 2 * Math.PI * 15;
 }
 
 .hero-float {
-  animation:
-    hero-float-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 1.1s both,
-    hero-bob 7s ease-in-out var(--float-delay, 0s) infinite;
-}
-@keyframes hero-float-in {
-  from {
-    opacity: 0;
-    scale: 0.92;
-  }
+  animation: hero-bob 7s ease-in-out var(--float-delay, 0s) infinite;
 }
 @keyframes hero-bob {
   50% {

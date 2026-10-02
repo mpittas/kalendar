@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { CircleAlert } from "lucide-vue-next";
 import { ref } from "vue";
 
 useHead({
@@ -102,10 +103,7 @@ const handleGoogleSignUp = async () => {
         v-if="error"
         class="flex items-center gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 dark:border-rose-400/25 dark:bg-rose-500/10 p-3 text-xs sm:text-sm font-medium text-rose-800 dark:text-rose-200"
       >
-        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="10" cy="10" r="7" />
-          <path d="M10 6v4M10 14h.01" stroke-linecap="round" />
-        </svg>
+        <CircleAlert class="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
         <span>{{ error }}</span>
       </div>
 

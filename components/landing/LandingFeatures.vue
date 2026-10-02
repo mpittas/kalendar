@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ArrowUpDown, Check, Clock, Columns2, Contrast, Plus } from "lucide-vue-next";
 import { COLOR_KEYS, paletteOf } from "~/lib/colors";
 import MockBlock from "~/components/landing/MockBlock.vue";
 
@@ -81,22 +82,22 @@ const details = [
   {
     title: "Quarter-hour precision",
     text: "Blocks move and resize in 15-minute steps.",
-    icon: "M10 5.5V10l3 2M17 10a7 7 0 11-14 0 7 7 0 0114 0z",
+    icon: Clock,
   },
   {
     title: "Overlaps side by side",
     text: "Two things at once sit next to each other.",
-    icon: "M3.5 4.5h5v11h-5zM11.5 4.5h5v7h-5z",
+    icon: Columns2,
   },
   {
     title: "Keyboard friendly",
     text: "Focus a block, nudge it with the arrow keys.",
-    icon: "M10 4v12M6 8l4-4 4 4M6 12l4 4 4-4",
+    icon: ArrowUpDown,
   },
   {
     title: "Light and dark",
     text: "Follows your system, or pick a side.",
-    icon: "M10 3a7 7 0 100 14V3zM10 3a7 7 0 010 14",
+    icon: Contrast,
   },
 ];
 </script>
@@ -241,9 +242,7 @@ const details = [
                 {{ routine.emoji }} {{ routine.title }}
               </span>
               <span class="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2.5 py-1 text-xs text-muted-foreground">
-                <svg viewBox="0 0 20 20" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M10 4v12M4 10h12" stroke-linecap="round" />
-                </svg>
+                <Plus class="h-3 w-3" />
                 Manage
               </span>
             </div>
@@ -264,9 +263,7 @@ const details = [
               <ul class="mt-2 space-y-1">
                 <li class="flex items-center gap-2 text-muted-foreground line-through">
                   <span class="flex h-3.5 w-3.5 items-center justify-center rounded-[4px] bg-foreground text-background">
-                    <svg viewBox="0 0 16 16" class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M3.5 8.5l3 3 6-6" />
-                    </svg>
+                    <Check class="h-2.5 w-2.5" :stroke-width="3" />
                   </span>
                   Call the dentist
                 </li>
@@ -341,9 +338,7 @@ const details = [
       <ul data-reveal class="mt-5 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
         <li v-for="detail in details" :key="detail.title" class="bg-card p-5 sm:p-6">
           <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-canvas text-foreground shadow-2xs">
-            <svg viewBox="0 0 20 20" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path :d="detail.icon" />
-            </svg>
+            <component :is="detail.icon" class="h-[18px] w-[18px]" aria-hidden="true" />
           </span>
           <h3 class="mt-4 text-[15px] font-semibold tracking-tight text-foreground">{{ detail.title }}</h3>
           <p class="mt-1 text-sm leading-relaxed text-muted-foreground">{{ detail.text }}</p>

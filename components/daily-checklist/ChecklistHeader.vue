@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Check } from "lucide-vue-next";
 defineProps<{
   completedCount: number;
   totalCount: number;
@@ -11,9 +12,7 @@ defineProps<{
   <div class="shrink-0 px-4 pb-2 pt-4">
     <p class="flex items-center gap-1.5 text-sm font-medium tabular-nums text-foreground">
       <template v-if="allDone">
-        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M5 10.5l3.5 3.5L15 6.5" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
+        <Check class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
         All done
       </template>
       <template v-else>

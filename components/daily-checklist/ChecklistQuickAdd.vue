@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import Tooltip from "~/components/ui/tooltip/Tooltip.vue";
+import TooltipContent from "~/components/ui/tooltip/TooltipContent.vue";
+import TooltipProvider from "~/components/ui/tooltip/TooltipProvider.vue";
+import TooltipTrigger from "~/components/ui/tooltip/TooltipTrigger.vue";
 
 defineProps<{
   adding: boolean;
@@ -15,19 +19,20 @@ const HABIT_EMOJIS = [
 ];
 
 const SCOPES = [
-  { value: "default", label: "Every day" },
-  { value: "day", label: "Only this day" },
-] as const;
+  { label: "Every day", everyDay: true, tip: "Shows up on every day's checklist." },
+  { label: "This day only", everyDay: false, tip: "Only appears on the day you're viewing." },
+];
 
 const newTitle = ref("");
 const newEmoji = ref("💊");
 const showEmojiPicker = ref(false);
-const newScope = ref<"default" | "day">("default");
+// The default list applies to every day; a one-off only to the day being viewed.
+const everyDay = ref(true);
 
 const handleSubmit = () => {
   const title = newTitle.value.trim();
   if (!title) return;
-  emit("submit", { title, emoji: newEmoji.value, scope: newScope.value });
+  emit("submit", { title, emoji: newEmoji.value, scope: everyDay.value ? "default" : "day" });
   newTitle.value = "";
   const currentIndex = HABIT_EMOJIS.indexOf(newEmoji.value);
   if (currentIndex >= 0 && currentIndex < HABIT_EMOJIS.length - 1) {
@@ -38,12 +43,8 @@ const handleSubmit = () => {
 </script>
 
 <template>
-  <div class="shrink-0 border-t border-border px-3 pb-3 pt-3">
-    <form
-      class="flex items-center gap-1 rounded-xl border border-input bg-background p-1 shadow-xs transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring"
-      @submit.prevent="handleSubmit"
-    >
-      <!-- Emoji picker button -->
+  <div class="shrink-0 border-t border-border px-3 py-2.5">
+    <form class="flex items-center gap-1" @submit.prevent="handleSubmit">
       <div class="relative shrink-0">
         <button
           type="button"
@@ -80,36 +81,40 @@ const handleSubmit = () => {
         enterkeyhint="done"
         autocomplete="off"
         aria-label="New checklist item"
-        :placeholder="newScope === 'day' ? 'Add for this day…' : 'Add a habit…'"
+        placeholder="Add a habit…"
         maxlength="100"
         class="h-9 min-w-0 flex-1 bg-transparent px-1 text-sm placeholder:text-muted-foreground focus-visible:outline-none touch:h-11"
       />
 
+      <!-- Shown once there is something to add -->
       <button
+        v-if="newTitle.trim()"
         type="submit"
-        :disabled="!newTitle.trim() || adding"
-        class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-30 touch:h-11 touch:w-11"
-        :aria-label="adding ? 'Adding…' : 'Add item'"
+        :disabled="adding"
+        class="flex h-9 shrink-0 cursor-pointer items-center rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40 touch:h-11 touch:px-4 touch:text-sm"
       >
-        <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M10 4.5v11M4.5 10h11" />
-        </svg>
+        {{ adding ? "Adding…" : "Add" }}
       </button>
     </form>
 
-    <!-- Scope: the default list applies to every day, a one-off only to this one -->
-    <div class="mt-2 inline-flex items-center rounded-lg bg-muted p-0.5 text-xs text-muted-foreground touch:text-sm" role="group" aria-label="Where to add the item">
-      <button
-        v-for="scope in SCOPES"
-        :key="scope.value"
-        type="button"
-        class="inline-flex h-7 cursor-pointer items-center justify-center rounded-md px-2.5 font-medium transition-colors touch:h-10 touch:px-4"
-        :class="newScope === scope.value ? 'bg-background text-foreground shadow-xs' : 'hover:text-foreground'"
-        :aria-pressed="newScope === scope.value"
-        @click="newScope = scope.value"
-      >
-        {{ scope.label }}
-      </button>
-    </div>
+    <TooltipProvider :delay-duration="150" :skip-delay-duration="300">
+      <div class="mt-2 grid grid-cols-2 rounded-lg bg-muted p-0.5 text-xs touch:text-sm" role="radiogroup" aria-label="Where to add the item">
+        <Tooltip v-for="option in SCOPES" :key="option.label">
+          <TooltipTrigger as-child>
+            <button
+              type="button"
+              role="radio"
+              :aria-checked="everyDay === option.everyDay"
+              class="inline-flex h-7 w-full cursor-pointer items-center justify-center rounded-md font-medium transition-colors touch:h-10"
+              :class="everyDay === option.everyDay ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'"
+              @click="everyDay = option.everyDay"
+            >
+              {{ option.label }}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">{{ option.tip }}</TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
   </div>
 </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Check, ChevronLeft, ChevronRight, Moon, Plus, Search } from "lucide-vue-next";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import { paletteOf } from "~/lib/colors";
 import { formatDuration, formatTime, formatTimeRange, gutterLabel } from "~/lib/time";
@@ -149,9 +150,7 @@ onBeforeUnmount(() => {
       </div>
       <div class="flex items-center gap-2">
         <span class="flex h-7 w-7 items-center justify-center rounded-md border border-input text-foreground">
-          <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-          </svg>
+          <Moon class="h-3.5 w-3.5" />
         </span>
         <span class="flex h-7 items-center gap-1.5 rounded-md border border-input px-1 text-[11px] font-medium text-foreground sm:pr-2">
           <span class="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[9px] font-semibold text-primary-foreground">AL</span>
@@ -172,10 +171,7 @@ onBeforeUnmount(() => {
         </div>
         <div class="px-3 pb-2 pt-2.5">
           <div class="flex h-8 items-center gap-2 rounded-lg border border-input bg-background px-2.5 text-xs text-muted-foreground shadow-xs">
-            <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75">
-              <circle cx="9" cy="9" r="5.5" />
-              <path d="M13.5 13.5L17 17" stroke-linecap="round" />
-            </svg>
+            <Search class="h-3.5 w-3.5" />
             Search activities
           </div>
         </div>
@@ -183,9 +179,7 @@ onBeforeUnmount(() => {
           <section v-for="group in groups" :key="group.name" class="overflow-hidden rounded-xl border border-border/70 bg-card shadow-2xs">
             <div class="flex items-center justify-between gap-2 bg-muted/40 px-2.5 py-1.5 text-xs font-semibold text-foreground">
               <span class="flex items-center gap-2">
-                <svg viewBox="0 0 20 20" class="h-3 w-3 rotate-90 text-foreground" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M7.5 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
+                <ChevronRight class="h-3 w-3 rotate-90 text-foreground" />
                 <span :class="['h-2 w-2 rounded-full', paletteOf(group.color).dot]" />
                 {{ group.name }}
               </span>
@@ -212,9 +206,7 @@ onBeforeUnmount(() => {
             class="flex items-center justify-between rounded-xl border border-border/70 bg-muted/40 px-2.5 py-1.5 text-xs font-semibold text-foreground shadow-2xs"
           >
             <span class="flex items-center gap-2">
-              <svg viewBox="0 0 20 20" class="h-3 w-3 text-muted-foreground" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M7.5 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+              <ChevronRight class="h-3 w-3 text-muted-foreground" />
               <span :class="['h-2 w-2 rounded-full', paletteOf(group.color).dot]" />
               {{ group.name }}
             </span>
@@ -228,12 +220,8 @@ onBeforeUnmount(() => {
         <div class="flex h-12 items-center justify-between gap-2 border-b border-border pl-1.5 pr-3 sm:px-5">
           <div class="flex min-w-0 items-center gap-1.5 sm:gap-2">
             <span class="flex text-muted-foreground">
-              <svg viewBox="0 0 20 20" class="h-7 w-7 p-1.5" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12.5 15l-5-5 5-5" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-              <svg viewBox="0 0 20 20" class="h-7 w-7 p-1.5" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M7.5 15l5-5-5-5" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+              <ChevronLeft class="h-7 w-7 p-1.5" />
+              <ChevronRight class="h-7 w-7 p-1.5" />
             </span>
             <div class="min-w-0">
               <p class="truncate text-sm font-semibold leading-tight tracking-tight text-foreground">Thursday, October 1</p>
@@ -244,9 +232,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <span class="inline-flex h-7 shrink-0 items-center gap-1 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground">
-            <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M10 4v12M4 10h12" stroke-linecap="round" />
-            </svg>
+            <Plus class="h-3.5 w-3.5" />
             Task
           </span>
         </div>
@@ -254,9 +240,7 @@ onBeforeUnmount(() => {
         <!-- Routines -->
         <div class="flex items-center gap-2 overflow-hidden border-b border-border/40 px-3 py-2.5 [mask-image:linear-gradient(to_right,black_85%,transparent)] sm:px-5">
           <span class="flex shrink-0 items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <svg class="h-3 w-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-            </svg>
+            <Check class="h-3 w-3 text-emerald-600 dark:text-emerald-400" :stroke-width="3" />
             Routines
           </span>
           <span

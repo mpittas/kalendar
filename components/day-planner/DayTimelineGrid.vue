@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Check, Plus } from "lucide-vue-next";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { ScheduledTask } from "~/lib/types";
 import { SLOT_HEIGHT, SLOT_MINUTES, SNAP_MINUTES } from "~/lib/types";
@@ -55,18 +56,17 @@ const updateHover = () => {
     return;
   }
   // Floors to the quarter hour under the cursor, same as the click-to-create handler, so the block lands where it's shown.
-  hoverMinutes.value = floorMinutes(((y - rect.top) / SLOT_HEIGHT) * SLOT_MINUTES, SNAP_MINUTES);
+  const minutes = floorMinutes(((y - rect.top) / SLOT_HEIGHT) * SLOT_MINUTES, SNAP_MINUTES);
+  // No ghost over a row that already holds activities.
+  const end = minutes + Math.min(HOVER_DURATION, DAY_MINUTES - minutes);
+  const occupied = props.tasks.some((task) => task.startMinutes < end && task.startMinutes + task.durationMinutes > minutes);
+  hoverMinutes.value = occupied ? null : minutes;
 };
 
 const handlePointerMove = (event: PointerEvent) => {
   if (event.pointerType !== "mouse") return; // no hover on touch
   lastPointer = { x: event.clientX, y: event.clientY };
   updateHover();
-};
-
-const hoveredTaskId = ref<string | null>(null);
-const onBlockPointerEnter = (task: ScheduledTask, event: PointerEvent) => {
-  if (event.pointerType === "mouse") hoveredTaskId.value = task.id;
 };
 
 const clearHover = () => {
@@ -274,12 +274,12 @@ const dragGhostStyle = computed(() => {
 const shownStart = (task: ScheduledTask) => (drag.value?.id === task.id ? drag.value.snappedStart : task.startMinutes);
 
 // Start and end marked in the gutter and across the grid: where a moved block or dragged-in
-// activity will land, the block being resized, or the hovered block.
+// activity will land, or the block being resized.
 const guideMinutes = computed(() => {
   const span = (start: number, duration: number) => [start, Math.min(start + duration, DAY_MINUTES)];
   if (drag.value) return span(drag.value.snappedStart, durationOf(drag.value.id));
   if (props.preview) return span(props.preview.start, props.preview.duration);
-  const task = props.tasks.find((item) => item.id === (props.resizing ?? hoveredTaskId.value));
+  const task = props.tasks.find((item) => item.id === props.resizing);
   return task ? span(task.startMinutes, task.durationMinutes) : null;
 });
 
@@ -329,7 +329,7 @@ const toneOf = (task: { category: string; color: string }) => paletteOf(colorOf(
         </span>
       </div>
 
-      <!-- Start and end times of the hovered, moving or resizing block -->
+      <!-- Start and end times of the moving or resizing block -->
       <template v-if="guideMinutes">
         <div
           v-for="minute in guideMinutes"
@@ -413,9 +413,7 @@ const toneOf = (task: { category: string; color: string }) => paletteOf(colorOf(
           width: '98%',
         }"
       >
-        <svg viewBox="0 0 20 20" class="h-4 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-          <path d="M10 5v10M5 10h10" stroke-linecap="round" />
-        </svg>
+        <Plus class="h-4 w-3.5 shrink-0" aria-hidden="true" />
         {{ formatTimeRange(hoverMinutes, hoverMinutes + hoverDuration) }}
       </div>
 
@@ -462,8 +460,6 @@ const toneOf = (task: { category: string; color: string }) => paletteOf(colorOf(
         @keydown.enter.self.prevent="emit('task-click', task)"
         @keydown="(e: KeyboardEvent) => onBlockKeydown(task, e)"
         @pointerdown="(e: PointerEvent) => onBlockPointerDown(task, e)"
-        @pointerenter="(e: PointerEvent) => onBlockPointerEnter(task, e)"
-        @pointerleave="hoveredTaskId = null"
         @contextmenu="(e: MouseEvent) => { if (drag || pending) e.preventDefault(); }"
         @click.stop="onBlockClick(task)"
         :style="{
@@ -497,9 +493,7 @@ const toneOf = (task: { category: string; color: string }) => paletteOf(colorOf(
             task.completed ? [toneOf(task).accent, 'border-transparent text-white'] : [toneOf(task).check, 'text-transparent'],
           ]"
         >
-          <svg viewBox="0 0 16 16" class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3.5 8.5l3 3 6-6" />
-          </svg>
+          <Check class="h-2.5 w-2.5" aria-hidden="true" :stroke-width="3" />
         </button>
 
         <!-- Resize handle at bottom -->

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChevronLeft, ChevronRight } from "lucide-vue-next";
 import { paletteOf } from "~/lib/colors";
 import MockBlock from "~/components/landing/MockBlock.vue";
 
@@ -74,12 +75,8 @@ const steps = [
               <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold tracking-tight text-foreground">October 2026</span>
                 <span class="flex gap-1 text-muted-foreground">
-                  <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12.5 15l-5-5 5-5" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M7.5 15l5-5-5-5" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
+                  <ChevronLeft class="h-3.5 w-3.5" />
+                  <ChevronRight class="h-3.5 w-3.5" />
                 </span>
               </div>
               <div class="mt-2 grid grid-cols-7 text-center font-mono text-[9px] font-semibold uppercase text-muted-foreground">

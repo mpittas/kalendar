@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChevronRight, ChevronsDownUp, ChevronsUpDown, Folder, GripVertical, Plus, Search, X } from "lucide-vue-next";
 import { ref, computed, watch, onMounted, nextTick } from "vue";
 import type { ActivityTemplate } from "~/lib/types";
 import { paletteOf } from "~/lib/colors";
@@ -196,10 +197,7 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
     <div class="px-3 pb-2 pt-2.5">
       <div class="flex items-center gap-2">
       <div class="relative min-w-0 flex-1">
-        <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-          <circle cx="9" cy="9" r="5.5" />
-          <path d="M13.5 13.5L17 17" stroke-linecap="round" />
-        </svg>
+        <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
         <input
           ref="searchRef"
           v-model="search"
@@ -216,9 +214,7 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
           aria-label="Clear search"
           @click="clearSearch"
         >
-          <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M5 5l10 10M15 5L5 15" stroke-linecap="round" />
-          </svg>
+          <X class="h-3.5 w-3.5" aria-hidden="true" />
         </button>
       </div>
         <button
@@ -229,12 +225,8 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
           :aria-label="allCollapsed ? 'Expand all categories' : 'Collapse all categories'"
           @click="toggleAll"
         >
-          <svg v-if="allCollapsed" viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M6 7.5l4-3.5 4 3.5M6 12.5l4 3.5 4-3.5" />
-          </svg>
-          <svg v-else viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M6 4l4 3.5L14 4M6 16l4-3.5L14 16" />
-          </svg>
+          <ChevronsUpDown v-if="allCollapsed" class="h-4 w-4" aria-hidden="true" />
+          <ChevronsDownUp v-else class="h-4 w-4" aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -243,9 +235,7 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
           aria-label="Manage categories"
           @click="showLibrary('categories')"
         >
-          <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 6.5A1.5 1.5 0 014.5 5h3.4a1.5 1.5 0 011.1.5l.9 1h5.6A1.5 1.5 0 0117 8v6.5a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 14.5v-8z" />
-          </svg>
+          <Folder class="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -284,17 +274,7 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
             @click="toggleGroup(group.category)"
           >
             <div class="flex items-center gap-2 min-w-0">
-              <svg
-                viewBox="0 0 20 20"
-                class="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200"
-                :class="isOpen(group.category) ? 'rotate-90 text-foreground' : ''"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <path d="M7.5 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+              <ChevronRight class="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200" :class="isOpen(group.category) ? 'rotate-90 text-foreground' : ''" aria-hidden="true" />
               <span class="h-2.5 w-2.5 shrink-0 rounded-full shadow-2xs" :class="paletteOf(group.color).dot" />
               <span class="truncate font-semibold tracking-tight text-foreground">{{ group.category }}</span>
             </div>
@@ -330,16 +310,7 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
             <span class="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
               {{ formatDuration(template.defaultDuration) }}
             </span>
-            <svg
-              viewBox="0 0 20 20"
-              class="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-60 group-focus-visible:opacity-60"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <circle cx="7" cy="5" r="1.4" /><circle cx="13" cy="5" r="1.4" />
-              <circle cx="7" cy="10" r="1.4" /><circle cx="13" cy="10" r="1.4" />
-              <circle cx="7" cy="15" r="1.4" /><circle cx="13" cy="15" r="1.4" />
-            </svg>
+            <GripVertical class="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-60 group-focus-visible:opacity-60" aria-hidden="true" />
           </li>
 
           <!-- Quick add: a subtle row at the end of the category, which turns into the form -->
@@ -391,7 +362,7 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
               class="flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium text-muted-foreground/80 transition hover:bg-accent/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               @click="startAdd(group.category)"
             >
-              <svg viewBox="0 0 20 20" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+              <Plus class="h-3 w-3" aria-hidden="true" />
               Add new activity
             </button>
           </li>
@@ -410,9 +381,7 @@ const onDragStart = (event: DragEvent, template: ActivityTemplate) => {
         class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-medium text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground cursor-pointer"
         @click="emit('manage')"
       >
-        <svg viewBox="0 0 20 20" class="h-3.5 w-3.5 text-muted-foreground" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path d="M10 4v12M4 10h12" stroke-linecap="round" />
-        </svg>
+        <Plus class="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
         Customize
       </button>
     </div>

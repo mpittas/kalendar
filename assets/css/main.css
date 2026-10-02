@@ -1,5 +1,6 @@
 @import "@fontsource-variable/inter";
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 /* Phones and tablets: no hover, finger-sized pointer. Use for touch-only layout and copy. */

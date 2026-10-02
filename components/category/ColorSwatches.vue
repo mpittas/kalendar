@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Check } from "lucide-vue-next";
 import { canonicalColor, COLOR_KEYS, PALETTE } from "~/lib/colors";
 
 defineProps<{ modelValue: string }>();
@@ -19,9 +20,7 @@ const emit = defineEmits<{ (e: "update:modelValue", value: string): void }>();
       :class="[PALETTE[key].swatch, canonicalColor(modelValue) === key ? 'ring-2 ring-foreground' : '']"
       @click="emit('update:modelValue', key)"
     >
-      <svg v-if="canonicalColor(modelValue) === key" viewBox="0 0 16 16" class="h-3 w-3 text-white touch:h-4 touch:w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M3.5 8.5l3 3 6-6" />
-      </svg>
+      <Check v-if="canonicalColor(modelValue) === key" class="h-3 w-3 text-white touch:h-4 touch:w-4" aria-hidden="true" :stroke-width="3" />
     </button>
   </div>
 </template>

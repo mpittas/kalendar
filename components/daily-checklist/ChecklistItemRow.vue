@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { Check, Ellipsis } from "lucide-vue-next";
 import type { DayChecklistItem } from "~/lib/types";
 
 const props = defineProps<{
   item: DayChecklistItem;
   completed: boolean;
-  /** Whether the row's action buttons are open. Owned by the parent so only one row is open at a time. */
+  /** Whether the row's menu is open. Owned by the parent so only one row's menu is open at a time. */
   expanded: boolean;
 }>();
 
@@ -21,91 +22,86 @@ const run = (action: () => void) => {
   action();
 };
 
-const actionClass =
-  "inline-flex h-8 cursor-pointer items-center justify-center whitespace-nowrap rounded-md px-3 text-xs font-medium transition-colors touch:h-11 touch:flex-1 touch:px-2 touch:text-sm";
+const menuItemClass =
+  "flex min-h-9 w-full cursor-pointer items-center rounded-md px-2.5 text-left text-sm transition-colors touch:min-h-11";
 </script>
 
 <template>
   <div
-    class="group rounded-lg transition-colors"
-    :class="expanded ? 'bg-accent/60' : 'hover:bg-accent/60'"
+    class="group relative flex items-center rounded-lg transition-colors hover:bg-accent/60"
+    :class="expanded ? 'bg-accent/60' : ''"
     @keydown.esc="expanded && emit('toggle-actions', item.id)"
   >
-    <div class="flex min-h-11 items-center">
-      <!-- The whole label is the toggle, so the hit area is the full row width -->
-      <button
-        type="button"
-        class="flex min-h-11 min-w-0 flex-1 cursor-pointer items-start gap-3 rounded-lg py-3 pl-2 pr-1 text-left"
-        :aria-pressed="completed"
-        @click="emit('toggle', item.id)"
+    <button
+      type="button"
+      class="flex min-h-10 min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg py-2 pl-2.5 pr-1 text-left touch:min-h-12"
+      :aria-pressed="completed"
+      @click="emit('toggle', item.id)"
+    >
+      <span
+        class="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition-colors touch:h-5 touch:w-5"
+        :class="completed
+          ? 'border-foreground bg-foreground text-background'
+          : 'border-foreground/30 text-transparent group-hover:border-foreground/60'"
+        aria-hidden="true"
       >
-        <span
-          class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors touch:-mt-0.5 touch:h-6 touch:w-6"
-          :class="completed
-            ? 'border-emerald-600 bg-emerald-600 text-white'
-            : 'border-foreground/25 bg-background text-transparent group-hover:border-foreground/50'"
-          aria-hidden="true"
+        <Check class="h-2.5 w-2.5" :stroke-width="3" />
+      </span>
+
+      <span class="min-w-0 flex-1 text-sm leading-snug transition-colors" :class="completed ? 'text-muted-foreground line-through decoration-muted-foreground/40' : 'text-foreground'">
+        <span class="mr-1.5 select-none" :class="completed ? 'opacity-50' : ''" aria-hidden="true">{{ item.emoji }}</span>{{ item.title }}
+        <span v-if="item.scope === 'day'" class="ml-1 text-[11px] text-muted-foreground">· this day only</span>
+      </span>
+    </button>
+
+    <!-- Appears on hover or focus where there is a real pointer; always visible on touch -->
+    <button
+      type="button"
+      class="mr-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition hover:bg-background hover:text-foreground touch:h-11 touch:w-11"
+      :class="expanded
+        ? 'text-foreground'
+        : '[@media(hover:hover)]:lg:opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'"
+      aria-haspopup="menu"
+      :aria-expanded="expanded"
+      :aria-label="`Actions for ${item.title}`"
+      @click="emit('toggle-actions', item.id)"
+    >
+      <Ellipsis class="h-4 w-4" aria-hidden="true" />
+    </button>
+
+    <template v-if="expanded">
+      <div class="fixed inset-0 z-30" aria-hidden="true" @click="emit('toggle-actions', item.id)" />
+      <div
+        role="menu"
+        class="absolute right-1 top-full z-40 mt-1 w-40 rounded-lg border border-border bg-popover p-1 shadow-lg touch:w-48"
+      >
+        <button
+          v-if="item.scope === 'default'"
+          type="button"
+          role="menuitem"
+          :class="[menuItemClass, 'text-foreground hover:bg-accent']"
+          @click="run(() => emit('edit', item))"
         >
-          <svg viewBox="0 0 20 20" class="h-3 w-3 touch:h-3.5 touch:w-3.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 10.5l3.5 3.5L15 6.5" />
-          </svg>
-        </span>
-
-        <span class="shrink-0 select-none text-sm leading-snug transition-opacity" :class="completed ? 'opacity-50' : ''" aria-hidden="true">{{ item.emoji }}</span>
-
-        <span class="min-w-0 flex-1">
-          <span
-            class="block break-words text-sm leading-snug transition-colors"
-            :class="completed ? 'text-muted-foreground line-through decoration-muted-foreground/50' : 'text-foreground'"
-          >{{ item.title }}</span>
-          <span v-if="item.scope === 'day'" class="mt-0.5 block text-[11px] leading-tight text-muted-foreground">Only this day</span>
-        </span>
-      </button>
-
-      <!-- Fades in on hover or focus where there is a real pointer (the slot stays reserved, so nothing shifts); always visible on touch -->
-      <button
-        type="button"
-        class="mr-1 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition hover:bg-background hover:text-foreground touch:mr-0 touch:h-11 touch:w-11"
-        :class="expanded
-          ? 'text-foreground'
-          : '[@media(hover:hover)]:lg:opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'"
-        :aria-expanded="expanded"
-        :aria-label="`Actions for ${item.title}`"
-        @click="emit('toggle-actions', item.id)"
-      >
-        <svg viewBox="0 0 20 20" class="h-4 w-4" fill="currentColor" aria-hidden="true">
-          <circle cx="4.5" cy="10" r="1.4" />
-          <circle cx="10" cy="10" r="1.4" />
-          <circle cx="15.5" cy="10" r="1.4" />
-        </svg>
-      </button>
-    </div>
-
-    <!-- Labeled actions, indented to line up with the title -->
-    <div v-if="expanded" class="flex flex-wrap gap-1.5 pb-2 pl-10 pr-2 touch:pl-2">
-      <button
-        v-if="item.scope === 'default'"
-        type="button"
-        :class="[actionClass, 'border border-input bg-background text-foreground hover:bg-accent']"
-        @click="run(() => emit('edit', item))"
-      >
-        Edit
-      </button>
-      <button
-        v-if="item.scope === 'default'"
-        type="button"
-        :class="[actionClass, 'border border-input bg-background text-foreground hover:bg-accent']"
-        @click="run(() => emit('skip', item, true))"
-      >
-        Skip this day
-      </button>
-      <button
-        type="button"
-        :class="[actionClass, 'text-destructive hover:bg-destructive/10']"
-        @click="run(() => emit('remove', item))"
-      >
-        {{ item.scope === "day" ? "Remove" : "Delete" }}
-      </button>
-    </div>
+          Edit
+        </button>
+        <button
+          v-if="item.scope === 'default'"
+          type="button"
+          role="menuitem"
+          :class="[menuItemClass, 'text-foreground hover:bg-accent']"
+          @click="run(() => emit('skip', item, true))"
+        >
+          Skip this day
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          :class="[menuItemClass, 'text-destructive hover:bg-destructive/10']"
+          @click="run(() => emit('remove', item))"
+        >
+          {{ item.scope === "day" ? "Remove" : "Delete" }}
+        </button>
+      </div>
+    </template>
   </div>
 </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChevronLeft, ChevronRight, Plus } from "lucide-vue-next";
 import { addDaysISO, formatDuration, longDate, mediumDate } from "~/lib/time";
 
 defineProps<{
@@ -24,18 +25,14 @@ const emit = defineEmits<{
           class="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground active:bg-muted short:h-10 short:w-10 sm:h-7 sm:w-7"
           aria-label="Previous day"
         >
-          <svg viewBox="0 0 20 20" class="h-5 w-5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M12.5 15l-5-5 5-5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <ChevronLeft class="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />
         </NuxtLink>
         <NuxtLink
           :to="`/day/${addDaysISO(day, 1)}`"
           class="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground active:bg-muted short:h-10 short:w-10 sm:h-7 sm:w-7"
           aria-label="Next day"
         >
-          <svg viewBox="0 0 20 20" class="h-5 w-5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M7.5 15l5-5-5-5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <ChevronRight class="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />
         </NuxtLink>
       </div>
 
@@ -64,9 +61,7 @@ const emit = defineEmits<{
         @click="emit('create-block')"
         class="hidden h-7 cursor-pointer items-center gap-1 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 lg:inline-flex"
       >
-        <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M10 4v12M4 10h12" stroke-linecap="round" />
-        </svg>
+        <Plus class="h-3.5 w-3.5" />
         Task
       </button>
     </div>

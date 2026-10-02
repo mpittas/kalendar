@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Check, ChevronDown, Plus, SlidersHorizontal } from "lucide-vue-next";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { paletteOf } from "~/lib/colors";
 import { withImplicitCategories } from "~/composables/useCategories";
@@ -156,9 +157,7 @@ onBeforeUnmount(() => {
     >
       <span class="h-2.5 w-2.5 shrink-0 rounded-full" :class="paletteOf(selected?.color ?? 'slate').dot" />
       <span class="min-w-0 flex-1 truncate text-foreground">{{ modelValue || "Choose a category" }}</span>
-      <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-muted-foreground transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <path d="M5.5 8l4.5 4.5L14.5 8" stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
+      <ChevronDown class="h-4 w-4 shrink-0 text-muted-foreground transition-transform" :class="open ? 'rotate-180' : ''" aria-hidden="true" />
     </button>
 
     <Teleport to="body">
@@ -190,12 +189,7 @@ onBeforeUnmount(() => {
                   <span class="h-2.5 w-2.5 rounded-full" :class="paletteOf(entry.color).dot" />
                 </span>
                 <span class="min-w-0 flex-1 truncate font-medium text-foreground">{{ entry.name }}</span>
-                <svg
-                  v-if="entry.name.toLowerCase() === modelValue?.trim().toLowerCase()"
-                  viewBox="0 0 16 16" class="h-3.5 w-3.5 shrink-0 text-foreground" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
-                >
-                  <path d="M3.5 8.5l3 3 6-6" />
-                </svg>
+                <Check v-if="entry.name.toLowerCase() === modelValue?.trim().toLowerCase()" class="h-3.5 w-3.5 shrink-0 text-foreground" aria-hidden="true" :stroke-width="3" />
               </button>
             </li>
             <li v-if="!entries.length" class="px-3 py-4 text-center text-xs text-muted-foreground">No categories yet</li>
@@ -231,7 +225,7 @@ onBeforeUnmount(() => {
                 @click="startCreating"
               >
                 <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
-                  <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke-linecap="round" /></svg>
+                  <Plus class="h-3.5 w-3.5" aria-hidden="true" />
                 </span>
                 New category
               </button>
@@ -241,9 +235,7 @@ onBeforeUnmount(() => {
                 @click="manage"
               >
                 <span class="flex h-6 w-6 shrink-0 items-center justify-center">
-                  <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 6h9M15 6h2M3 14h2M8 14h9" /><circle cx="13.5" cy="6" r="1.8" /><circle cx="6.5" cy="14" r="1.8" />
-                  </svg>
+                  <SlidersHorizontal class="h-3.5 w-3.5" aria-hidden="true" />
                 </span>
                 Manage categories…
               </button>

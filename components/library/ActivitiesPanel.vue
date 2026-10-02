@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChevronLeft, Pencil, Plus, Search, Trash2 } from "lucide-vue-next";
 import { ref, computed, watch } from "vue";
 import { paletteOf } from "~/lib/colors";
 import { api } from "~/lib/api";
@@ -142,7 +143,7 @@ const confirmDelete = async (id: string) => {
         class="-ml-2 mb-3 inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-md px-2 text-sm font-medium text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:mb-4 sm:min-h-0 sm:text-xs"
         @click="backToList"
       >
-        <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l-5 5 5 5" /></svg>
+        <ChevronLeft class="h-3.5 w-3.5" aria-hidden="true" />
         All activities
       </button>
       <h3 class="mb-4 text-sm font-semibold tracking-tight text-foreground">
@@ -164,10 +165,7 @@ const confirmDelete = async (id: string) => {
     <div v-else class="space-y-4">
       <div class="flex items-center gap-2">
         <div class="relative min-w-0 flex-1">
-          <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-            <circle cx="9" cy="9" r="5.5" />
-            <path d="M13.5 13.5L17 17" stroke-linecap="round" />
-          </svg>
+          <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <input
             v-model="search"
             type="search"
@@ -183,9 +181,7 @@ const confirmDelete = async (id: string) => {
           class="inline-flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 sm:h-9 sm:px-3.5"
           @click="startCreate"
         >
-          <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
-            <path d="M10 4v12M4 10h12" stroke-linecap="round" />
-          </svg>
+          <Plus class="h-3.5 w-3.5" aria-hidden="true" />
           New
         </button>
       </div>
@@ -231,9 +227,7 @@ const confirmDelete = async (id: string) => {
                 class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-8 sm:w-8"
                 @click="startEdit(template)"
               >
-                <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M13.5 3.5l3 3L7 16H4v-3l9.5-9.5z" />
-                </svg>
+                <Pencil class="h-4 w-4" aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -243,9 +237,7 @@ const confirmDelete = async (id: string) => {
                 :class="deletingId === template.id ? 'bg-destructive/10 text-destructive' : ''"
                 @click="deletingId = deletingId === template.id ? null : template.id"
               >
-                <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M4 6h12M8 6V4h4v2M6 6l.7 10h6.6L14 6M8.5 9v4M11.5 9v4" />
-                </svg>
+                <Trash2 class="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
             <div v-if="deletingId === template.id" class="flex flex-wrap items-center justify-between gap-2 border-t border-destructive/20 bg-destructive/5 px-3 py-2.5">

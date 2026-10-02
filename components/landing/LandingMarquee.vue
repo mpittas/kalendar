@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Check } from "lucide-vue-next";
 import { paletteOf } from "~/lib/colors";
 import { formatDuration } from "~/lib/time";
 
@@ -68,9 +69,7 @@ const routineTrack = [...routines, ...routines, ...routines, ...routines];
               routine.done ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-muted-foreground/40 text-transparent',
             ]"
           >
-            <svg viewBox="0 0 16 16" class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3.5 8.5l3 3 6-6" />
-            </svg>
+            <Check class="h-2.5 w-2.5" :stroke-width="3" />
           </span>
           {{ routine.emoji }} {{ routine.title }}
         </span>

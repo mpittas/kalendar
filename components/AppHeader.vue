@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Calendar, Clock, Moon, Sun } from "lucide-vue-next";
 import { computed } from "vue";
 import { todayISO } from "~/lib/time";
 
@@ -50,12 +51,7 @@ const initials = computed(() => {
               ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
               : 'text-muted-foreground hover:text-foreground hover:bg-background/50'"
           >
-            <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 shrink-0 max-[400px]:hidden max-[359px]:block max-[359px]:h-4 max-[359px]:w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
+            <Calendar class="h-3.5 w-3.5 shrink-0 max-[400px]:hidden max-[359px]:block max-[359px]:h-4 max-[359px]:w-4" />
             <span class="max-[359px]:sr-only">Calendar</span>
           </NuxtLink>
           <NuxtLink
@@ -65,10 +61,7 @@ const initials = computed(() => {
               ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
               : 'text-muted-foreground hover:text-foreground hover:bg-background/50'"
           >
-            <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 shrink-0 max-[400px]:hidden max-[359px]:block max-[359px]:h-4 max-[359px]:w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
+            <Clock class="h-3.5 w-3.5 shrink-0 max-[400px]:hidden max-[359px]:block max-[359px]:h-4 max-[359px]:w-4" />
             <span class="max-[359px]:sr-only">Today</span>
           </NuxtLink>
         </nav>
@@ -84,13 +77,8 @@ const initials = computed(() => {
           class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-input bg-background text-foreground shadow-2xs transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer sm:h-8 sm:w-8"
           @click="toggleTheme"
         >
-          <svg viewBox="0 0 24 24" class="h-4 w-4 dark:hidden" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-          </svg>
-          <svg viewBox="0 0 24 24" class="hidden h-4 w-4 dark:block" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="4" />
-            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-          </svg>
+          <Moon class="h-4 w-4 dark:hidden" aria-hidden="true" />
+          <Sun class="hidden h-4 w-4 dark:block" aria-hidden="true" />
         </button>
         <div v-if="loading" class="h-10 w-10 animate-pulse rounded-md bg-muted sm:h-8 sm:w-20" />
 

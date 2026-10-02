@@ -550,9 +550,7 @@ const openChecklistManager = () => {
       <ActivityPalette
         v-else
         :templates="templates"
-        @pick="(template) => {
-          editor = { mode: 'create', day, startMinutes: snapMinutes(nowMinutes(), 30), template };
-        }"
+        @pick="(template) => createFromTemplate(template, snapMinutes(nowMinutes(), 30))"
         @drag-start="(template) => { dragSource = { kind: 'template', template }; }"
         @drag-end="() => { dragSource = null; preview = null; }"
         @manage="showLibrary('activities')"
@@ -634,7 +632,7 @@ const openChecklistManager = () => {
       :open="mobileSheet === 'activities'"
       :templates="templates"
       @close="mobileSheet = null"
-      @pick-template="(template) => { editor = { mode: 'create', day, startMinutes: snapMinutes(nowMinutes(), 30), template }; }"
+      @pick-template="(template) => { mobileSheet = null; createFromTemplate(template, snapMinutes(nowMinutes(), 30)); }"
       @open-manager="showLibrary('activities')"
     />
 

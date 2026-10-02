@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from "lucide-vue-next";
 import { addMonths, monthTitle } from "~/lib/time";
 
 const props = defineProps<{
@@ -35,16 +36,7 @@ const emit = defineEmits<{
           <span
             class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground shadow-2xs transition group-hover:border-foreground/30 group-hover:text-foreground sm:h-8 sm:w-8"
           >
-            <svg
-              viewBox="0 0 20 20"
-              class="h-4 w-4 transition-transform duration-200"
-              :class="isDateSelectorOpen ? 'rotate-180 text-foreground' : ''"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M5 7.5l5 5 5-5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
+            <ChevronDown class="h-4 w-4 transition-transform duration-200" :class="isDateSelectorOpen ? 'rotate-180 text-foreground' : ''" />
           </span>
         </button>
       </div>
@@ -78,9 +70,7 @@ const emit = defineEmits<{
           title="Previous month"
           aria-label="Previous month"
         >
-          <svg viewBox="0 0 20 20" class="h-5 w-5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12.5 15l-5-5 5-5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <ChevronLeft class="h-5 w-5 sm:h-4 sm:w-4" />
         </NuxtLink>
 
         <!-- Today Button -->
@@ -102,9 +92,7 @@ const emit = defineEmits<{
           title="Next month"
           aria-label="Next month"
         >
-          <svg viewBox="0 0 20 20" class="h-5 w-5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M7.5 15l5-5-5-5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <ChevronRight class="h-5 w-5 sm:h-4 sm:w-4" />
         </NuxtLink>
 
         <div class="mx-0.5 h-5 w-px bg-border sm:h-4" />
@@ -117,10 +105,7 @@ const emit = defineEmits<{
           title="Jump to date"
           aria-label="Jump to date"
         >
-          <svg viewBox="0 0 20 20" class="h-5 w-5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="14" height="13" rx="2" stroke-linecap="round" stroke-linejoin="round" />
-            <path d="M3 8h14M7 2v4M13 2v4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <Calendar class="h-5 w-5 sm:h-4 sm:w-4" />
         </button>
       </div>
     </div>

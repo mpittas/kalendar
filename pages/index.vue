@@ -50,7 +50,11 @@ onMounted(() => {
     },
     { rootMargin: "0px 0px -8% 0px", threshold: 0.12 },
   );
-  el.querySelectorAll("[data-reveal]").forEach((node) => observer?.observe(node));
+  // Anything already on screen at load is shown straight away; only content below the fold fades in.
+  el.querySelectorAll("[data-reveal]").forEach((node) => {
+    if (node.getBoundingClientRect().top < window.innerHeight) node.classList.add("is-revealed");
+    else observer?.observe(node);
+  });
   el.classList.add("reveal-ready");
 });
 

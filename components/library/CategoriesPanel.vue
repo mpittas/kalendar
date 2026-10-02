@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Plus, Trash2 } from "lucide-vue-next";
 import { computed, nextTick, ref, watch } from "vue";
 import { paletteOf } from "~/lib/colors";
 import { withImplicitCategories } from "~/composables/useCategories";
@@ -187,9 +188,7 @@ const toggleColors = (entry: CategoryEntry) => {
             :disabled="adding || !newName.trim()"
             class="inline-flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:px-3.5"
           >
-            <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
-              <path d="M10 4v12M4 10h12" stroke-linecap="round" />
-            </svg>
+            <Plus class="h-3.5 w-3.5" aria-hidden="true" />
             Add
           </button>
         </div>
@@ -273,9 +272,7 @@ const toggleColors = (entry: CategoryEntry) => {
                   :class="deleting === keyOf(entry) ? 'bg-destructive/10 text-destructive' : ''"
                   @click="askDelete(entry)"
                 >
-                  <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M4 6h12M8 6V4h4v2M6 6l.7 10h6.6L14 6M8.5 9v4M11.5 9v4" />
-                  </svg>
+                  <Trash2 class="h-4 w-4" aria-hidden="true" />
                 </button>
               </template>
               <button

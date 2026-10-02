@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Search } from "lucide-vue-next";
 import { ref, computed } from "vue";
 import type { ActivityTemplate } from "~/lib/types";
 import { paletteOf } from "~/lib/colors";
@@ -47,9 +48,7 @@ const toneOf = (item: ActivityTemplate) => paletteOf(colorOf(item));
           placeholder="Search activities..."
           class="h-11 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
-        <svg viewBox="0 0 20 20" class="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M8.5 14a5.5 5.5 0 100-11 5.5 5.5 0 000 11zM13 13l4 4" stroke-linecap="round" />
-        </svg>
+        <Search class="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
       </div>
 
       <div class="max-h-[50dvh] space-y-1.5 overflow-y-auto overscroll-contain">

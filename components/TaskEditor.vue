@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Trash2 } from "lucide-vue-next";
 import { ref, computed, watch } from "vue";
 import { paletteOf } from "~/lib/colors";
 import { api } from "~/lib/api";
@@ -328,9 +329,7 @@ const remove = async () => {
             @click="sourceTemplate ? (confirmingTemplateDelete = !confirmingTemplateDelete) : remove()"
             class="mr-auto inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-destructive/30 bg-destructive/10 text-xs font-medium text-destructive shadow-xs transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50 sm:h-9 sm:w-auto sm:px-3"
           >
-            <svg viewBox="0 0 20 20" class="h-5 w-5 sm:hidden" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 6h12M8 6V4h4v2M6 6l.7 10h6.6L14 6M8.5 9v4M11.5 9v4" />
-            </svg>
+            <Trash2 class="h-5 w-5 sm:hidden" aria-hidden="true" />
             <span class="hidden sm:inline">{{ sourceTemplate ? "Delete activity" : "Delete block" }}</span>
           </button>
           <button

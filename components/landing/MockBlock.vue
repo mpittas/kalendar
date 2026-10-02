@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Check } from "lucide-vue-next";
 import { computed } from "vue";
 import { paletteOf } from "~/lib/colors";
 import TimeBlock from "~/components/day-planner/TimeBlock.vue";
@@ -27,9 +28,7 @@ const tone = computed(() => paletteOf(props.color));
         done ? [tone.accent, 'border-transparent text-white'] : [tone.check, 'text-transparent'],
       ]"
     >
-      <svg viewBox="0 0 16 16" class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M3.5 8.5l3 3 6-6" />
-      </svg>
+      <Check class="h-2.5 w-2.5" aria-hidden="true" :stroke-width="3" />
     </span>
     <slot />
   </TimeBlock>

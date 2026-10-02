@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ArrowRight, CircleHelp } from "lucide-vue-next";
 import { formatDuration, formatTimeRange, gutterLabel } from "~/lib/time";
 import MockBlock from "~/components/landing/MockBlock.vue";
 
@@ -47,10 +48,7 @@ const planned = tasks.reduce((sum, task) => sum + task.duration, 0);
             </li>
           </ul>
           <p class="mt-4 flex items-center gap-2 rounded-lg bg-muted/70 px-3 py-2.5 text-[13px] text-muted-foreground">
-            <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-              <circle cx="10" cy="10" r="7" />
-              <path d="M8 8a2 2 0 113 1.7c-.6.4-1 .8-1 1.5M10 14h.01" stroke-linecap="round" />
-            </svg>
+            <CircleHelp class="h-4 w-4 shrink-0" aria-hidden="true" />
             No times, no order. Does it all fit?
           </p>
         </div>
@@ -58,9 +56,7 @@ const planned = tasks.reduce((sum, task) => sum + task.duration, 0);
         <!-- Arrow -->
         <div data-reveal class="flex justify-center [--reveal-delay:80ms]" aria-hidden="true">
           <span class="btn-primary flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <svg viewBox="0 0 20 20" class="h-4 w-4 rotate-90 lg:rotate-0" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 10h11M11 5.5l4.5 4.5-4.5 4.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
+            <ArrowRight class="h-4 w-4 rotate-90 lg:rotate-0" />
           </span>
         </div>
 

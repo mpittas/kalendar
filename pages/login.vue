@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Check, CircleAlert } from "lucide-vue-next";
 import { ref } from "vue";
 
 useHead({
@@ -115,10 +116,7 @@ const handleResetPassword = async () => {
         v-if="error"
         class="flex items-center gap-2.5 rounded-lg border border-rose-200/80 bg-rose-50/80 dark:border-rose-400/25 dark:bg-rose-500/10 p-3 text-xs sm:text-sm font-medium text-rose-800 dark:text-rose-200"
       >
-        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="10" cy="10" r="7" />
-          <path d="M10 6v4M10 14h.01" stroke-linecap="round" />
-        </svg>
+        <CircleAlert class="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
         <span>{{ error }}</span>
       </div>
 
@@ -126,9 +124,7 @@ const handleResetPassword = async () => {
         v-if="successMessage"
         class="flex items-center gap-2.5 rounded-lg border border-emerald-200/80 bg-emerald-50/80 dark:border-emerald-400/25 dark:bg-emerald-500/10 p-3 text-xs sm:text-sm font-medium text-emerald-800 dark:text-emerald-200"
       >
-        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M5 10l3 3 7-7" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
+        <Check class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
         <span>{{ successMessage }}</span>
       </div>
 

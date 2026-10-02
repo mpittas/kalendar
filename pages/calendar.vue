@@ -18,10 +18,11 @@ const month = computed(() => {
 const range = computed(() => monthRange(month.value));
 
 // Client-only: API calls need the signed-in user's token, which SSR doesn't have.
-const { data: tasks } = await useAsyncData<ScheduledTask[]>(
+// Not awaited, so navigating here isn't held up until the month's tasks arrive.
+const { data: tasks } = useAsyncData<ScheduledTask[]>(
   "month-tasks",
   () => api.getTasksBetween(range.value.from, range.value.to),
-  { server: false, watch: [month], default: () => [] },
+  { server: false, lazy: true, watch: [month], default: () => [] },
 );
 
 useHead({

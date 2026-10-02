@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ArrowRight } from "lucide-vue-next";
 import MockBlock from "~/components/landing/MockBlock.vue";
 
 defineProps<{
@@ -42,9 +43,7 @@ const stack = [
             class="group inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-[15px] font-medium text-zinc-900 shadow-[0_8px_24px_-8px_rgb(255_255_255/0.35)] transition hover:bg-white/90 active:scale-[0.98]"
           >
             {{ start.label }}
-            <svg viewBox="0 0 20 20" class="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M4 10h11M11 5.5l4.5 4.5-4.5 4.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
+            <ArrowRight class="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </NuxtLink>
           <NuxtLink
             v-if="!signedIn"

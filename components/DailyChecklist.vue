@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChevronRight } from "lucide-vue-next";
 import { ref, computed, watch } from "vue";
 import type { ChecklistItem, DayChecklist, DayChecklistItem } from "~/lib/types";
 import { api } from "~/lib/api";
@@ -179,9 +180,7 @@ const removeItem = async (item: DayChecklistItem) => {
       <!-- Default items skipped on this day only -->
       <details v-if="skippedItems.length > 0" class="group/skipped mt-3 border-t border-border/60 pt-1">
         <summary class="flex min-h-10 cursor-pointer list-none select-none items-center gap-1.5 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground touch:min-h-11 touch:text-sm [&::-webkit-details-marker]:hidden">
-          <svg viewBox="0 0 20 20" class="h-3.5 w-3.5 transition-transform group-open/skipped:rotate-90" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M7.5 5l5 5-5 5" />
-          </svg>
+          <ChevronRight class="h-3.5 w-3.5 transition-transform group-open/skipped:rotate-90" aria-hidden="true" />
           Skipped on this day
           <span class="tabular-nums">{{ skippedItems.length }}</span>
         </summary>

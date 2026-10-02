@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChevronLeft, ChevronRight } from "lucide-vue-next";
 import { MONTH_LABELS, setYearMonth } from "~/lib/time";
 
 const props = defineProps<{
@@ -35,9 +36,7 @@ const emit = defineEmits<{
             title="Previous year"
             aria-label="Previous year"
           >
-            <svg viewBox="0 0 20 20" class="h-5 w-5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M12.5 15l-5-5 5-5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
+            <ChevronLeft class="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />
           </button>
           <span class="min-w-[4rem] text-center font-mono text-base font-bold tabular-nums text-foreground" aria-live="polite">
             {{ activeYear }}
@@ -49,9 +48,7 @@ const emit = defineEmits<{
             title="Next year"
             aria-label="Next year"
           >
-            <svg viewBox="0 0 20 20" class="h-5 w-5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M7.5 15l5-5-5-5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
+            <ChevronRight class="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />
           </button>
         </div>
       </div>

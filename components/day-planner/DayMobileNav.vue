@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { AlignLeft, Check, FileText, Plus } from "lucide-vue-next";
 const props = defineProps<{
   checklistStats: {
     total: number;
@@ -22,9 +23,7 @@ const tab =
     class="z-30 flex shrink-0 items-center justify-around gap-1 border-t border-border bg-background pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] pt-1.5 short:pt-1 lg:hidden"
   >
     <button type="button" :class="tab" @click="emit('open-sheet', 'activities')">
-      <svg viewBox="0 0 20 20" class="h-6 w-6 text-foreground short:h-5 short:w-5" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <path d="M4 6h12M4 10h12M4 14h8" stroke-linecap="round" />
-      </svg>
+      <AlignLeft class="h-6 w-6 text-foreground short:h-5 short:w-5" aria-hidden="true" />
       <span class="text-[11px] font-medium">Activities</span>
     </button>
 
@@ -33,16 +32,12 @@ const tab =
       class="flex h-12 shrink-0 cursor-pointer items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold short:h-10 text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-95"
       @click="emit('create-block')"
     >
-      <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-        <path d="M10 4v12M4 10h12" stroke-linecap="round" />
-      </svg>
+      <Plus class="h-4 w-4" aria-hidden="true" />
       <span>Schedule</span>
     </button>
 
     <button type="button" :class="tab" @click="emit('open-sheet', 'checklist')">
-      <svg viewBox="0 0 20 20" class="h-6 w-6 text-foreground short:h-5 short:w-5" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <path d="M5 10l3 3 7-7" stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
+      <Check class="h-6 w-6 text-foreground short:h-5 short:w-5" aria-hidden="true" />
       <span class="text-[11px] font-medium">Checklist</span>
       <span
         v-if="checklistStats.total > 0"
@@ -54,9 +49,7 @@ const tab =
     </button>
 
     <button type="button" :class="tab" @click="emit('open-sheet', 'notes')">
-      <svg viewBox="0 0 20 20" class="h-6 w-6 text-foreground short:h-5 short:w-5" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <path d="M5 3h8l3 3v11H5V3zM8 9h5M8 13h5" stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
+      <FileText class="h-6 w-6 text-foreground short:h-5 short:w-5" aria-hidden="true" />
       <span class="text-[11px] font-medium">Notes</span>
       <span
         v-if="hasNotes"
