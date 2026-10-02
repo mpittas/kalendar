@@ -671,7 +671,8 @@ const openChecklistManager = () => {
 
     <Modal
       :open="mobileSheet === 'checklist'"
-      title="Daily Habits & Checklist"
+      title="Checklist"
+      :subtitle="longDate(day)"
       flush
       @close="mobileSheet = null"
     >

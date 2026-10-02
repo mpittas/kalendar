@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import type { ChecklistItem, DayChecklist, DayChecklistItem } from "~/lib/types";
 import { api } from "~/lib/api";
 import ChecklistHeader from "~/components/daily-checklist/ChecklistHeader.vue";
@@ -31,6 +31,12 @@ const editingItem = ref<ChecklistItem | null>(null);
 const editTitle = ref("");
 const editEmoji = ref("");
 const saving = ref(false);
+// Only one row shows its actions at a time.
+const expandedId = ref<string | null>(null);
+const toggleActions = (id: string) => {
+  expandedId.value = expandedId.value === id ? null : id;
+};
+watch(() => props.day, () => { expandedId.value = null; });
 
 const totalCount = computed(() => props.items.length);
 const completedCount = computed(() => {
@@ -136,8 +142,8 @@ const removeItem = async (item: DayChecklistItem) => {
 
 <template>
   <div class="flex h-full flex-col bg-background">
-    <!-- Progress banner -->
     <ChecklistHeader
+      v-if="totalCount > 0"
       :completed-count="completedCount"
       :total-count="totalCount"
       :percentage="percentage"
@@ -145,51 +151,57 @@ const removeItem = async (item: DayChecklistItem) => {
     />
 
     <!-- Items list -->
-    <div class="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-4 py-3">
-      <p v-if="items.length > 0 || skippedItems.length > 0" class="px-2 pb-1 text-xs text-muted-foreground">
-        Your default checklist repeats every day. Skip items or add one-offs for just this day.
-      </p>
+    <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3" :class="totalCount > 0 ? 'pt-1' : 'pt-4'">
+      <div v-if="items.length === 0" class="px-4 py-10 text-center">
+        <p class="text-sm font-medium text-foreground">
+          {{ skippedItems.length === 0 ? "No checklist items yet" : "Everything is skipped on this day" }}
+        </p>
+        <p v-if="skippedItems.length === 0" class="mt-1 text-xs text-muted-foreground">
+          Add small habits below, like pills, a protein shake or a shower.
+        </p>
+      </div>
 
-      <p v-if="items.length === 0 && skippedItems.length === 0" class="py-10 text-center text-sm text-muted-foreground">
-        No checklist items yet.<br />Add small habits below (e.g. pills, protein shake, shower).
-      </p>
-      <p v-else-if="items.length === 0" class="py-6 text-center text-sm text-muted-foreground">
-        Everything is skipped for this day.
-      </p>
-
-      <ChecklistItemRow
-        v-for="item in items"
-        :key="item.id"
-        :item="item"
-        :completed="isCompleted(item.id)"
-        @toggle="toggle"
-        @edit="startEdit"
-        @skip="skipForDay"
-        @remove="(it) => it.scope === 'day' ? removeExtra(it) : removeItem(it)"
-      />
+      <ul v-else class="space-y-px">
+        <li v-for="item in items" :key="item.id">
+          <ChecklistItemRow
+            :item="item"
+            :completed="isCompleted(item.id)"
+            :expanded="expandedId === item.id"
+            @toggle="toggle"
+            @toggle-actions="toggleActions"
+            @edit="startEdit"
+            @skip="skipForDay"
+            @remove="(it) => it.scope === 'day' ? removeExtra(it) : removeItem(it)"
+          />
+        </li>
+      </ul>
 
       <!-- Default items skipped on this day only -->
-      <details v-if="skippedItems.length > 0" class="pt-2">
-        <summary class="flex min-h-11 cursor-pointer select-none items-center text-xs font-medium text-muted-foreground hover:text-foreground touch:text-sm">
-          Skipped on this day ({{ skippedItems.length }})
+      <details v-if="skippedItems.length > 0" class="group/skipped mt-3 border-t border-border/60 pt-1">
+        <summary class="flex min-h-10 cursor-pointer list-none select-none items-center gap-1.5 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground touch:min-h-11 touch:text-sm [&::-webkit-details-marker]:hidden">
+          <svg viewBox="0 0 20 20" class="h-3.5 w-3.5 transition-transform group-open/skipped:rotate-90" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7.5 5l5 5-5 5" />
+          </svg>
+          Skipped on this day
+          <span class="tabular-nums">{{ skippedItems.length }}</span>
         </summary>
-        <div class="mt-1.5 space-y-1">
-          <div
+        <ul class="space-y-px">
+          <li
             v-for="item in skippedItems"
             :key="item.id"
-            class="flex items-center gap-2.5 rounded-lg p-2 text-sm text-muted-foreground"
+            class="flex min-h-11 items-center gap-2 rounded-lg py-1 pl-2 pr-1 text-sm text-muted-foreground"
           >
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/60 text-sm opacity-60">{{ item.emoji }}</span>
-            <span class="min-w-0 flex-1 truncate">{{ item.title }}</span>
+            <span class="shrink-0 leading-snug opacity-50" aria-hidden="true">{{ item.emoji }}</span>
+            <span class="min-w-0 flex-1 break-words leading-snug">{{ item.title }}</span>
             <button
               type="button"
+              class="inline-flex h-8 shrink-0 cursor-pointer items-center rounded-md px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-accent touch:h-11 touch:px-4 touch:text-sm"
               @click="skipForDay(item, false)"
-              class="shrink-0 cursor-pointer rounded-md border border-input bg-background px-2 py-1 text-xs font-medium text-foreground shadow-xs hover:bg-accent touch:h-10 touch:px-4 touch:text-sm"
             >
               Restore
             </button>
-          </div>
-        </div>
+          </li>
+        </ul>
       </details>
     </div>
 
