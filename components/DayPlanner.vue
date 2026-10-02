@@ -605,7 +605,6 @@ const openChecklistManager = () => {
         :stats="stats"
         :flash="flash"
         @create-block="editor = { mode: 'create', day, startMinutes: snapMinutes(nowMinutes(), 30), template: null }"
-        @customize="showLibrary()"
       />
 
       <div ref="scrollRef" class="relative min-h-0 flex-1 overflow-y-auto overscroll-contain bg-background scroll-pt-6">
@@ -645,6 +644,7 @@ const openChecklistManager = () => {
         :checklist-stats="checklistStats"
         :has-notes="notesText.trim().length > 0"
         @open-sheet="(sheet) => { mobileSheet = sheet; }"
+        @customize="showLibrary()"
         @create-block="editor = { mode: 'create', day, startMinutes: snapMinutes(nowMinutes(), 30), template: null }"
       />
     </section>

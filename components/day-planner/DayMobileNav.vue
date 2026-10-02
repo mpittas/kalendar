@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, FileText, Plus } from "lucide-vue-next";
+import { Check, FileText, Plus, Settings } from "lucide-vue-next";
 const props = defineProps<{
   checklistStats: {
     total: number;
@@ -11,6 +11,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "open-sheet", sheet: "checklist" | "notes"): void;
   (e: "create-block"): void;
+  (e: "customize"): void;
 }>();
 
 const tab =
@@ -51,6 +52,17 @@ const tab =
         class="absolute right-1/2 top-1 h-1.5 w-1.5 translate-x-[calc(50%+12px)] rounded-full bg-primary short:static short:translate-x-0"
         aria-label="Has notes"
       />
+    </button>
+
+    <!-- Phones have no sidebar, so this is where activities and categories are edited -->
+    <button
+      type="button"
+      :class="tab"
+      aria-label="Edit activities and categories"
+      @click="emit('customize')"
+    >
+      <Settings class="h-5 w-5 text-foreground short:h-4 short:w-4" aria-hidden="true" />
+      <span class="text-[10px] font-medium">Library</span>
     </button>
   </nav>
 </template>
