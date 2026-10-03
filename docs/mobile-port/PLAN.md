@@ -9,18 +9,20 @@ Legend: `[ ]` todo, `[x]` done, `[~]` in progress / blocked.
 ## Phase 0 — groundwork (the web app keeps working)
 
 ### 0.1 Monorepo
-- [ ] Commit 1: pure `git mv` of the Nuxt app into `apps/web` (app.vue, nuxt.config.ts,
+- [x] Commit 1: pure `git mv` of the Nuxt app into `apps/web` (app.vue, nuxt.config.ts,
       assets, components, composables, lib, middleware, pages, plugins, server, utils,
       tsconfig.json, package.json, .env.example).
-- [ ] Commit 2: root `package.json` with npm workspaces, regenerated root `package-lock.json`,
+- [x] Commit 2: root `package.json` with npm workspaces, updated root `package-lock.json`,
       any fixes.
-- [ ] Keep at the root: firebase.json, .firebaserc, firestore.rules, firestore.indexes.json,
+- [x] Keep at the root: firebase.json, .firebaserc, firestore.rules, firestore.indexes.json,
       PRODUCT.md, DESIGN.md, .agents/, agent/, skills-lock.json, .mcp.json.
-- [ ] Update `.claude/launch.json` so its configs still start the web app.
-- [ ] Acceptance: one `npm install` at the root works; web typecheck and build pass;
+- [x] Update `.claude/launch.json` so its configs still start the web app.
+- [x] Acceptance: one `npm install` at the root works; web typecheck and build pass;
       `npm run dev -w apps/web` serves the same app.
+- [x] Deviation logged: `oxc-parser` pinned to 0.144.0 (Smart App Control blocks the binary
+      in the 0.143.0 package nuxt pins). See DECISIONS.md.
 - [ ] HUMAN_TODO: move `.env` into `apps/web/`.
-- [ ] HUMAN_TODO: set the hosting project's root directory to `apps/web`.
+- [ ] HUMAN_TODO: if the web app is served by Firebase Hosting, point it at `apps/web`.
 
 ### 0.2 packages/core (@klndr/core)
 - [ ] Move: types and constants, time, layout.
