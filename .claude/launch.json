@@ -4,13 +4,13 @@
     {
       "name": "dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": ["run", "dev", "-w", "apps/web"],
       "port": 3000
     },
     {
       "name": "demo",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["nuxt", "dev", "--dotenv", ".env.demo"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "-w", "apps/web", "--", "--dotenv", ".env.demo"],
       "env": {
         "FIREBASE_API_KEY": "",
         "FIREBASE_AUTH_DOMAIN": "",
