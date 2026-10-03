@@ -122,6 +122,14 @@ describe("requests", () => {
     expect(calls[0].url).toBe("/api/checklist/extras/e1?day=2026-10-03");
     expect(calls[0].init.method).toBe("DELETE");
   });
+
+  it("deletes the account with a DELETE and no body", async () => {
+    const calls = stubFetch({ ok: true });
+    await createApiClient().deleteAccount();
+    expect(calls[0].url).toBe("/api/account");
+    expect(calls[0].init.method).toBe("DELETE");
+    expect(calls[0].init.body).toBeUndefined();
+  });
 });
 
 describe("failures", () => {

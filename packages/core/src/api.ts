@@ -54,6 +54,8 @@ export type ApiClient = {
   removeDayChecklistExtra(day: string, id: string): Promise<DayChecklist>;
   getDayNotes(day: string): Promise<DayNotes>;
   saveDayNotes(day: string, text: string): Promise<DayNotes>;
+  /** Delete every document the caller owns: the data half of deleting an account. */
+  deleteAccount(): Promise<void>;
 };
 
 export function createApiClient(options: ApiClientOptions = {}): ApiClient {
@@ -231,6 +233,9 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
         body: JSON.stringify({ day, text }),
       });
       return data.dayNotes;
+    },
+    async deleteAccount(): Promise<void> {
+      await request<{ ok: true }>("/api/account", { method: "DELETE" });
     },
   };
 }

@@ -48,6 +48,12 @@ export interface Store {
   removeDayChecklistExtra(day: string, id: string): Promise<DayChecklist>;
   getDayNotes(day: string): Promise<DayNotes>;
   setDayNotes(day: string, text: string): Promise<DayNotes>;
+  /**
+   * Delete everything this user owns: every document under `users/{uid}` — the collections above and
+   * the one-time seed markers — and then the profile document itself. The Auth user is removed by the
+   * client afterwards, which is what makes this the data half of deleting an account.
+   */
+  deleteAccount(): Promise<void>;
 }
 
 export const MAX_DAY_EXTRAS = 50;
