@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Check, Ellipsis } from "lucide-vue-next";
-import type { DayChecklistItem } from "~/lib/types";
+import type { DayChecklistItem } from "@klndr/core";
 
 const props = defineProps<{
   item: DayChecklistItem;

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from "vue";
-import { DURATION_CHOICES, formatDuration } from "~/lib/time";
-import type { ActivityTemplate } from "~/lib/types";
+import { DURATION_CHOICES, formatDuration, type ActivityTemplate } from "@klndr/core";
 
 export type ActivityDraft = {
   name: string;

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Check } from "lucide-vue-next";
-import { canonicalColor, COLOR_KEYS, PALETTE } from "~/lib/colors";
+import { canonicalColor, COLOR_KEYS } from "@klndr/core";
+import { PALETTE } from "~/lib/colors";
 
 defineProps<{ modelValue: string }>();
 const emit = defineEmits<{ (e: "update:modelValue", value: string): void }>();

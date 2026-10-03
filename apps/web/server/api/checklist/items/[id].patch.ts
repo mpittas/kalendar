@@ -1,4 +1,4 @@
-import type { ChecklistItem } from "~/lib/types";
+import type { ChecklistItem } from "@klndr/core";
 
 export default defineEventHandler(async (event) => {
   const id = parseId(event);

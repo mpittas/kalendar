@@ -2,7 +2,7 @@
 import { Check, ChevronLeft, ChevronRight, Moon, Plus, Search } from "lucide-vue-next";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import { paletteOf } from "~/lib/colors";
-import { formatDuration, formatTime, formatTimeRange, gutterLabel } from "~/lib/time";
+import { formatDuration, formatTime, formatTimeRange, gutterLabel } from "@klndr/core";
 import MockBlock from "~/components/landing/MockBlock.vue";
 
 /**

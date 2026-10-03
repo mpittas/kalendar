@@ -1,17 +1,6 @@
-export type ColorKey =
-  | "indigo"
-  | "emerald"
-  | "amber"
-  | "rose"
-  | "sky"
-  | "violet"
-  | "teal"
-  | "orange"
-  | "pink"
-  | "lime"
-  | "cyan"
-  | "slate";
+import { COLOR_LABELS, canonicalColor, type ColorKey } from "@klndr/core";
 
+/** The Tailwind classes behind every role a color plays; the keys and their labels live in @klndr/core. */
 export type PaletteEntry = {
   label: string;
   swatch: string;
@@ -31,7 +20,7 @@ export type PaletteEntry = {
 
 export const PALETTE: Record<ColorKey, PaletteEntry> = {
   indigo: {
-    label: "Indigo",
+    label: COLOR_LABELS.indigo,
     swatch: "bg-indigo-500",
     block: "bg-indigo-50 border-indigo-200/80 text-indigo-950 hover:bg-indigo-100 hover:border-indigo-300/80 dark:bg-[color-mix(in_oklab,var(--color-indigo-500)_16%,var(--background))] dark:border-indigo-400/25 dark:text-indigo-50 dark:hover:bg-[color-mix(in_oklab,var(--color-indigo-500)_24%,var(--background))] dark:hover:border-indigo-400/40",
     blockDone: "bg-[color-mix(in_oklab,var(--color-indigo-50)_45%,var(--background))] border-indigo-200/50 text-indigo-950/45 hover:border-indigo-200 dark:bg-[color-mix(in_oklab,var(--color-indigo-500)_6%,var(--background))] dark:border-indigo-400/15 dark:text-indigo-50/40 dark:hover:border-indigo-400/30",
@@ -45,7 +34,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     check: "border-indigo-400/80 hover:border-indigo-600 hover:text-indigo-600 dark:border-indigo-300/45 dark:hover:border-indigo-200 dark:hover:text-indigo-200",
   },
   emerald: {
-    label: "Emerald",
+    label: COLOR_LABELS.emerald,
     swatch: "bg-emerald-500",
     block: "bg-emerald-50 border-emerald-200/80 text-emerald-950 hover:bg-emerald-100 hover:border-emerald-300/80 dark:bg-[color-mix(in_oklab,var(--color-emerald-500)_16%,var(--background))] dark:border-emerald-400/25 dark:text-emerald-50 dark:hover:bg-[color-mix(in_oklab,var(--color-emerald-500)_24%,var(--background))] dark:hover:border-emerald-400/40",
     blockDone: "bg-[color-mix(in_oklab,var(--color-emerald-50)_45%,var(--background))] border-emerald-200/50 text-emerald-950/45 hover:border-emerald-200 dark:bg-[color-mix(in_oklab,var(--color-emerald-500)_6%,var(--background))] dark:border-emerald-400/15 dark:text-emerald-50/40 dark:hover:border-emerald-400/30",
@@ -59,7 +48,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     check: "border-emerald-400/80 hover:border-emerald-600 hover:text-emerald-600 dark:border-emerald-300/45 dark:hover:border-emerald-200 dark:hover:text-emerald-200",
   },
   amber: {
-    label: "Amber",
+    label: COLOR_LABELS.amber,
     swatch: "bg-amber-500",
     block: "bg-amber-50 border-amber-200/80 text-amber-950 hover:bg-amber-100 hover:border-amber-300/80 dark:bg-[color-mix(in_oklab,var(--color-amber-500)_16%,var(--background))] dark:border-amber-400/25 dark:text-amber-50 dark:hover:bg-[color-mix(in_oklab,var(--color-amber-500)_24%,var(--background))] dark:hover:border-amber-400/40",
     blockDone: "bg-[color-mix(in_oklab,var(--color-amber-50)_45%,var(--background))] border-amber-200/50 text-amber-950/45 hover:border-amber-200 dark:bg-[color-mix(in_oklab,var(--color-amber-500)_6%,var(--background))] dark:border-amber-400/15 dark:text-amber-50/40 dark:hover:border-amber-400/30",
@@ -73,7 +62,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     check: "border-amber-400/80 hover:border-amber-600 hover:text-amber-600 dark:border-amber-300/45 dark:hover:border-amber-200 dark:hover:text-amber-200",
   },
   rose: {
-    label: "Rose",
+    label: COLOR_LABELS.rose,
     swatch: "bg-rose-500",
     block: "bg-rose-50 border-rose-200/80 text-rose-950 hover:bg-rose-100 hover:border-rose-300/80 dark:bg-[color-mix(in_oklab,var(--color-rose-500)_16%,var(--background))] dark:border-rose-400/25 dark:text-rose-50 dark:hover:bg-[color-mix(in_oklab,var(--color-rose-500)_24%,var(--background))] dark:hover:border-rose-400/40",
     blockDone: "bg-[color-mix(in_oklab,var(--color-rose-50)_45%,var(--background))] border-rose-200/50 text-rose-950/45 hover:border-rose-200 dark:bg-[color-mix(in_oklab,var(--color-rose-500)_6%,var(--background))] dark:border-rose-400/15 dark:text-rose-50/40 dark:hover:border-rose-400/30",
@@ -87,7 +76,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     check: "border-rose-400/80 hover:border-rose-600 hover:text-rose-600 dark:border-rose-300/45 dark:hover:border-rose-200 dark:hover:text-rose-200",
   },
   sky: {
-    label: "Sky",
+    label: COLOR_LABELS.sky,
     swatch: "bg-sky-500",
     block: "bg-sky-50 border-sky-200/80 text-sky-950 hover:bg-sky-100 hover:border-sky-300/80 dark:bg-[color-mix(in_oklab,var(--color-sky-500)_16%,var(--background))] dark:border-sky-400/25 dark:text-sky-50 dark:hover:bg-[color-mix(in_oklab,var(--color-sky-500)_24%,var(--background))] dark:hover:border-sky-400/40",
     blockDone: "bg-[color-mix(in_oklab,var(--color-sky-50)_45%,var(--background))] border-sky-200/50 text-sky-950/45 hover:border-sky-200 dark:bg-[color-mix(in_oklab,var(--color-sky-500)_6%,var(--background))] dark:border-sky-400/15 dark:text-sky-50/40 dark:hover:border-sky-400/30",
@@ -101,7 +90,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     check: "border-sky-400/80 hover:border-sky-600 hover:text-sky-600 dark:border-sky-300/45 dark:hover:border-sky-200 dark:hover:text-sky-200",
   },
   violet: {
-    label: "Violet",
+    label: COLOR_LABELS.violet,
     swatch: "bg-violet-500",
     block: "bg-violet-50 border-violet-200/80 text-violet-950 hover:bg-violet-100 hover:border-violet-300/80 dark:bg-[color-mix(in_oklab,var(--color-violet-500)_16%,var(--background))] dark:border-violet-400/25 dark:text-violet-50 dark:hover:bg-[color-mix(in_oklab,var(--color-violet-500)_24%,var(--background))] dark:hover:border-violet-400/40",
     blockDone: "bg-[color-mix(in_oklab,var(--color-violet-50)_45%,var(--background))] border-violet-200/50 text-violet-950/45 hover:border-violet-200 dark:bg-[color-mix(in_oklab,var(--color-violet-500)_6%,var(--background))] dark:border-violet-400/15 dark:text-violet-50/40 dark:hover:border-violet-400/30",
@@ -115,7 +104,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     check: "border-violet-400/80 hover:border-violet-600 hover:text-violet-600 dark:border-violet-300/45 dark:hover:border-violet-200 dark:hover:text-violet-200",
   },
   teal: {
-    label: "Teal",
+    label: COLOR_LABELS.teal,
     swatch: "bg-teal-500",
     block: "bg-teal-50 border-teal-200/80 text-teal-950 hover:bg-teal-100 hover:border-teal-300/80 dark:bg-[color-mix(in_oklab,var(--color-teal-500)_16%,var(--background))] dark:border-teal-400/25 dark:text-teal-50 dark:hover:bg-[color-mix(in_oklab,var(--color-teal-500)_24%,var(--background))] dark:hover:border-teal-400/40",
     blockDone: "bg-[color-mix(in_oklab,var(--color-teal-50)_45%,var(--background))] border-teal-200/50 text-teal-950/45 hover:border-teal-200 dark:bg-[color-mix(in_oklab,var(--color-teal-500)_6%,var(--background))] dark:border-teal-400/15 dark:text-teal-50/40 dark:hover:border-teal-400/30",
@@ -129,7 +118,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     check: "border-teal-400/80 hover:border-teal-600 hover:text-teal-600 dark:border-teal-300/45 dark:hover:border-teal-200 dark:hover:text-teal-200",
   },
   orange: {
-    label: "Orange",
+    label: COLOR_LABELS.orange,
     swatch: "bg-orange-500",
     block: "bg-orange-50 border-orange-200/80 text-orange-950 hover:bg-orange-100 hover:border-orange-300/80 dark:bg-[color-mix(in_oklab,var(--color-orange-500)_16%,var(--background))] dark:border-orange-400/25 dark:text-orange-50 dark:hover:bg-[color-mix(in_oklab,var(--color-orange-500)_24%,var(--background))] dark:hover:border-orange-400/40",
     blockDone: "bg-[color-mix(in_oklab,var(--color-orange-50)_45%,var(--background))] border-orange-200/50 text-orange-950/45 hover:border-orange-200 dark:bg-[color-mix(in_oklab,var(--color-orange-500)_6%,var(--background))] dark:border-orange-400/15 dark:text-orange-50/40 dark:hover:border-orange-400/30",
@@ -143,7 +132,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     check: "border-orange-400/80 hover:border-orange-600 hover:text-orange-600 dark:border-orange-300/45 dark:hover:border-orange-200 dark:hover:text-orange-200",
   },
   pink: {
-    label: "Pink",
+    label: COLOR_LABELS.pink,
     swatch: "bg-pink-500",
     block: "bg-pink-50 border-pink-200/80 text-pink-950 hover:bg-pink-100 hover:border-pink-300/80 dark:bg-[color-mix(in_oklab,var(--color-pink-500)_16%,var(--background))] dark:border-pink-400/25 dark:text-pink-50 dark:hover:bg-[color-mix(in_oklab,var(--color-pink-500)_24%,var(--background))] dark:hover:border-pink-400/40",
     blockDone: "bg-[color-mix(in_oklab,var(--color-pink-50)_45%,var(--background))] border-pink-200/50 text-pink-950/45 hover:border-pink-200 dark:bg-[color-mix(in_oklab,var(--color-pink-500)_6%,var(--background))] dark:border-pink-400/15 dark:text-pink-50/40 dark:hover:border-pink-400/30",
@@ -157,7 +146,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     check: "border-pink-400/80 hover:border-pink-600 hover:text-pink-600 dark:border-pink-300/45 dark:hover:border-pink-200 dark:hover:text-pink-200",
   },
   lime: {
-    label: "Lime",
+    label: COLOR_LABELS.lime,
     swatch: "bg-lime-500",
     block: "bg-lime-50 border-lime-200/80 text-lime-950 hover:bg-lime-100 hover:border-lime-300/80 dark:bg-[color-mix(in_oklab,var(--color-lime-500)_16%,var(--background))] dark:border-lime-400/25 dark:text-lime-50 dark:hover:bg-[color-mix(in_oklab,var(--color-lime-500)_24%,var(--background))] dark:hover:border-lime-400/40",
     blockDone: "bg-[color-mix(in_oklab,var(--color-lime-50)_45%,var(--background))] border-lime-200/50 text-lime-950/45 hover:border-lime-200 dark:bg-[color-mix(in_oklab,var(--color-lime-500)_6%,var(--background))] dark:border-lime-400/15 dark:text-lime-50/40 dark:hover:border-lime-400/30",
@@ -171,7 +160,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     check: "border-lime-400/80 hover:border-lime-600 hover:text-lime-600 dark:border-lime-300/45 dark:hover:border-lime-200 dark:hover:text-lime-200",
   },
   cyan: {
-    label: "Cyan",
+    label: COLOR_LABELS.cyan,
     swatch: "bg-cyan-500",
     block: "bg-cyan-50 border-cyan-200/80 text-cyan-950 hover:bg-cyan-100 hover:border-cyan-300/80 dark:bg-[color-mix(in_oklab,var(--color-cyan-500)_16%,var(--background))] dark:border-cyan-400/25 dark:text-cyan-50 dark:hover:bg-[color-mix(in_oklab,var(--color-cyan-500)_24%,var(--background))] dark:hover:border-cyan-400/40",
     blockDone: "bg-[color-mix(in_oklab,var(--color-cyan-50)_45%,var(--background))] border-cyan-200/50 text-cyan-950/45 hover:border-cyan-200 dark:bg-[color-mix(in_oklab,var(--color-cyan-500)_6%,var(--background))] dark:border-cyan-400/15 dark:text-cyan-50/40 dark:hover:border-cyan-400/30",
@@ -185,7 +174,7 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     check: "border-cyan-400/80 hover:border-cyan-600 hover:text-cyan-600 dark:border-cyan-300/45 dark:hover:border-cyan-200 dark:hover:text-cyan-200",
   },
   slate: {
-    label: "Slate",
+    label: COLOR_LABELS.slate,
     swatch: "bg-slate-500",
     block: "bg-slate-50 border-slate-200/80 text-slate-950 hover:bg-slate-100 hover:border-slate-300/80 dark:bg-[color-mix(in_oklab,var(--color-slate-500)_16%,var(--background))] dark:border-slate-400/25 dark:text-slate-50 dark:hover:bg-[color-mix(in_oklab,var(--color-slate-500)_24%,var(--background))] dark:hover:border-slate-400/40",
     blockDone: "bg-[color-mix(in_oklab,var(--color-slate-50)_45%,var(--background))] border-slate-200/50 text-slate-950/45 hover:border-slate-200 dark:bg-[color-mix(in_oklab,var(--color-slate-500)_6%,var(--background))] dark:border-slate-400/15 dark:text-slate-50/40 dark:hover:border-slate-400/30",
@@ -199,26 +188,6 @@ export const PALETTE: Record<ColorKey, PaletteEntry> = {
     check: "border-slate-400/80 hover:border-slate-600 hover:text-slate-600 dark:border-slate-300/45 dark:hover:border-slate-200 dark:hover:text-slate-200",
   },
 };
-
-/** Every key a stored color may hold. Older data can still use the ones left out of the picker. */
-export const ACCEPTED_COLOR_KEYS = Object.keys(PALETTE) as ColorKey[];
-
-/** The colors offered when choosing one: one per hue, so no two options look alike. */
-export const COLOR_KEYS: ColorKey[] = ["indigo", "emerald", "amber", "rose", "violet", "orange", "pink", "slate"];
-
-/** Colors dropped from the picker, shown as the option that replaced them (sky/cyan were a second blue, teal/lime a second green). */
-const REPLACED_COLORS: Partial<Record<ColorKey, ColorKey>> = {
-  sky: "indigo",
-  cyan: "indigo",
-  teal: "emerald",
-  lime: "emerald",
-};
-
-export function canonicalColor(color: string): ColorKey {
-  const key = color as ColorKey;
-  if (!(key in PALETTE)) return "indigo";
-  return REPLACED_COLORS[key] ?? key;
-}
 
 export function paletteOf(color: string): PaletteEntry {
   return PALETTE[canonicalColor(color)];

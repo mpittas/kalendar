@@ -1,18 +1,27 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
-import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist, DayChecklistItem, DayExtraItem, DayNotes } from "~/lib/types";
-import { SLOT_HEIGHT, SLOT_MINUTES, SNAP_MINUTES } from "~/lib/types";
-import { paletteOf } from "~/lib/colors";
-import { boxOf, layoutDay } from "~/lib/layout";
-import { api } from "~/lib/api";
 import {
+  SLOT_HEIGHT,
+  SLOT_MINUTES,
+  SNAP_MINUTES,
+  boxOf,
+  layoutDay,
   floorMinutes,
   formatTime,
   longDate,
   nowMinutes,
   snapMinutes,
   todayISO,
-} from "~/lib/time";
+  type ActivityTemplate,
+  type ScheduledTask,
+  type ChecklistItem,
+  type DayChecklist,
+  type DayChecklistItem,
+  type DayExtraItem,
+  type DayNotes,
+} from "@klndr/core";
+import { paletteOf } from "~/lib/colors";
+import { api } from "~/lib/api";
 import type { EditorRequest } from "~/components/TaskEditor.vue";
 import DayPlannerHeader from "~/components/day-planner/DayPlannerHeader.vue";
 import DayRoutinesShelf from "~/components/day-planner/DayRoutinesShelf.vue";

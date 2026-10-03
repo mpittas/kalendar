@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Calendar, Clock, Moon, Sun } from "lucide-vue-next";
 import { computed } from "vue";
-import { todayISO } from "~/lib/time";
+import { todayISO } from "@klndr/core";
 
 const { user, profile, loading, isConfigured } = useAuth();
 const { toggle: toggleTheme } = useTheme();

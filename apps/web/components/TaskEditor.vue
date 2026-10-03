@@ -9,8 +9,9 @@ import {
   formatTime,
   fromTimeInput,
   timeInputValue,
-} from "~/lib/time";
-import type { ActivityTemplate, ScheduledTask } from "~/lib/types";
+  type ActivityTemplate,
+  type ScheduledTask,
+} from "@klndr/core";
 
 export type EditorRequest = {
   mode: "create" | "edit";

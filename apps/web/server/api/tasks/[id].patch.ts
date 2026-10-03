@@ -1,5 +1,4 @@
-import { isValidISODate } from "~/lib/time";
-import type { ScheduledTask } from "~/lib/types";
+import { isValidISODate, type ScheduledTask } from "@klndr/core";
 
 export default defineEventHandler(async (event) => {
   const id = parseId(event);

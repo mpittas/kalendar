@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight, Plus } from "lucide-vue-next";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import type { DayChecklistItem } from "~/lib/types";
+import type { DayChecklistItem } from "@klndr/core";
 
 const props = defineProps<{
   items: DayChecklistItem[];

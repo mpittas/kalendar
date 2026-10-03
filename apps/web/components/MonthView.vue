@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import type { ScheduledTask } from "~/lib/types";
 import {
   addDaysISO,
   formatDuration,
@@ -11,7 +10,8 @@ import {
   monthMatrix,
   parseISODate,
   todayISO,
-} from "~/lib/time";
+  type ScheduledTask,
+} from "@klndr/core";
 import MonthViewHeader from "~/components/month-view/MonthViewHeader.vue";
 import MonthGrid from "~/components/month-view/MonthGrid.vue";
 import MonthSidebar from "~/components/month-view/MonthSidebar.vue";

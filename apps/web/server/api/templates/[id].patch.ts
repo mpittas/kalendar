@@ -1,4 +1,4 @@
-import type { ActivityTemplate } from "~/lib/types";
+import type { ActivityTemplate } from "@klndr/core";
 
 export default defineEventHandler(async (event) => {
   const id = parseId(event);

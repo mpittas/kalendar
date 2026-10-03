@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { ChevronRight, ChevronsDownUp, ChevronsUpDown, Pencil, Plus, Search, SquarePen, X } from "lucide-vue-next";
 import { ref, computed, watch, onMounted, nextTick } from "vue";
-import type { ActivityTemplate } from "~/lib/types";
+import { DURATION_CHOICES, formatDuration, withImplicitCategories, type ActivityTemplate } from "@klndr/core";
 import { paletteOf } from "~/lib/colors";
-import { DURATION_CHOICES, formatDuration } from "~/lib/time";
 import { api } from "~/lib/api";
-import { withImplicitCategories } from "~/composables/useCategories";
 
 const props = defineProps<{
   templates: ActivityTemplate[];

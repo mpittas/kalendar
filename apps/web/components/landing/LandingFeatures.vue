@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ArrowUpDown, Check, Clock, Columns2, Contrast, Plus } from "lucide-vue-next";
-import { COLOR_KEYS, paletteOf } from "~/lib/colors";
+import { COLOR_KEYS } from "@klndr/core";
+import { paletteOf } from "~/lib/colors";
 import MockBlock from "~/components/landing/MockBlock.vue";
 
 type Chip = { time: string; title: string; color: string };

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { ScheduledTask } from "~/lib/types";
+import { formatTime, parseISODate, type ScheduledTask } from "@klndr/core";
 import { paletteOf } from "~/lib/colors";
-import { formatTime, parseISODate } from "~/lib/time";
 
 const props = defineProps<{
   upcoming: ScheduledTask[];

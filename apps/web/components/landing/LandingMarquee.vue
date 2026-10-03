@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Check } from "lucide-vue-next";
 import { paletteOf } from "~/lib/colors";
-import { formatDuration } from "~/lib/time";
+import { formatDuration } from "@klndr/core";
 
 // What every new account starts with: DEFAULT_TEMPLATES and the daily routines in server/utils/db.ts.
 const activities = [

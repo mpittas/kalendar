@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { ScheduledTask } from "~/lib/types";
+import { formatTime, WEEKDAY_LABELS, type ScheduledTask } from "@klndr/core";
 import { paletteOf } from "~/lib/colors";
-import { formatTime, WEEKDAY_LABELS } from "~/lib/time";
 
 export type DayCell = {
   iso: string;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronRight } from "lucide-vue-next";
 import { ref, computed, watch } from "vue";
-import type { ChecklistItem, DayChecklist, DayChecklistItem } from "~/lib/types";
+import type { ChecklistItem, DayChecklist, DayChecklistItem } from "@klndr/core";
 import { api } from "~/lib/api";
 import ChecklistHeader from "~/components/daily-checklist/ChecklistHeader.vue";
 import ChecklistItemRow from "~/components/daily-checklist/ChecklistItemRow.vue";

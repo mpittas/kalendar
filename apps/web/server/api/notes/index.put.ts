@@ -1,5 +1,4 @@
-import { isValidISODate } from "~/lib/time";
-import { MAX_NOTES_LENGTH } from "~/server/utils/db";
+import { MAX_NOTES_LENGTH, isValidISODate } from "@klndr/core";
 
 export default defineEventHandler(async (event) => {
   const body = await readJsonObject(event);

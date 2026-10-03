@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ActivityTemplate } from "~/lib/types";
+import type { ActivityTemplate } from "@klndr/core";
 import LibraryPanel from "~/components/library/LibraryPanel.vue";
 
 defineProps<{ templates: ActivityTemplate[] }>();

@@ -1,4 +1,4 @@
-import { isValidISODate } from "~/lib/time";
+import { isValidISODate } from "@klndr/core";
 
 export default defineEventHandler(async (event) => {
   const body = await readJsonObject(event);

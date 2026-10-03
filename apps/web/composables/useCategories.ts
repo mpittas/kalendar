@@ -1,12 +1,10 @@
+import { colorOfCategory, nextCategoryColor, sortCategoriesByName, type Category } from "@klndr/core";
 import { api } from "~/lib/api";
-import { canonicalColor, COLOR_KEYS } from "~/lib/colors";
-import type { ActivityTemplate, Category } from "~/lib/types";
-
-const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
 
 /**
  * Shared category state. Everything that shows or edits categories (the sidebar, the pickers in
  * the editors and the manager dialog) reads the same list, so a change shows up everywhere at once.
+ * The pure parts — sorting, the implicit names, the colors — come from @klndr/core.
  */
 export const useCategories = () => {
   const categories = useState<Category[]>("categories", () => []);
@@ -16,7 +14,7 @@ export const useCategories = () => {
   const load = async (force = false) => {
     if (loaded.value && !force) return;
     try {
-      categories.value = (await api.getCategories()).sort(byName);
+      categories.value = sortCategoriesByName(await api.getCategories());
       loadError.value = null;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not load categories";
@@ -30,7 +28,7 @@ export const useCategories = () => {
 
   const create = async (draft: Omit<Category, "id">) => {
     const created = await api.createCategory(draft);
-    categories.value = [...categories.value, created].sort(byName);
+    categories.value = sortCategoriesByName([...categories.value, created]);
     return created;
   };
 
@@ -42,7 +40,7 @@ export const useCategories = () => {
   const update = async (id: string, patch: Partial<Omit<Category, "id">>, apply?: (updated: Category) => void) => {
     const updated = await api.updateCategory(id, patch);
     apply?.(updated);
-    categories.value = categories.value.map((c) => (c.id === id ? updated : c)).sort(byName);
+    categories.value = sortCategoriesByName(categories.value.map((c) => (c.id === id ? updated : c)));
     return updated;
   };
 
@@ -52,37 +50,10 @@ export const useCategories = () => {
   };
 
   /** Pick a color not used yet, so a new category is easy to tell apart. */
-  const nextColor = () => {
-    const used = new Set(categories.value.map((c) => canonicalColor(c.color)));
-    return COLOR_KEYS.find((key) => !used.has(key)) ?? COLOR_KEYS[categories.value.length % COLOR_KEYS.length];
-  };
+  const nextColor = () => nextCategoryColor(categories.value);
 
-  /**
-   * The color of an activity or block is its category's. The color saved with the item is only a
-   * fallback while the category isn't known, e.g. before the list has loaded.
-   */
-  const colorOf = (item: { category: string; color?: string }) => {
-    const name = item.category?.trim().toLowerCase();
-    return categories.value.find((c) => c.name.toLowerCase() === name)?.color ?? item.color ?? "slate";
-  };
+  /** The color of an activity or block is its category's, falling back to the item's own. */
+  const colorOf = (item: { category: string; color?: string }) => colorOfCategory(categories.value, item);
 
   return { categories, loaded, loadError, load, create, update, remove, nextColor, colorOf };
-};
-
-/**
- * Saved categories plus any name the activities use that isn't saved (yet), so nothing
- * disappears from the UI if the two ever disagree. Unsaved ones have no `id`.
- */
-export type CategoryEntry = Omit<Category, "id"> & { id: string | null };
-
-export const withImplicitCategories = (saved: Category[], templates: ActivityTemplate[] = []): CategoryEntry[] => {
-  const known = new Set(saved.map((c) => c.name.toLowerCase()));
-  const extra = new Map<string, CategoryEntry>();
-  for (const t of templates) {
-    const name = t.category?.trim();
-    if (name && !known.has(name.toLowerCase()) && !extra.has(name.toLowerCase())) {
-      extra.set(name.toLowerCase(), { id: null, name, color: t.color || "slate" });
-    }
-  }
-  return [...saved, ...extra.values()].sort(byName);
 };

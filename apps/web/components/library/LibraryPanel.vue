@@ -3,11 +3,8 @@ import { Clock, FolderPlus, Palette, Pencil, Plus, Search, Trash2 } from "lucide
 import { computed, nextTick, ref, watch } from "vue";
 import { paletteOf } from "~/lib/colors";
 import { api } from "~/lib/api";
-import { formatDuration } from "~/lib/time";
-import { withImplicitCategories } from "~/composables/useCategories";
-import type { CategoryEntry } from "~/composables/useCategories";
+import { formatDuration, withImplicitCategories, type ActivityTemplate, type CategoryEntry } from "@klndr/core";
 import type { LibraryFocus } from "~/composables/useLibrary";
-import type { ActivityTemplate } from "~/lib/types";
 import ActivityForm from "~/components/activity/ActivityForm.vue";
 import type { ActivityDraft } from "~/components/activity/ActivityForm.vue";
 import ColorSwatches from "~/components/category/ColorSwatches.vue";

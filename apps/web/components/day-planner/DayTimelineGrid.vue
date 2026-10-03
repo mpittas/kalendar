@@ -1,11 +1,25 @@
 <script setup lang="ts">
 import { Check, Plus, X } from "lucide-vue-next";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import type { ScheduledTask } from "~/lib/types";
-import { SLOT_HEIGHT, SLOT_MINUTES, SNAP_MINUTES } from "~/lib/types";
+import {
+  SLOT_HEIGHT,
+  SLOT_MINUTES,
+  SNAP_MINUTES,
+  boxOf,
+  columnsBeside,
+  lanesFor,
+  layoutDay,
+  withLanes,
+  formatDuration,
+  formatTime,
+  formatTimeRange,
+  gutterLabel,
+  floorMinutes,
+  HOUR_OPTIONS,
+  snapMinutes,
+  type ScheduledTask,
+} from "@klndr/core";
 import { paletteOf } from "~/lib/colors";
-import { boxOf, columnsBeside, lanesFor, layoutDay, withLanes } from "~/lib/layout";
-import { formatDuration, formatTime, formatTimeRange, gutterLabel, floorMinutes, HOUR_OPTIONS, snapMinutes } from "~/lib/time";
 import TimeBlock from "~/components/day-planner/TimeBlock.vue";
 
 const props = defineProps<{

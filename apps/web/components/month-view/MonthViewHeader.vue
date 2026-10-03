@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from "lucide-vue-next";
-import { addMonths, monthTitle } from "~/lib/time";
+import { addMonths, monthTitle } from "@klndr/core";
 
 const props = defineProps<{
   month: string;

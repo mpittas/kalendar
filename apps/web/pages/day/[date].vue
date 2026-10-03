@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { isValidISODate, todayISO } from "~/lib/time";
+import {
+  isValidISODate,
+  todayISO,
+  type ActivityTemplate,
+  type ScheduledTask,
+  type ChecklistItem,
+  type DayChecklist,
+  type DayNotes,
+} from "@klndr/core";
 import { api } from "~/lib/api";
-import type { ActivityTemplate, ScheduledTask, ChecklistItem, DayChecklist, DayNotes } from "~/lib/types";
 
 const route = useRoute();
 const rawDate = computed(() => route.params.date as string);

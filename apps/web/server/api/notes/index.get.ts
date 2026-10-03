@@ -1,4 +1,4 @@
-import { isValidISODate, todayISO } from "~/lib/time";
+import { isValidISODate, todayISO } from "@klndr/core";
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);

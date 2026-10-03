@@ -2,8 +2,7 @@
 import { Check, ChevronDown, Plus, SlidersHorizontal } from "lucide-vue-next";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { paletteOf } from "~/lib/colors";
-import { withImplicitCategories } from "~/composables/useCategories";
-import type { ActivityTemplate } from "~/lib/types";
+import { withImplicitCategories, type ActivityTemplate } from "@klndr/core";
 
 const props = defineProps<{
   modelValue: string;

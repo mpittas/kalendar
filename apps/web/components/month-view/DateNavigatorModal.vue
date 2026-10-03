@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from "lucide-vue-next";
-import { MONTH_LABELS, setYearMonth } from "~/lib/time";
+import { MONTH_LABELS, setYearMonth } from "@klndr/core";
 
 const props = defineProps<{
   open: boolean;

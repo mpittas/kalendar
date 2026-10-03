@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight, Plus } from "lucide-vue-next";
-import { addDaysISO, formatDuration, longDate, mediumDate } from "~/lib/time";
+import { addDaysISO, formatDuration, longDate, mediumDate } from "@klndr/core";
 
 defineProps<{
   day: string;

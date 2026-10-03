@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ArrowRight, CircleHelp } from "lucide-vue-next";
-import { formatDuration, formatTimeRange, gutterLabel } from "~/lib/time";
+import { formatDuration, formatTimeRange, gutterLabel } from "@klndr/core";
 import MockBlock from "~/components/landing/MockBlock.vue";
 
 const START = 9 * 60;

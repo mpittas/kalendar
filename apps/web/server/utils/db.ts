@@ -1,51 +1,19 @@
-import type { ActivityTemplate, Category, ScheduledTask, ChecklistItem, DayChecklist, DayExtraItem, DayNotes } from "~/lib/types";
-import { toISODate } from "~/lib/time";
+import type {
+  ActivityTemplate,
+  Category,
+  ChecklistItem,
+  DayChecklist,
+  DayExtraItem,
+  DayNotes,
+  ScheduledTask,
+  Store,
+} from "@klndr/core";
+import { MAX_DAY_EXTRAS, toISODate } from "@klndr/core";
 import { Firestore, FirestoreError, type FsDoc } from "./firestore";
 import { sessionOf, type Session } from "./session";
 
-/**
- * Data access for one signed-in user. Everything lives under `users/{uid}` in
- * Firestore (see `firestore.rules` for the schema and the access rules).
- */
-export interface Store {
-  listTemplates(): Promise<ActivityTemplate[]>;
-  createTemplate(draft: Omit<ActivityTemplate, "id" | "archived">): Promise<ActivityTemplate>;
-  updateTemplate(id: string, patch: Partial<Omit<ActivityTemplate, "id">>): Promise<ActivityTemplate | null>;
-  deleteTemplate(id: string): Promise<boolean>;
-  listCategories(): Promise<Category[]>;
-  /** Throws a 409 when the name is already taken (case-insensitive). */
-  createCategory(draft: Omit<Category, "id">): Promise<Category>;
-  /** Renaming also moves the category's activities and scheduled blocks to the new name. */
-  updateCategory(id: string, patch: Partial<Omit<Category, "id">>): Promise<Category | null>;
-  /**
-   * Activities in the category must go somewhere: moved to another category via `moveTo` (its name),
-   * or deleted with the category when `deleteActivities` is set. Scheduled blocks always stay.
-   */
-  deleteCategory(id: string, moveTo: string | null, deleteActivities?: boolean): Promise<boolean>;
-  /** Make sure a category with this name exists; returns its canonical spelling. */
-  ensureCategory(name: string): Promise<string>;
-  listTasksForDay(day: string): Promise<ScheduledTask[]>;
-  listTasksBetween(from: string, to: string): Promise<ScheduledTask[]>;
-  createTask(draft: Omit<ScheduledTask, "id">): Promise<ScheduledTask>;
-  updateTask(id: string, patch: Partial<Omit<ScheduledTask, "id" | "templateId">>): Promise<ScheduledTask | null>;
-  deleteTask(id: string): Promise<boolean>;
-  listChecklistItems(): Promise<ChecklistItem[]>;
-  createChecklistItem(draft: Omit<ChecklistItem, "id" | "archived">): Promise<ChecklistItem>;
-  updateChecklistItem(id: string, patch: Partial<Omit<ChecklistItem, "id">>): Promise<ChecklistItem | null>;
-  deleteChecklistItem(id: string): Promise<boolean>;
-  getDayChecklist(day: string): Promise<DayChecklist>;
-  toggleDayChecklistItem(day: string, itemId: string, completed: boolean): Promise<DayChecklist>;
-  /** Skip (or bring back) a default checklist item for one day only. */
-  setDayChecklistItemHidden(day: string, itemId: string, hidden: boolean): Promise<DayChecklist>;
-  /** Add a one-off checklist item that exists only on `day`. */
-  addDayChecklistExtra(day: string, draft: Omit<DayExtraItem, "id">): Promise<DayChecklist>;
-  removeDayChecklistExtra(day: string, id: string): Promise<DayChecklist>;
-  getDayNotes(day: string): Promise<DayNotes>;
-  setDayNotes(day: string, text: string): Promise<DayNotes>;
-}
-
-const MAX_DAY_EXTRAS = 50;
-export const MAX_NOTES_LENGTH = 20_000;
+// The `Store` interface and the shared limits (MAX_DAY_EXTRAS, MAX_NOTES_LENGTH) live in
+// @klndr/core, beside the types they describe. Below: the two implementations of it.
 
 const emptyNotes = (day: string): DayNotes => ({ day, text: "" });
 

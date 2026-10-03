@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { isValidISODate, monthRange, todayISO } from "~/lib/time";
+import { isValidISODate, monthRange, todayISO, type ScheduledTask } from "@klndr/core";
 import { api } from "~/lib/api";
-import type { ScheduledTask } from "~/lib/types";
 
 const route = useRoute();
 const today = todayISO();

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
-import type { DayNotes } from "~/lib/types";
+import { renderMarkdown, toggleTaskLine, type DayNotes } from "@klndr/core";
 import { api } from "~/lib/api";
-import { renderMarkdown, toggleTaskLine } from "~/lib/markdown";
 
 const MAX_LENGTH = 20_000;
 const SAVE_DELAY_MS = 700;
