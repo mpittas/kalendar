@@ -10,8 +10,9 @@
   "scripts": {
     "dev": "npm run dev -w apps/web",
     "build": "npm run build -w apps/web",
-    "typecheck": "npm run typecheck -w apps/web && npm run typecheck -w packages/core",
-    "test": "npm run test -w packages/core"
+    "typecheck": "npm run typecheck -w apps/web && npm run typecheck -w packages/core && npm run typecheck -w packages/tokens",
+    "test": "npm run test -w packages/core && npm run test -w packages/tokens",
+    "generate": "npm run generate -w packages/tokens"
   },
   "overrides": {
     "@grpc/grpc-js": "^1.14.5",

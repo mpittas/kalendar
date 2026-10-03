@@ -1,0 +1,28 @@
+{
+  "name": "@klndr/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./theme.css": "./generated/theme.css",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "generate": "node scripts/generate.mts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@klndr/core": "*"
+  },
+  "devDependencies": {
+    "@types/culori": "^4.0.1",
+    "culori": "^4.0.2"
+  }
+}
