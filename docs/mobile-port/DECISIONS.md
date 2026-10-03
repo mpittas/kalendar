@@ -362,4 +362,80 @@ file names are not always the component names: there is no `trash-2`, `Trash2` i
 device is set to. It is temporary — task 1.3 puts the auth gate in front of it and Phase 2 replaces it
 with the Day tab — but it is how all of this gets looked at before there are screens to put it in.
 
+## 2026-10-03 — audit: Reusables was in the brief, and the primitives are hand-built
+
+The brief lists React Native Reusables among the mobile components. Tasks 1.1-1.2 instead wrote the
+primitives directly on Uniwind and `@klndr/tokens`, without recording the choice. Kept: they are small,
+read DESIGN.md's scale and the shared tokens, and carry the accessibility rules (a required name on every
+icon button, 44 pt targets) that Reusables' defaults would have had to be bent to. If a later screen wants
+a Reusables component (a combobox, say), it can be added beside them and will pick up the same tokens.
+
+## 2026-10-03 — 1.3: one definition of a first profile, in core
+
+The web's `loadProfile` and the phone's both have to create `users/{uid}` the same way on a first
+sign-in, because the rules, the web profile page and the API all read that document. Rather than copy the
+web's twelve lines, `@klndr/core` owns it: `newProfileData` (the fields, minus the two timestamps the
+database stamps) and `loadOrCreateProfile` (read, create if absent, read back) over a `ProfileDb` that a
+platform implements in a few lines. The web still keeps its own Vue wrapper (shared state,
+`pendingSignUpName`) and only swapped the field list for `newProfileData`; its output is the same object,
+pinned by a test.
+
+The sign-in wording follows the same rule: `authErrorMessage` is the web's `getFriendlyErrorMessage`
+for login and sign-up, by context, with one addition (a lost connection). The web pages were left alone.
+
+## 2026-10-03 — 1.3: one auth adapter, and the web one that was not kept
+
+The plan asked for a `.native.ts` (React Native Firebase) and a `.web.ts` (Firebase JS SDK) adapter behind one
+`AuthService`. Both were written; the web one was removed again before the first commit, with its `firebase`
+dependency, its four `EXPO_PUBLIC_FIREBASE_*` variables and the `moduleSuffixes` setting, because nothing builds
+or ships it (Expo web is out of scope) and untested code is a liability in a public repository. The interface
+stays, so a web adapter is an afternoon's work if the app ever runs on the web: it is in this file's history.
+
+## 2026-10-03 — 1.3: how each provider signs in
+
+- **Email:** `signInWithEmailAndPassword`, `createUserWithEmailAndPassword` (then `updateProfile` with the
+  typed name), `sendPasswordResetEmail`. Validation and wording come from core.
+- **Google:** the native Google SDK, then `GoogleAuthProvider.credential(idToken)` into Firebase. The SDK
+  is configured with the *web* client id on both platforms, because that is the audience Firebase accepts.
+  It is configured lazily, so a build without the id only fails when someone taps the button.
+- **Apple on iOS:** `expo-apple-authentication` with a random raw nonce whose SHA-256 goes to Apple; the
+  identity token and the *raw* nonce go to Firebase through `OAuthProvider("apple.com").credential`.
+  Apple shares the person's name only the first time, and Firebase does not read it from the token, so it
+  is held as the pending name for the profile that sign-in may create. The button is Apple's own component.
+- **Apple on Android:** Firebase's own OAuth provider flow (`signInWithPopup` in the RN Firebase API,
+  which runs the native provider activity). There is no system sheet to use.
+- A back-out (Apple `ERR_REQUEST_CANCELED`, Google `SIGN_IN_CANCELLED`, Firebase `web-context-canceled`)
+  returns `"cancelled"` and shows nothing; it is not an error.
+- **Apple token revocation on delete** (task 2.6) differs per platform: RN Firebase's
+  `revokeToken(auth, authorizationCode)` works on iOS and is a no-op elsewhere, and `revokeAccessToken` (the
+  web flow's) throws on native. 2.6 must therefore take a fresh Apple *authorization code* on iOS.
+
+## 2026-10-03 — 1.3: the gate, and the states behind it
+
+`Stack.Protected` is used rather than redirects in screens: it also guards deep links and flips by itself
+when the state changes, so no screen navigates after signing in or out. The provider's four states —
+`loading` (a restored session, or the profile being read, as the web waits for it), `signed-out`,
+`signed-in`, and `unavailable` — exist for two reasons: the splash must hold until Firebase has answered or
+a signed-in person sees a signed-out frame, and a checkout with neither Firebase config nor demo mode would
+otherwise crash inside a native call. A profile that fails to load leaves the person signed in, with a
+retry, like the web's `profileError`. A load generation counter stops a slow profile read for a previous
+user from overwriting the screen.
+
+## 2026-10-03 — 1.3: config plugins, and when they are on
+
+`@react-native-firebase/app` throws at prebuild without `google-services.json` / the plist, so the plugins
+(`app`, `auth`, and Google sign-in with its `iosUrlScheme`) are added only when either file exists — which
+keeps a fresh checkout startable in demo mode — **or when `EAS_BUILD` is set**, so a store build missing a
+file fails at build time instead of shipping with no sign-in. The URL scheme is read from the plist's
+`REVERSED_CLIENT_ID` (override: `GOOGLE_IOS_URL_SCHEME`). `ios.usesAppleSignIn` stays in the config and
+the `expo-apple-authentication` plugin is added.
+
+**Correction (first iOS build):** this entry first said the Firebase iOS SDK would be built through
+CocoaPods (`disableSPM: true`) because "CocoaPods works with either linkage". That was reasoned, not run,
+and it was wrong: the EAS build failed in *Install pods* with "Swift pods cannot yet be integrated as
+static libraries" (`FirebaseAuth`, `FirebaseFirestore`). React Native Firebase's own Expo guide
+(rnfirebase.io/ios-spm) says to keep its default, Swift Package Manager, and build the pods as dynamic
+frameworks, so `app.config.ts` now adds `expo-build-properties` with `ios.useFrameworks: "dynamic"` and
+no `disableSPM`. Lesson kept: nothing about the iOS native build is verified until EAS has built it.
+
 

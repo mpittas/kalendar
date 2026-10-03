@@ -20,7 +20,7 @@ Things only the owner can do, grouped by what each item unblocks. Exact steps gi
       yours; leaving the override in place is harmless.
 
 ## Task 0.4 — store compliance
-- [ ] Deploy the updated `firestore.rules` (`firebase deploy --only firestore:rules`). The change is
+- [x] Deploy the updated `firestore.rules` (`firebase deploy --only firestore:rules`). The change is DONE 2026-10-03: released to klndr-app and re-read live.
       small: the owner may now delete their own profile document and the three `meta/*` seed markers
       (which is what account deletion needs) — updates to those documents are still refused.
 - [ ] Apple Services ID, key, and the Firebase console setup for "Sign in with Apple" (the web button
@@ -36,10 +36,10 @@ Things only the owner can do, grouped by what each item unblocks. Exact steps gi
 ## Task 1.1 — mobile app identity
 - [ ] Confirm the iOS bundle id / Android package (placeholder `com.klndr.app`). It cannot
       change after the first store release.
-- [ ] `eas init` once you have an Expo account (it writes the EAS project id). `eas.json` currently
+- [x] `eas init` once you have an Expo account (it writes the EAS project id). `eas.json` currently
       uses `"appVersionSource": "local"` so builds work without a project; switch it to `remote` if
       you would rather EAS own the build numbers.
-- [ ] Put the Firebase native config files in `apps/mobile/` (`google-services.json`,
+- [x] Put the Firebase native config files in `apps/mobile/` (`google-services.json`,
       `GoogleService-Info.plist`) for store builds, or point `GOOGLE_SERVICES_JSON` /
       `GOOGLE_SERVICES_INFO_PLIST` at them. They are gitignored, so EAS needs them as file
       environment variables.
@@ -53,6 +53,25 @@ Things only the owner can do, grouped by what each item unblocks. Exact steps gi
 - [ ] Set the largest system text size and confirm nothing clips — the header, buttons, list rows and,
       in Phase 2, the timeline.
 - [ ] Turn on Reduce Motion and confirm the skeleton placeholder holds still.
+
+## Task 1.3 — auth on a device
+Needs a dev build with the Firebase config files in `apps/mobile/` (see Task 1.1) and a real Firebase project.
+- [ ] Firebase console: enable the Email/Password, Google and Apple providers (Apple needs the Services ID and
+      key from Task 0.4 as well; Apple on Android uses the same web flow, so the Firebase redirect handler
+      must be an authorised return URL for that Services ID).
+- [ ] Google: register the Android app's SHA-1 and SHA-256 (debug and the EAS keystore) in Firebase, then set
+      `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` to the *web* client id. Without the SHA, Google sign-in on Android
+      fails with a developer error.
+- [ ] iOS only: confirm "Sign in with Apple" is enabled for the App ID, and do the first iOS dev build — the
+      Firebase pods are built as dynamic frameworks (`expo-build-properties`), the setup React Native
+      Firebase documents for Expo. The first attempt (`disableSPM`) failed in "Install pods" and was fixed;
+      this one is not yet proven by a successful EAS build.
+- [ ] Try each path: email sign-up (the name shows in Settings), email sign-in, a wrong password (message),
+      password reset (email arrives), Google, Apple. Kill and relaunch: still signed in, no signed-out flash.
+- [ ] Sign out lands on sign-in; a deep link while signed out (`klndr://`) lands on sign-in, not a blank screen.
+- [ ] A new account has a `users/{uid}` document that looks the same as one created on the web.
+- [ ] Demo mode: `EXPO_PUBLIC_DEMO_MODE=1` with the web dev server running opens straight into the tabs.
+- [ ] Hand-check the keyboard on the sign-up form (four fields): the focused field and the button stay visible.
 
 ## Task 3.2 — rules tests
 - [ ] Run the Firestore rules tests (the emulator needs Java installed).

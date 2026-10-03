@@ -230,3 +230,112 @@ Verification:
 Next step:
 - Task 1.3: auth (React Native Firebase, Google, Apple, the auth gate, demo mode), starting with the
   platform adapters.
+
+## 2026-10-03 — session 7: audit of sessions 1–6, then task 1.3 (auth)
+
+### Audit (a second reader, after a different model wrote sessions 1–6)
+
+Re-ran everything instead of trusting the log, and read the code where a green check proves little:
+- `npm run typecheck` (all four workspaces) exit 0; `npm test` 294 pass (core 252, tokens 42), as logged;
+  `npm run build -w apps/web` passes; `npx expo export --platform android` bundles (4.5 MB Hermes).
+- The Phase 0 move is faithful: `layout.ts` and `time.ts` are identical to the originals once line
+  endings are ignored (only the `types` import path changed), `types.ts` differs by one blank line, the
+  markdown split keeps every inline pass and the 53 fixtures pin the HTML, and `TimelineHistory`
+  preserves the original undo/redo semantics (aliases, serial queue, resync on failure).
+- Account deletion is sound: the rules change is four lines of `allow delete` for the owner and nothing
+  else loosened; the server empties every collection the rules define (`templates`, `categories`,
+  `tasks`, `checklist_items`, `checklist_days`, `day_notes`, `meta`) and then the profile; the client
+  re-authenticates first, revokes the Apple token, and deletes the Auth user last.
+- The mobile design system is well made: required accessible names, 44 pt targets, reduce-motion, no
+  fixed heights, class names written out for Tailwind. `useThemeColors()` reads the platform scheme, which
+  looked wrong, but Uniwind's `setTheme` calls `Appearance.setColorScheme`, so the platform scheme *is*
+  the user's choice. Not a bug.
+
+Findings (none blocking):
+1. **Undocumented deviation:** the brief lists React Native Reusables; sessions 5-6 hand-built the
+   primitives on Uniwind instead and did not log it. They are good, so they stay; logged in DECISIONS.md.
+2. **CHECKPOINT A was crossed without stopping.** Closed by this review.
+3. **Nothing has ever run on a device or simulator.** Every "verified" in sessions 5-6 means "typechecks,
+   bundles, stylesheet compiles". That is stated in the log each time and stays true here.
+4. Small: `Toast` is mounted above the navigator, so a native form sheet will cover it. Revisit in 2.2,
+   when the first sheet has a real error to show.
+
+### Task 1.3 — auth
+
+Done:
+- **Core, shared with the web.** `newProfileData` and `loadOrCreateProfile` (behind a two-method
+  `ProfileDb`) are the one definition of "create `users/{uid}` on first sign-in"; the web's `loadProfile`
+  now builds its document with `newProfileData`, with identical output. `authErrorMessage`, `signInProblem`
+  and `signUpProblem` carry the web's wording for sign-in and sign-up. 13 new tests (265 in core).
+- **Adapters** (`src/auth/`): an `AuthService` interface; `firebase.ts` on React Native Firebase
+  (email, password reset, Google through `@react-native-google-signin`, Apple through
+  `expo-apple-authentication` with a hashed nonce on iOS and Firebase's OAuth provider flow on Android). `profile-loader.ts` shares one in-flight profile read and the
+  sign-up name between sign-up and the auth listener, as the web does with `profileLoads`.
+- **Gate:** `AuthProvider` (states `loading`, `signed-out`, `signed-in`, `unavailable`) and
+  `Stack.Protected` in the root layout: `(tabs)`, `design-system` and `sheet` only while signed in,
+  `(auth)` only while signed out. The splash stays up until fonts are loaded and Firebase has answered.
+- **Screens:** sign in, sign up, forgot password (Apple's own button on iOS), four native tabs as
+  placeholders (Day 2.1, Calendar 2.4, Library 2.5), and a Settings tab with the signed-in identity,
+  profile retry and sign out. The old catalogue moved to `/design-system`.
+- **Demo mode:** `EXPO_PUBLIC_DEMO_MODE=1` skips Firebase entirely; the API is called without a token.
+  A build with neither Firebase config nor demo mode shows an explanatory screen instead of crashing.
+- **Config plugins** in `app.config.ts`, conditional on the Firebase files (see DECISIONS.md).
+- `src/api.ts`: the one `createApiClient` with the token getter, ready for 1.4.
+
+Verification:
+- `npm run typecheck` exit 0 (all four); `npm test` 265 core + 42 tokens pass; web build passes.
+- `expo export` for **android and ios** both bundle (4.9 / 4.8 MB). The Android source map contains
+  `firebase.native.ts` and 35 React Native Firebase auth modules, **no** `firebase.web.ts` and no Firebase JS
+  auth modules, and all 12 route files.
+- `expo config` with no Firebase files: no Firebase plugin. With dummy files in the scratchpad: the three
+  plugins appear, `iosUrlScheme` is read from the plist's `REVERSED_CLIENT_ID`, both `googleServicesFile`s set.
+- `expo prebuild --platform android` with the dummy files: succeeds, `android/build.gradle` gets the
+  google-services classpath, `app/build.gradle` applies it, `google-services.json` is copied. Cleaned up
+  after; prebuild's rewrite of the `android`/`ios` npm scripts was reverted.
+- **Not verified, and not verifiable here:** iOS prebuild (Expo skips iOS on Windows), any sign-in on a
+  device, the Apple nonce flow, Google sign-in, the gate's redirects, keyboard behaviour. HUMAN_TODO.
+
+### First run on a real iPhone (same day, with the owner)
+
+- Registered the iPhone (`eas device:create`), set the EAS environment variables (the iOS plist as a secret
+  file, the Google web client id, the API base URL), and built with `eas build --profile development
+  --platform ios`.
+- **First build failed in "Install pods"** (`FirebaseAuth`/`FirebaseFirestore` "cannot yet be integrated as
+  static libraries"): the `disableSPM` choice above was wrong. Fixed per React Native Firebase's Expo guide
+  (`expo-build-properties`, `useFrameworks: "dynamic"`); see the correction in DECISIONS.md. Also fixed:
+  `ITSAppUsesNonExemptEncryption`, the EAS project id in `app.config.ts`, and the unused update `channel`s
+  (and `expo-updates`) were removed. The second build **succeeded**.
+- Live Firebase project `klndr-app`: `firestore.rules` released (the account-deletion change; re-read live),
+  iOS and Android apps registered for `com.klndr.app`, config files fetched into `apps/mobile/` (gitignored).
+  The Firebase MCP's deploy reported success without changing anything; the Firebase CLI did the release.
+- **Verified on the device:** the development build installs and runs; it connects to Metro; the sign-in gate
+  lets a signed-in user through to the four tabs; the Settings tab shows the right account.
+- **Not yet verified:** sign out and back in, the session surviving a relaunch, a wrong-password message,
+  password reset email, Google sign-in, Sign in with Apple (the provider is not enabled in Firebase yet),
+  deleting an account, and the profile document's shape against one created on the web.
+- Environment note: on this PC, Windows Smart App Control blocked NVM's helper (`reshim.exe`) and NVM then
+  refused to run `npm`. The workaround chosen by the owner is a signed Node installer from nodejs.org; the
+  project itself is unaffected.
+
+### Cleanup before the first public commit
+
+Everything that nothing ships or calls was taken out, and the rest re-verified:
+- The web auth adapter (`firebase.web.ts`), the `firebase` and `expo-image` dependencies of the mobile app, the
+  `EXPO_PUBLIC_FIREBASE_*` variables and `moduleSuffixes` (the app is iOS and Android only; see DECISIONS.md),
+  the always-true `appleSignInAvailable` flag, and the two demo screens (`design-system`, `sheet`) with the
+  "Design system" row they had in Settings.
+- Six exports that nothing used, in the web app before the port as well: `MONTH_SHORT_LABELS`,
+  `generateYearOptions`, `addYears`, `DAY_START_MINUTES`, `DAY_END_MINUTES`, `TABULAR_NUMBERS`, and their tests.
+- Kept on purpose, although nothing calls them yet: the unused design-system primitives, `formSheet`,
+  `src/api.ts` and the markdown parser, which tasks 1.4 and Phase 2 use next.
+- Verification after the cleanup: typecheck for all four workspaces, 264 core and 41 tokens tests, the web build,
+  and the Android and iOS bundles all pass. `npm` could not be run from the shell (an NVM trust problem, see
+  above), so the lockfile was edited by hand for the two removed packages and checked by script (every
+  workspace dependency still resolves; the `oxc-parser` and `rolldown` pins are untouched). Run `npm install`
+  once npm works again: it should change nothing.
+- Secrets scan of every file in the commit: no keys, tokens, `.env` or Firebase config files; those stay
+  gitignored.
+
+Next step:
+- Finish the remaining device checks above (HUMAN_TODO, Task 1.3), then task 1.4: TanStack Query hooks over
+  `src/api.ts`, optimistic mutations, MMKV cache, refetch rules.

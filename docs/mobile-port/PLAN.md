@@ -85,8 +85,9 @@ Legend: `[ ]` todo, `[x]` done, `[~]` in progress / blocked.
       path and the rules change are for a real project (see HUMAN_TODO, and 3.2 for the emulator).
 
 ### CHECKPOINT A
-- [ ] Stop and post a review summary: what moved, what changed in the web app, verification
-      output, the HUMAN_TODO list.
+- [x] Stop and post a review summary: what moved, what changed in the web app, verification
+      output, the HUMAN_TODO list. (Work ran on through 1.2 without stopping; the review was done
+      afterwards, as the audit in PROGRESS.md session 7.)
 
 ## Phase 1 — mobile foundation
 
@@ -149,14 +150,21 @@ Legend: `[ ]` todo, `[x]` done, `[~]` in progress / blocked.
       size.
 
 ### 1.3 Auth
-- [ ] React Native Firebase auth with email/password and password reset.
-- [ ] Native Google sign-in.
-- [ ] Sign in with Apple on iOS (nonce flow).
-- [ ] Apple sign-in on Android through Firebase's OAuth provider flow.
-- [ ] First sign-in creates users/{uid} exactly like loadProfile in useAuth.ts.
-- [ ] Expo Router auth gate: signed-out stack vs the tabs.
-- [ ] Demo mode (EXPO_PUBLIC_DEMO_MODE=1): no sign-in; API calls without a token.
-- [ ] Platform adapters: .native.ts (RNFirebase) and .web.ts (Firebase JS SDK).
+- [x] React Native Firebase auth with email/password and password reset.
+- [x] Native Google sign-in (`@react-native-google-signin/google-signin`, ID token to Firebase).
+- [x] Sign in with Apple on iOS (nonce flow, Apple's own button).
+- [x] Apple sign-in on Android through Firebase's OAuth provider flow.
+- [x] First sign-in creates users/{uid} exactly like loadProfile in useAuth.ts — both now call
+      `newProfileData` / `loadOrCreateProfile` in `@klndr/core` (tested), instead of two copies.
+- [x] Expo Router auth gate: signed-out stack vs the tabs (`Stack.Protected`, native tabs).
+- [x] Demo mode (EXPO_PUBLIC_DEMO_MODE=1): no sign-in; API calls without a token.
+- [x] Platform adapter: React Native Firebase (`src/auth/firebase.ts`). The planned `.web.ts` (Firebase JS SDK) was
+      written, then removed before the first commit: the app ships on iOS and Android only (see DECISIONS.md).
+- [x] Config plugins for RN Firebase, Google sign-in and Apple sign-in, added only when the Firebase
+      config files exist (or on EAS, where a missing file must fail the build).
+- [x] Verified: typecheck (all four workspaces), 265 core tests, Android and iOS bundles, the plugins
+      applied by a real `expo prebuild --platform android` with dummy config files.
+- [ ] HUMAN_TODO: try sign-in on a device — see HUMAN_TODO.md (Task 1.3).
 
 ### 1.4 Data
 - [ ] TanStack Query hooks over the core API client (day tasks, range tasks, templates,
