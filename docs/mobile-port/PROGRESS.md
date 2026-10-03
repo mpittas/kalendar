@@ -114,3 +114,39 @@ Verification (all green):
 
 Next step:
 - Task 0.4: store compliance (account deletion, the `DELETE /api/account` path, Sign in with Apple).
+
+## 2026-10-03 — session 4: task 0.4 store compliance (web + server)
+
+Done:
+- Account deletion, end to end. `DELETE /api/account` calls a new `Store.deleteAccount()`: the
+  Firestore store empties every collection under `users/{uid}` in batches and then deletes the profile
+  document, and the in-memory store forgets everything it held. The client then revokes the Apple token
+  (when one is linked) and deletes the Auth user, because only the signed-in user may do that and
+  Firebase asks for a recent sign-in — so the flow re-authenticates first: a password account types
+  its password, Google and Apple re-open their pop-up.
+- The profile page has a "Delete account" card: type `delete my account`, a password field when the
+  account has one, and a destructive button that stays disabled until the phrase matches.
+- `firestore.rules`: the owner may now delete `users/{uid}` and the three `meta/*` markers. Updates to
+  those documents are still refused, and nothing else was loosened.
+- Two public pages: `/privacy` (a draft policy, clearly marked DRAFT, with placeholders) and
+  `/account-deletion` (the in-app steps, what gets deleted, and an email route for someone who cannot
+  sign in). Both are in PUBLIC_PATHS and both are linked from the landing footer, the login page and
+  the signup page.
+- Sign in with Apple on the web, beside Google on both the login and the signup pages.
+
+Verification (all green):
+- `npm run typecheck` (web + core + tokens) — exit 0. `npm test` — core 252 + tokens 37 = 289 tests,
+  including a new one for the API client's `DELETE /api/account`.
+- `npm run build -w apps/web` — exit 0 (10.1 MB / 2.44 MB gzip).
+- Built server: `/` 200, `/privacy` 200, `/account-deletion` 200, `/login` 200 (the Apple button is in
+  the markup), `/signup` 200, `/api/health` 200 `{"ok":true}`.
+- Dev server, the deletion itself: the dev store started with 12 activities, 5 categories, 5 blocks, 5
+  checklist items and 2 ticks; a note and a one-off checklist item were added; `DELETE /api/account`
+  answered `{"ok":true}`, and every collection then came back empty — notes empty, the day's ticks and
+  extras gone — with health still 200 afterwards.
+- Not verified, and not verifiable here: the Firestore deletion path and the new rules (both need a
+  real project; the emulator needs Java, see 3.2). They are in HUMAN_TODO with the Apple provider
+  setup and the policy placeholders.
+
+Next step:
+- CHECKPOINT A: stop and report. Then Phase 1 (`apps/mobile`).

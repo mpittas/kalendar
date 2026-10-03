@@ -167,3 +167,40 @@ the pinned tests use resolved values, not the remembered hexes.
 - `swatch` is resolved too, even though it only repeats `dot`'s colour, because it is a role in the
   web palette and leaving a hole would invite a second source of truth.
 
+## 2026-10-03 — 0.4: who deletes what when an account goes
+
+The data and the identity are removed by different parties, in this order:
+
+1. The client re-authenticates. Firebase refuses `deleteUser` when the sign-in is old, and it is the
+   honest moment to ask anyway: a password account types its password, Google and Apple re-open their
+   pop-up. This is also the only place the Apple access token comes from.
+2. `DELETE /api/account` deletes the data: the collections first, the profile document last, so a
+   failure half way leaves a profile that still says who owns the leftovers. Deletes on this path are
+   unconditional (`currentDocument` preconditions are dropped), and each collection is emptied in
+   batches of 300 until it is empty, so an account of any size goes.
+3. Apple-linked accounts revoke the Apple token. Firebase 12 has no `User.revokeAccessToken()`; the
+   revocation is the top-level `revokeAccessToken(auth, token)` and it wants the Apple *access* token,
+   which only comes back from a fresh Apple credential — hence the pop-up in step 1. Failing to revoke
+   is logged, not fatal: the account still has to go.
+4. `deleteUser` on the client. Only the signed-in user may delete their own Auth user, and the API
+   deliberately holds no admin credentials, so this cannot move to the server.
+
+The server also forgets its in-memory seed markers, so a new account seeds from scratch.
+
+## 2026-10-03 — 0.4: the rules change is four lines of `allow delete`
+
+`users/{uid}` gained `allow delete: if isOwner(uid)` (it used to be `false`), and each of the three
+`meta/*` markers gained its own `allow delete: if isOwner(uid)` while keeping `allow update: if false`.
+Account deletion is the only thing that needs any of it; ownership, shapes, limits and immutability are
+otherwise untouched.
+
+## 2026-10-03 — 0.4: the policy pages, and what they claim
+
+`/privacy` and `/account-deletion` are public (in PUBLIC_PATHS) and describe what the code actually
+does: Firebase Authentication for identity (email/password, Google, Apple), Cloud Firestore for the
+data under the user's own uid, a server that passes the caller's token through instead of holding
+admin credentials, no analytics or advertising, and localStorage used only for the theme and the recent
+emojis. The deletion page gives the in-app steps and an email route for someone who can no longer sign
+in. The policy is marked DRAFT and carries `[COMPANY LEGAL NAME]`, `[CONTACT EMAIL]` and `[DATE]`
+placeholders — HUMAN_TODO, for the owner to fill in before the app is published.
+

@@ -65,19 +65,24 @@ Legend: `[ ]` todo, `[x]` done, `[~]` in progress / blocked.
       hexes (indigo-500 is #615fff, not #6366f1), and how a plain versus a `dark:` utility resolves.
 
 ### 0.4 Store compliance in the web app and server
-- [ ] Account deletion: "Delete account" section on the profile page (typed confirmation +
+- [x] Account deletion: "Delete account" section on the profile page (typed confirmation +
       re-authentication).
-- [ ] Account deletion deletes all user data (every subcollection under users/{uid}, the meta
+- [x] Account deletion deletes all user data (every subcollection under users/{uid}, the meta
       markers, then the profile doc), then the Auth user.
-- [ ] Data part as a `Store` method (MemoryStore + FirestoreStore) behind `DELETE /api/account`.
-- [ ] firestore.rules: owner may delete `users/{uid}` and `meta/*`; loosen nothing else.
-- [ ] Apple-linked accounts: revoke the Apple token on deletion.
+- [x] Data part as a `Store` method (MemoryStore + FirestoreStore) behind `DELETE /api/account`.
+- [x] firestore.rules: owner may delete `users/{uid}` and `meta/*`; loosen nothing else.
+- [x] Apple-linked accounts: revoke the Apple token on deletion.
 - [ ] HUMAN_TODO: deploy the rules.
-- [ ] Public `/account-deletion` page (in-app steps + email request). Add to PUBLIC_PATHS.
-- [ ] Public `/privacy` page (draft policy, placeholders, marked DRAFT). Add to PUBLIC_PATHS.
-- [ ] Link both from the landing footer, the login page and the signup page.
-- [ ] Sign in with Apple on the web (Firebase OAuthProvider "apple.com") next to Google.
+- [x] Public `/account-deletion` page (in-app steps + email request). Add to PUBLIC_PATHS.
+- [x] Public `/privacy` page (draft policy, placeholders, marked DRAFT). Add to PUBLIC_PATHS.
+- [x] Link both from the landing footer, the login page and the signup page.
+- [x] Sign in with Apple on the web (Firebase OAuthProvider "apple.com") next to Google.
 - [ ] HUMAN_TODO: Apple Services ID, key, and Firebase console setup.
+- [x] The client deletes the Auth user — only the signed-in user may, and Firebase asks for a recent
+      sign-in, which is why the flow re-authenticates first — and the API deletes the data.
+- [x] Verified the deletion end to end against the dev store: seeded data, a written note and an
+      extra checklist item, then `DELETE /api/account` left every collection empty. The Firestore
+      path and the rules change are for a real project (see HUMAN_TODO, and 3.2 for the emulator).
 
 ### CHECKPOINT A
 - [ ] Stop and post a review summary: what moved, what changed in the web app, verification

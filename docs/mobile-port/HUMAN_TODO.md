@@ -20,8 +20,18 @@ Things only the owner can do, grouped by what each item unblocks. Exact steps gi
       yours; leaving the override in place is harmless.
 
 ## Task 0.4 — store compliance
-- [ ] Deploy the updated `firestore.rules` (`firebase deploy --only firestore:rules`).
-- [ ] Apple Services ID, key, and the Firebase console setup for "Sign in with Apple".
+- [ ] Deploy the updated `firestore.rules` (`firebase deploy --only firestore:rules`). The change is
+      small: the owner may now delete their own profile document and the three `meta/*` seed markers
+      (which is what account deletion needs) — updates to those documents are still refused.
+- [ ] Apple Services ID, key, and the Firebase console setup for "Sign in with Apple" (the web button
+      is in place, but Firebase needs the provider enabled before it works).
+- [ ] Fill in the placeholders on the privacy policy and on the deletion page: `[COMPANY LEGAL NAME]`,
+      `[CONTACT EMAIL]` and `[DATE]` (in `apps/web/pages/privacy.vue` and
+      `apps/web/pages/account-deletion.vue`), then review the draft policy.
+- [ ] Once Firebase is configured, delete a throwaway account and check in the Firestore console that
+      nothing is left. The dev-mode run proves the endpoint and the in-memory store, but the Firestore
+      path and the new rules can only be exercised against a real project (the emulator needs Java —
+      see Task 3.2).
 
 ## Task 1.1 — mobile app identity
 - [ ] Confirm the iOS bundle id / Android package (placeholder `com.klndr.app`). It cannot
