@@ -7,7 +7,9 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { AuthProvider, useAuth } from "@/auth";
 import { ToastProvider } from "@/components/ui";
+import { UnavailableScreen } from "@/components/auth/unavailable";
 import { INTER_FONTS, useFonts } from "@/fonts";
 import { applyStoredTheme, ThemePreferenceProvider, useThemePreference } from "@/theme/preference";
 
@@ -23,17 +25,40 @@ function ThemedStatusBar() {
 }
 
 /**
- * The root layout. Task 1.3 replaces the plain stack with the auth gate (the signed-out screens
- * versus the tabs); the providers around it — theme, toast, safe area, gestures — stay.
+ * The auth gate: the tabs (and everything reached from them) exist only while someone is signed in, and
+ * the sign-in screens only while no one is. Expo Router's `Stack.Protected` is what makes that true of
+ * deep links too — a link to `klndr://day/…` while signed out lands on sign-in, not on a screen with no
+ * data behind it — and it redirects by itself when the sign-in state flips, so no screen has to
+ * navigate after signing in or out.
+ */
+function RootNavigator() {
+  const { state } = useAuth();
+  const signedIn = state.status === "signed-in";
+
+  if (state.status === "unavailable") return <UnavailableScreen message={state.message} />;
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={signedIn}>
+        <Stack.Screen name="(tabs)" />
+      </Stack.Protected>
+      <Stack.Protected guard={!signedIn}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+    </Stack>
+  );
+}
+
+/**
+ * The root layout: the providers (theme, auth, toast, safe area, gestures) around the gate. The splash
+ * screen stays up until the fonts are loaded *and* Firebase has said whether a session was restored, so a
+ * signed-in person never sees a signed-out frame first.
  */
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(INTER_FONTS);
+  const fontsReady = fontsLoaded || Boolean(fontError);
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) SplashScreen.hideAsync().catch(() => {});
-  }, [fontsLoaded, fontError]);
-
-  if (!fontsLoaded && !fontError) return null;
+  if (!fontsReady) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -41,10 +66,25 @@ export default function RootLayout() {
         <ThemePreferenceProvider>
           <ThemedStatusBar />
           <ToastProvider>
-            <Stack screenOptions={{ headerShown: false }} />
+            <AuthProvider>
+              <SplashUntilSettled />
+              <RootNavigator />
+            </AuthProvider>
           </ToastProvider>
         </ThemePreferenceProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
+}
+
+/** Lets the splash go once the auth state is known. Renders nothing. */
+function SplashUntilSettled() {
+  const { state } = useAuth();
+  const settled = state.status !== "loading";
+
+  useEffect(() => {
+    if (settled) SplashScreen.hideAsync().catch(() => {});
+  }, [settled]);
+
+  return null;
 }

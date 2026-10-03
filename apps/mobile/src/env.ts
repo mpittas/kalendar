@@ -14,6 +14,12 @@ export type DataMode = "api" | "firestore";
 /** The web API, without a trailing slash. Empty means "not configured" (demo mode without a server). */
 export const apiBaseUrl = (process.env.EXPO_PUBLIC_API_BASE_URL ?? "").replace(/\/+$/, "");
 
+/**
+ * The public website (privacy policy, account deletion). It is where the web app is deployed, which is
+ * not the API address on a developer machine, so it has its own value; it falls back to the API base.
+ */
+export const webBaseUrl = (process.env.EXPO_PUBLIC_WEB_URL || apiBaseUrl).replace(/\/+$/, "");
+
 /** Google sign-in needs the *web* client id on every platform, iOS and Android included. */
 export const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "";
 
@@ -23,4 +29,4 @@ export const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === "1";
 /** Where the data comes from: the web API (the default) or Firestore directly (Phase 3). */
 export const dataMode: DataMode = process.env.EXPO_PUBLIC_DATA_MODE === "firestore" ? "firestore" : "api";
 
-export const env = { apiBaseUrl, googleWebClientId, demoMode, dataMode } as const;
+export const env = { apiBaseUrl, webBaseUrl, googleWebClientId, demoMode, dataMode } as const;
