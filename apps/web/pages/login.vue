@@ -6,7 +6,7 @@ useHead({
   title: "Log In · klndr.",
 });
 
-const { login, loginWithGoogle, resetPassword, isConfigured } = useAuth();
+const { login, loginWithGoogle, loginWithApple, resetPassword, isConfigured } = useAuth();
 const router = useRouter();
 const route = useRoute();
 
@@ -57,6 +57,20 @@ const handleGoogleLogin = async () => {
   isSubmitting.value = true;
   try {
     await loginWithGoogle();
+    const redirect = safeRedirect(route.query.redirect);
+    router.push(redirect);
+  } catch (err: any) {
+    error.value = getFriendlyErrorMessage(err);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+const handleAppleLogin = async () => {
+  error.value = null;
+  isSubmitting.value = true;
+  try {
+    await loginWithApple();
     const redirect = safeRedirect(route.query.redirect);
     router.push(redirect);
   } catch (err: any) {
@@ -204,6 +218,20 @@ const handleResetPassword = async () => {
 
       <button
         type="button"
+        @click="handleAppleLogin"
+        :disabled="isSubmitting"
+        class="flex h-11 w-full items-center justify-center gap-2.5 rounded-md border border-input bg-background px-3.5 py-2 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground disabled:opacity-50 sm:h-9"
+      >
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path
+            d="M16.37 1.43c0 1.14-.42 2.2-1.25 3.04-.99 1-2.1 1.58-3.34 1.48-.02-1.16.44-2.28 1.24-3.1.83-.86 2.24-1.5 3.35-1.42zM20.9 17.02c-.55 1.27-.82 1.83-1.53 2.95-1 1.57-2.4 3.53-4.13 3.55-1.54.02-1.94-1-4.03-.99-2.09.01-2.53 1.01-4.07.99-1.73-.02-3.05-1.79-4.05-3.35C.3 16.02-.16 11.2 1.6 8.6c1.16-1.72 2.99-2.73 4.71-2.73 1.75 0 2.85 1 4.3 1 1.4 0 2.26-1 4.28-1 1.53 0 3.15.83 4.3 2.27-3.78 2.07-3.17 7.47 1.71 8.88z"
+          />
+        </svg>
+        Sign in with Apple
+      </button>
+
+      <button
+        type="button"
         @click="handleGoogleLogin"
         :disabled="isSubmitting"
         class="flex h-11 w-full items-center justify-center gap-2.5 rounded-md border border-input bg-background px-3.5 py-2 text-sm font-medium text-foreground shadow-xs transition hover:bg-accent hover:text-accent-foreground disabled:opacity-50 sm:h-9"
@@ -234,6 +262,12 @@ const handleResetPassword = async () => {
         <NuxtLink to="/signup" class="-my-2 inline-block py-2 font-medium text-foreground underline underline-offset-4 transition hover:text-primary">
           Sign up
         </NuxtLink>
+      </p>
+
+      <p class="text-center text-[11px] text-muted-foreground">
+        <NuxtLink to="/privacy" class="underline underline-offset-4 transition hover:text-foreground">Privacy</NuxtLink>
+        <span aria-hidden="true" class="px-1.5">·</span>
+        <NuxtLink to="/account-deletion" class="underline underline-offset-4 transition hover:text-foreground">Delete account</NuxtLink>
       </p>
     </div>
   </div>

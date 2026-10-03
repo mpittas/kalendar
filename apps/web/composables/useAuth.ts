@@ -9,6 +9,12 @@ import {
   sendPasswordResetEmail,
   GoogleAuthProvider,
   signInWithPopup,
+  deleteUser,
+  EmailAuthProvider,
+  OAuthProvider,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  revokeAccessToken,
   type User,
   type Auth,
 } from "firebase/auth";
@@ -22,6 +28,7 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import { cleanPatch, PROFILE_LIMITS, toProfile, type ProfilePatch, type UserProfile } from "@klndr/core";
+import { api } from "~/lib/api";
 
 // The profile model lives in @klndr/core. It is re-exported here so the web app keeps importing it
 // from its composable, and so the auto-imports keep offering the same names as before the move.
@@ -92,8 +99,16 @@ export async function getIdToken(): Promise<string | null> {
 // Profile loads already in flight, so the auth listener and a sign-in/sign-up
 // flow never race to create the same document.
 const profileLoads = new Map<string, Promise<UserProfile | null>>();
-// Name typed on the sign-up form, used when the profile document is first created.
+/** Name typed on the sign-up form, used when the profile document is first created. */
 let pendingSignUpName: string | null = null;
+
+/** The Apple provider, with the two scopes Firebase asks for on first sign-in. */
+const appleProvider = () => {
+  const provider = new OAuthProvider("apple.com");
+  provider.addScope("email");
+  provider.addScope("name");
+  return provider;
+};
 
 export function useAuth() {
   const user = useState<User | null>("auth_user", () => null);
@@ -214,6 +229,47 @@ export function useAuth() {
     return profile.value;
   };
 
+  /**
+   * Delete the account, in the only order that cannot leave a mess behind: re-authenticate (Firebase
+   * asks for a recent sign-in), remove every document the user owns, revoke the Apple token when one
+   * is linked — Apple requires that when an account is deleted — and then the Auth user itself.
+   *
+   * A password account passes its password; the popup providers re-authenticate with a popup.
+   */
+  const deleteAccount = async (options: { password?: string } = {}) => {
+    const { auth } = getFirebaseServices();
+    const current = auth?.currentUser;
+    if (!auth || !current) throw new Error("You must be signed in to delete your account.");
+
+    const providers = current.providerData.map((entry) => entry.providerId);
+    // Apple wants the token it handed over revoked when the account goes. The popup is also how we
+    // re-authenticate an Apple account, so the token comes back from that same response.
+    let appleToken: string | null = null;
+
+    if (providers.includes("password")) {
+      if (!current.email) throw new Error("You must be signed in to delete your account.");
+      if (!options.password) throw new Error("Enter your password to confirm.");
+      await reauthenticateWithCredential(current, EmailAuthProvider.credential(current.email, options.password));
+    } else if (providers.includes("apple.com")) {
+      const credential = await reauthenticateWithPopup(current, appleProvider());
+      appleToken = OAuthProvider.credentialFromResult(credential)?.accessToken ?? null;
+    } else if (providers.includes("google.com")) {
+      await reauthenticateWithPopup(current, new GoogleAuthProvider());
+    }
+
+    // The data goes first: it is still authorized by the token we are holding.
+    await api.deleteAccount();
+
+    if (appleToken) {
+      await revokeAccessToken(auth, appleToken).catch((err) => console.warn("Could not revoke the Apple token:", err));
+    }
+
+    await deleteUser(current);
+    user.value = null;
+    profile.value = null;
+    profileError.value = null;
+  };
+
   const signUp = async (email: string, pass: string, name: string) => {
     const { auth } = getFirebaseServices();
     if (!auth) throw new Error("Firebase Auth is not initialized. Please check credentials in .env.");
@@ -253,6 +309,17 @@ export function useAuth() {
     return cred.user;
   };
 
+  /** Sign in with Apple, the other identity provider the app offers. */
+  const loginWithApple = async () => {
+    const { auth } = getFirebaseServices();
+    if (!auth) throw new Error("Firebase Auth is not initialized. Please configure Firebase credentials.");
+
+    const cred = await signInWithPopup(auth, appleProvider());
+    user.value = cred.user;
+    await loadProfile(cred.user);
+    return cred.user;
+  };
+
   const resetPassword = async (email: string) => {
     const { auth } = getFirebaseServices();
     if (!auth) throw new Error("Firebase Auth is not initialized.");
@@ -279,8 +346,10 @@ export function useAuth() {
     signUp,
     login,
     loginWithGoogle,
+    loginWithApple,
     resetPassword,
     logout,
+    deleteAccount,
     updateProfileData,
     loadProfile,
   };

@@ -19,6 +19,8 @@ const year = new Date().getFullYear();
       <nav class="-mx-2 flex flex-wrap items-center text-sm" aria-label="Footer">
         <a href="#how-it-works" class="rounded-md px-2 py-2 text-muted-foreground transition hover:text-foreground">How it works</a>
         <a href="#features" class="rounded-md px-2 py-2 text-muted-foreground transition hover:text-foreground">Features</a>
+        <NuxtLink to="/privacy" class="rounded-md px-2 py-2 text-muted-foreground transition hover:text-foreground">Privacy</NuxtLink>
+        <NuxtLink to="/account-deletion" class="rounded-md px-2 py-2 text-muted-foreground transition hover:text-foreground">Delete account</NuxtLink>
         <NuxtLink v-if="!signedIn" to="/login" class="rounded-md px-2 py-2 text-muted-foreground transition hover:text-foreground">Log in</NuxtLink>
         <NuxtLink :to="start.to" class="rounded-md px-2 py-2 font-medium text-foreground transition hover:opacity-80">{{ start.label }}</NuxtLink>
       </nav>

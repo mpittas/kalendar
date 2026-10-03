@@ -4,12 +4,13 @@ import { ref, computed, watch, onMounted } from "vue";
 import { PROFILE_LIMITS, type UserProfile } from "~/composables/useAuth";
 import ProfileCard from "~/components/profile/ProfileCard.vue";
 import AccountActionsCard from "~/components/profile/AccountActionsCard.vue";
+import DeleteAccountCard from "~/components/profile/DeleteAccountCard.vue";
 
 useHead({
   title: "Profile · klndr.",
 });
 
-const { user, profile, profileError, loading, updateProfileData, loadProfile, logout, resetPassword } = useAuth();
+const { user, profile, profileError, loading, updateProfileData, loadProfile, logout, resetPassword, deleteAccount } = useAuth();
 const router = useRouter();
 
 const form = ref<Partial<UserProfile>>({
@@ -103,6 +104,32 @@ const handleSendResetEmail = async () => {
 const handleLogout = async () => {
   await logout();
   router.push("/login");
+};
+
+/** Password accounts re-enter their password; the popup providers re-authenticate with a popup. */
+const needsPassword = computed(() => user.value?.providerData.some((provider) => provider.providerId === "password") ?? false);
+const isDeleting = ref(false);
+const deleteError = ref<string | null>(null);
+
+const describeDeleteError = (err: any) => {
+  const code = String(err?.code ?? "");
+  if (code.includes("wrong-password") || code.includes("invalid-credential")) return "That password doesn't match this account.";
+  if (code.includes("requires-recent-login")) return "For safety, sign out and sign in again, then delete your account.";
+  if (code.includes("popup-closed-by-user") || code.includes("cancelled-popup-request")) return "The sign-in window closed before it finished.";
+  return err?.message || "Could not delete your account.";
+};
+
+const handleDeleteAccount = async (payload: { password?: string }) => {
+  deleteError.value = null;
+  isDeleting.value = true;
+  try {
+    await deleteAccount(payload);
+    await router.push("/");
+  } catch (err: any) {
+    deleteError.value = describeDeleteError(err);
+  } finally {
+    isDeleting.value = false;
+  }
 };
 </script>
 
@@ -344,6 +371,13 @@ const handleLogout = async () => {
       </div>
 
       <AccountActionsCard @logout="handleLogout" />
+
+      <DeleteAccountCard
+        :needs-password="needsPassword"
+        :busy="isDeleting"
+        :error="deleteError"
+        @delete="handleDeleteAccount"
+      />
     </div>
   </div>
 </template>
