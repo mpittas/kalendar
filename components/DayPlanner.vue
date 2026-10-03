@@ -426,9 +426,13 @@ const onTaskSaved = (task: ScheduledTask) => {
 };
 
 // Renaming or deleting a category rewrites its activities and blocks on the server.
+let categoriesRefresh = 0;
 const onCategoriesChanged = async () => {
+  const run = ++categoriesRefresh;
   try {
     const [nextTemplates, nextTasks] = await Promise.all([api.getTemplates(), api.getTasksForDay(props.day)]);
+    // Two quick renames: an older reload finishing last must not bring the old names back.
+    if (run !== categoriesRefresh) return;
     templates.value = nextTemplates;
     tasks.value = nextTasks;
   } catch {
