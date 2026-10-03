@@ -27,7 +27,7 @@ import {
   serverTimestamp,
   type Firestore,
 } from "firebase/firestore";
-import { cleanPatch, PROFILE_LIMITS, toProfile, type ProfilePatch, type UserProfile } from "@klndr/core";
+import { cleanPatch, newProfileData, toProfile, type ProfilePatch, type UserProfile } from "@klndr/core";
 import { api } from "~/lib/api";
 
 // The profile model lives in @klndr/core. It is re-exported here so the web app keeps importing it
@@ -157,21 +157,15 @@ export function useAuth() {
       try {
         let snap = await getDoc(ref);
         if (!snap.exists()) {
-          const email = firebaseUser.email;
-          const displayName = (
-            pendingSignUpName || firebaseUser.displayName || email?.split("@")[0] || "User"
-          ).slice(0, PROFILE_LIMITS.displayName);
           await setDoc(ref, {
-            uid: firebaseUser.uid,
-            email: email ?? null,
-            displayName,
-            photoURL: firebaseUser.photoURL ?? null,
-            bio: "",
-            phone: "",
-            location: "",
-            timezone: (Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC").slice(0, PROFILE_LIMITS.timezone),
-            weekStartsOnMonday: true,
-            defaultTaskDuration: 60,
+            ...newProfileData({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              signUpName: pendingSignUpName,
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            }),
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           });

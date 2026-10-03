@@ -1,5 +1,38 @@
 import { describe, expect, it } from "vitest";
-import { DURATION_OPTIONS, PROFILE_LIMITS, cleanPatch, isValidTimeZone, toProfile } from "../src/index";
+import { DURATION_OPTIONS, PROFILE_LIMITS, cleanPatch, isValidTimeZone, loadOrCreateProfile, newProfileData, toProfile } from "../src/index";
+
+describe("newProfileData", () => {
+  const base = { uid: "u1", email: "ada@example.com" };
+
+  it("starts from the same defaults the web app always used", () => {
+    expect(newProfileData({ ...base, displayName: "Ada L", photoURL: "https://x/y.png", timezone: "Europe/Nicosia" })).toEqual({
+      uid: "u1",
+      email: "ada@example.com",
+      displayName: "Ada L",
+      photoURL: "https://x/y.png",
+      bio: "",
+      phone: "",
+      location: "",
+      timezone: "Europe/Nicosia",
+      weekStartsOnMonday: true,
+      defaultTaskDuration: 60,
+    });
+  });
+
+  it("prefers the sign-up name, then the provider's, then the email's local part, then 'User'", () => {
+    expect(newProfileData({ ...base, signUpName: "Typed", displayName: "Provider" }).displayName).toBe("Typed");
+    expect(newProfileData({ ...base, displayName: "Provider" }).displayName).toBe("Provider");
+    expect(newProfileData({ ...base, displayName: "" }).displayName).toBe("ada");
+    expect(newProfileData({ uid: "u2", email: null }).displayName).toBe("User");
+  });
+
+  it("falls back to UTC and nulls, and caps what the rules cap", () => {
+    const bare = newProfileData({ uid: "u2", email: undefined });
+    expect(bare).toMatchObject({ email: null, photoURL: null, timezone: "UTC" });
+    expect(newProfileData({ ...base, signUpName: "x".repeat(200) }).displayName).toHaveLength(PROFILE_LIMITS.displayName);
+    expect(newProfileData({ ...base, timezone: "x".repeat(200) }).timezone).toHaveLength(PROFILE_LIMITS.timezone);
+  });
+});
 
 describe("cleanPatch", () => {
   it("keeps only what was sent", () => {
@@ -114,5 +147,44 @@ describe("toProfile", () => {
   it("only reads a timestamp out of a Firestore-style value", () => {
     expect(toProfile("uid-1", { createdAt: "2026-01-02" }).createdAt).toBeUndefined();
     expect(toProfile("uid-1", { createdAt: null }).createdAt).toBeUndefined();
+  });
+});
+
+describe("loadOrCreateProfile", () => {
+  const source = { uid: "u1", email: "ada@example.com", displayName: "Ada", timezone: "UTC" };
+
+  const fakeDb = (existing: Record<string, any> | null = null) => {
+    let stored = existing;
+    const created: unknown[] = [];
+    return {
+      created,
+      db: {
+        read: async () => stored,
+        create: async (_uid: string, fields: Record<string, any>) => {
+          created.push(fields);
+          stored = { ...fields, createdAt: { toDate: () => new Date("2026-01-02T03:04:05Z") } };
+        },
+      },
+    };
+  };
+
+  it("returns an existing profile without writing anything", async () => {
+    const { db, created } = fakeDb({ displayName: "Existing", email: "e@x.y", weekStartsOnMonday: false });
+    const profile = await loadOrCreateProfile(db, source);
+    expect(profile).toMatchObject({ uid: "u1", displayName: "Existing", weekStartsOnMonday: false });
+    expect(created).toHaveLength(0);
+  });
+
+  it("creates the profile on a first sign-in and reads it back", async () => {
+    const { db, created } = fakeDb();
+    const profile = await loadOrCreateProfile(db, { ...source, signUpName: "Ada Lovelace" });
+    expect(created).toEqual([newProfileData({ ...source, signUpName: "Ada Lovelace" })]);
+    expect(profile).toMatchObject({ displayName: "Ada Lovelace", defaultTaskDuration: 60, createdAt: "2026-01-02T03:04:05.000Z" });
+  });
+
+  it("says so when the document cannot be read after it was created", async () => {
+    await expect(loadOrCreateProfile({ read: async () => null, create: async () => {} }, source)).rejects.toThrow(
+      "The profile could not be created.",
+    );
   });
 });

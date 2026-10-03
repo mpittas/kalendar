@@ -10,6 +10,7 @@ export * from "./colors";
 export * from "./categories";
 export * from "./validation";
 export * from "./profile";
+export * from "./auth";
 export * from "./emojis";
 export * from "./markdown";
 export * from "./api";

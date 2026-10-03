@@ -50,6 +50,44 @@ export function toProfile(uid: string, data: Record<string, any>): UserProfile {
   };
 }
 
+/** What a sign-in provider tells us about a user, as far as a first profile is concerned. */
+export type NewProfileSource = {
+  uid: string;
+  email: string | null | undefined;
+  /** The name the identity provider holds, if any. */
+  displayName?: string | null;
+  photoURL?: string | null;
+  /** A name typed on the sign-up form, which wins over the provider's. */
+  signUpName?: string | null;
+  /** The device's time zone, if it knows one. */
+  timezone?: string | null;
+};
+
+/**
+ * The fields of a first `users/{uid}` document, without its two timestamps (the database stamps
+ * `createdAt` and `updatedAt` itself, and `firestore.rules` insists they are server time). The web and
+ * the phone both create the profile on first sign-in, and this is the one place that says how.
+ */
+export function newProfileData(source: NewProfileSource) {
+  const email = source.email ?? null;
+  const displayName = (source.signUpName || source.displayName || email?.split("@")[0] || "User").slice(
+    0,
+    PROFILE_LIMITS.displayName,
+  );
+  return {
+    uid: source.uid,
+    email,
+    displayName,
+    photoURL: source.photoURL ?? null,
+    bio: "",
+    phone: "",
+    location: "",
+    timezone: (source.timezone || "UTC").slice(0, PROFILE_LIMITS.timezone),
+    weekStartsOnMonday: true,
+    defaultTaskDuration: 60,
+  };
+}
+
 export function isValidTimeZone(value: string): boolean {
   try {
     new Intl.DateTimeFormat(undefined, { timeZone: value });
@@ -100,4 +138,25 @@ export function cleanPatch(patch: ProfilePatch): Record<string, string | number 
     out.defaultTaskDuration = minutes;
   }
   return out;
+}
+
+/** The one document the profile needs from a database: read it, and create it the first time. */
+export type ProfileDb = {
+  read(uid: string): Promise<Record<string, any> | null>;
+  /** Creates `users/{uid}`; the implementation adds the server-time `createdAt` and `updatedAt`. */
+  create(uid: string, fields: ReturnType<typeof newProfileData>): Promise<void>;
+};
+
+/**
+ * Read `users/{uid}`, creating it on a first sign-in. This is `loadProfile` from the web app's
+ * `useAuth`, without the framework: the web keeps its own copy of the shared-state wrapper around it.
+ */
+export async function loadOrCreateProfile(db: ProfileDb, source: NewProfileSource): Promise<UserProfile> {
+  let data = await db.read(source.uid);
+  if (!data) {
+    await db.create(source.uid, newProfileData(source));
+    data = await db.read(source.uid);
+  }
+  if (!data) throw new Error("The profile could not be created.");
+  return toProfile(source.uid, data);
 }
