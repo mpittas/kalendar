@@ -44,6 +44,16 @@ Things only the owner can do, grouped by what each item unblocks. Exact steps gi
       `GOOGLE_SERVICES_INFO_PLIST` at them. They are gitignored, so EAS needs them as file
       environment variables.
 
+## Task 1.2 — the design system on a device
+- [ ] On a device or simulator build: switch the theme (System / Light / Dark), then force-quit and
+      relaunch — the choice has to survive, and no frame should flash the wrong theme.
+- [ ] Open the sheet (the button on the home screen): check the detents, the grabber, swipe-down to
+      dismiss, and the primary action staying above the home indicator.
+- [ ] Check the native menu (Expo UI `Picker`) and the date/time picker in both themes.
+- [ ] Set the largest system text size and confirm nothing clips — the header, buttons, list rows and,
+      in Phase 2, the timeline.
+- [ ] Turn on Reduce Motion and confirm the skeleton placeholder holds still.
+
 ## Task 3.2 — rules tests
 - [ ] Run the Firestore rules tests (the emulator needs Java installed).
 

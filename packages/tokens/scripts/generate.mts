@@ -7,6 +7,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { FONT_SANS, THEME_COLOR_GROUPS, THEMES, THEME_VARIABLES } from "../src/theme.ts";
+import { RADII, SPACING, TYPE_SCALE } from "../src/scale.ts";
 import { PALETTE_ROLES } from "../src/palette-types.ts";
 import {
   paletteModule,
@@ -14,6 +15,7 @@ import {
   parseTailwindColors,
   resolvePalette,
   themeCss,
+  uniwindThemeCss,
 } from "../tools/resolve.ts";
 
 // …/packages/tokens/scripts/generate.mts → the repo root is three levels up.
@@ -32,6 +34,11 @@ const generated = join(here, "..", "generated");
 mkdirSync(generated, { recursive: true });
 writeFileSync(join(generated, "theme.css"), themeCss(THEMES, THEME_COLOR_GROUPS, FONT_SANS), "utf8");
 writeFileSync(join(generated, "palette.ts"), paletteModule(palette), "utf8");
+writeFileSync(
+  join(generated, "uniwind.css"),
+  uniwindThemeCss(THEMES, THEME_COLOR_GROUPS, { radii: RADII, spacing: SPACING, typeScale: TYPE_SCALE }),
+  "utf8",
+);
 
 const colours = Object.keys(palette);
 const sample = palette.indigo.light.block;
@@ -40,6 +47,6 @@ console.log(
     `colours: ${colours.join(", ")}`,
     `roles per colour: ${PALETTE_ROLES.length}, theme variables: ${THEME_VARIABLES.length}`,
     `sample — indigo.light.block: ${JSON.stringify(sample)}`,
-    "wrote generated/theme.css and generated/palette.ts",
+    "wrote generated/theme.css, generated/palette.ts and generated/uniwind.css",
   ].join("\n"),
 );

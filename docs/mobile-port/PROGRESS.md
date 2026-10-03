@@ -190,3 +190,43 @@ Verification (all green):
 Next step:
 - Task 1.2: the design system (Uniwind wired to the tokens, the theme preference in MMKV, Inter, the
   primitives).
+
+## 2026-10-03 — session 6: task 1.2, the design system
+
+Done:
+- **Tokens for two engines.** `packages/tokens` generates a second artefact from the same data:
+  `generated/uniwind.css` (theme variables per `@variant`, the `--color-*` mapping, and the radii,
+  spacing and type scale). It is exported as `@klndr/tokens/uniwind.css`, imported by the mobile
+  stylesheet, and pinned by a test so it cannot drift from `src/theme.ts` / `src/scale.ts`. The web's
+  `theme.css` is byte-for-byte unchanged.
+- **Uniwind.** `src/global.css` imports Tailwind, Uniwind and the tokens' stylesheet; `metro.config.js`
+  wraps the config with `withUniwindConfig` and writes `src/uniwind-types.d.ts` (committed: it is the
+  reference that gives `className` its types, and Metro regenerates it on every bundle).
+- **Theme preference** (`src/theme/preference.tsx`): system/light/dark in MMKV, applied at module scope
+  in the root layout so nothing flashes, with `resolved` coming from the platform's own scheme.
+- **Inter** (four weights) through expo-font with the splash screen held until they are ready; every
+  time in the app is `numeric` (tabular numerals).
+- **Primitives** (`src/components/ui/`): Text, Button, IconButton, TextField, Switch,
+  SegmentedControl, ListRow, Chip, Toast (with Undo), ColorSwatch, EmptyState, Skeleton, `formSheet()`,
+  and `Picker`/`DateTimePicker` over the native controls.
+- **A catalogue screen** (`app/index.tsx`) with every primitive, plus a sheet demo route
+  (`app/sheet.tsx`) and `src/icons.ts` (deep lucide imports).
+
+Verification:
+- `npm run typecheck` — exit 0 for all four workspaces. `npm test` — 294 pass (core 252, tokens 42,
+  five of them new). `npm run build` (web) — exit 0.
+- `npx expo export --platform android` — exit 0, 2148 modules, 4.45 MB Hermes bytecode. It was 6.6 MB
+  with the lucide barrel; the deep imports in `src/icons.ts` took 2.1 MB back.
+- The stylesheet the tokens produce really does generate the utilities the primitives use: compiling
+  `src/global.css` with Tailwind 4.3.3 emits `.bg-card { background-color: var(--card) }`,
+  `.text-body` with size/line-height/weight from `--text-body*`, `.rounded-md` from `--radius-md`
+  (10px), `.p-md` from `--spacing-md` (16px), `.gap-sm`, and the semantic colours — with the values
+  present in both the `.light`/`.dark` class path and the `prefers-color-scheme` path, after Uniwind's
+  `unset` placeholder.
+- Not verified here, and in HUMAN_TODO: how any of it *looks* and feels — the theme switch across a
+  relaunch, sheet detents, the native menu and picker, the largest text size, and reduce motion. That
+  needs a dev build on a device or simulator.
+
+Next step:
+- Task 1.3: auth (React Native Firebase, Google, Apple, the auth gate, demo mode), starting with the
+  platform adapters.

@@ -1,8 +1,9 @@
 const { getDefaultConfig } = require("expo/metro-config");
+const { withUniwindConfig } = require("uniwind/metro");
 const path = require("node:path");
 
 /**
- * Metro, told about the workspace.
+ * Metro, told about the workspace and about Uniwind.
  *
  * `@klndr/core` and `@klndr/tokens` ship TypeScript source (no build step), so Metro has to watch
  * the workspace root and compile them with the app's Babel preset — the same way Vite compiles them
@@ -22,4 +23,11 @@ config.resolver.nodeModulesPaths = [
 // somewhere unexpected.
 config.resolver.disableHierarchicalLookup = true;
 
-module.exports = config;
+/**
+ * `withUniwindConfig` compiles the stylesheet and generates the class name types; it has to wrap the
+ * config above, so the resolver knows about the workspace first.
+ */
+module.exports = withUniwindConfig(config, {
+  cssEntryFile: "./src/global.css",
+  dtsFile: "./src/uniwind-types.d.ts",
+});

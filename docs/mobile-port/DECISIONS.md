@@ -273,4 +273,93 @@ switching to `remote` versioning is then a one-line change.
 Every profile pins `EXPO_PUBLIC_DATA_MODE=api`, which makes the Phase 3 rule explicit at the level
 where it can actually be enforced: Firestore mode is opt-in per run, never a build default.
 
+## 2026-10-03 — 1.2: the token package generates for two engines, from one source
+
+The web app and the phone get their colours from the same data (`src/theme.ts`, `src/scale.ts`), but
+they do not get them the same way. Tailwind in a browser selects a theme with a `.dark` class; Uniwind
+in React Native selects one with a `@variant`, scoped inside `@layer theme { :root { … } }`. So the
+generator writes a second file, `generated/uniwind.css`, containing exactly that, plus the scale:
+
+- the twenty theme variables, once per variant;
+- `@theme inline` mapping them to `--color-*`, the same mapping the web's file has, so `bg-card`,
+  `text-muted-foreground`, `border-border` and the rest mean the same thing on both;
+- the scale — `--radius-*`, `--spacing-*` and `--text-*` — registered so `rounded-md`, `p-md` and
+  `text-body` are DESIGN.md's numbers on the phone too.
+
+Two details are deliberately different from the web's file. **Line height and tracking are resolved to
+points at generation time**: React Native wants `21px` where the web writes `1.5`, and `-0.75px` where
+it writes `-0.025em`, and a unitless line height would be a rendering bug rather than a small
+difference. And **there is no `--font-sans`**: a font stack is a browser idea, and React Native needs
+one exact family name, which the app's `Text` supplies from the scale's weight.
+
+The generated file is a test fixture like the others: `test/uniwind.test.ts` pins the shape and the
+computed numbers, and fails if the committed file drifts.
+
+## 2026-10-03 — 1.2: the theme is a preference the app owns, the styling is Uniwind's
+
+`Uniwind.setTheme('light' | 'dark' | 'system')` switches the CSS variables and the `dark:` variants;
+what it has no concept of is remembering that choice, so `src/theme/preference.tsx` owns it and MMKV
+stores it. Three decisions are worth stating:
+
+- **It is applied at module scope in the root layout**, not in an effect, because an effect runs after
+  the first paint and a cold start would flash the wrong theme. The same module-scope call keeps the
+  splash screen up until Inter has loaded, so no frame shows a fallback face either.
+- **"System" is resolved by asking the platform** (`useColorScheme`) rather than by reading Uniwind's
+  current theme, so `resolved` in the provider is what the screen is actually showing — and it keeps
+  up when the phone flips at dusk.
+- **Native props that take a colour and no class name** — an `ActivityIndicator`, a picker's accent,
+  a status bar — read `THEMES[resolved].values` from `@klndr/tokens` through `useThemeColors()`. The
+  data is already resolved sRGB, so no colour maths happens at runtime.
+
+The shared stylesheet is `apps/mobile/src/global.css`, which imports Tailwind, Uniwind and
+`@klndr/tokens/uniwind.css`. Tailwind scans for class names from the directory the entry file is in,
+which is `src` — where all of this app's code lives, so no `@source` directive is needed.
+
+## 2026-10-03 — 1.2: typography goes through `Text`, and the family comes from the weight
+
+React Native needs one exact family name per weight: with four static Inter files loaded, `fontWeight`
+alone does not select the right face on Android. So `Text` takes a scale step, applies its `text-*`
+utility (size, line height and tracking, from the tokens), and sets `fontFamily` from that step's
+weight through `FONT_FOR_WEIGHT`. No `font-*` utility is used anywhere in the app.
+
+Class names are always written out, never built: Tailwind finds candidates by reading the source, so
+`text-${variant}` would produce a utility that was never generated. Every prop-to-class mapping in the
+primitives is a `Record` of literal strings.
+
+Large text is a constraint on the same subject: the primitives use `minHeight` and never a fixed
+`height`, so a bigger system text size grows the control instead of clipping it.
+
+## 2026-10-03 — 1.2: the icon barrel, and 2.1 MB
+
+`import { CalendarX } from 'lucide-react-native'` pulls the whole barrel in, because Metro does not
+tree-shake: 1867 icon modules, and the Android bundle went from 3.0 MB to 6.6 MB. Importing the file
+itself (`lucide-react-native/icons/calendar-x`, which imports only the shared `createLucideIcon`)
+brings that back to 4.45 MB across 2148 modules, and leaves a bundle whose size is dominated by the
+Uniwind runtime and its compiled stylesheet rather than by icons nobody draws.
+
+`src/icons.ts` is that list — the app's whole icon vocabulary in one file, so the deep import looks
+deliberate rather than arbitrary, and adding an icon becomes a visible decision. Note that lucide's
+file names are not always the component names: there is no `trash-2`, `Trash2` is an alias of `Trash`.
+
+## 2026-10-03 — 1.2: what every primitive promises
+
+- **A role and a label.** `IconButton`'s `label` is required, not optional: an icon has no text, so it
+  is the only accessible name it will ever have. Rows, chips, swatches and pickers all name
+  themselves, and a swatch says "indigo" (the name from `@klndr/core`), not a hex value.
+- **A 44-point target**, from `MIN_TOUCH_TARGET`/`MIN_TAP_TARGET` in `components/ui/targets.ts` —
+  numbers rather than utilities, so a hit area can never depend on the stylesheet. A small colour dot
+  still gets a 44-point pressable.
+- **Press feedback that is not motion** (opacity), and a `Skeleton` that stops moving when the system
+  asks for less motion, since a pulsing rectangle is exactly what that setting is about.
+- **Sheets through `formSheet()`**, which returns Expo Router's form-sheet options with the detents and
+  the token radius, so the grabber, the swipe-to-dismiss and the detents are the platform's.
+- **Native controls behind our API.** `Picker` and `DateTimePicker` wrap Expo UI's SwiftUI/Material
+  picker and the community date/time picker, so a screen imports ours and never a vendor's: one place
+  to change if a native control has to be replaced, and the place where the accent colour and the
+  current scheme are handed over.
+
+`app/index.tsx` is the catalogue: every primitive on one screen, in whichever theme and text size the
+device is set to. It is temporary — task 1.3 puts the auth gate in front of it and Phase 2 replaces it
+with the Day tab — but it is how all of this gets looked at before there are screens to put it in.
+
 

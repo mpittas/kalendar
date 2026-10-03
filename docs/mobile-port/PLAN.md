@@ -121,17 +121,32 @@ Legend: `[ ]` todo, `[x]` done, `[~]` in progress / blocked.
       native config files (`google-services.json`, `GoogleService-Info.plist`) for store builds.
 
 ### 1.2 Design system
-- [ ] Uniwind wired to @klndr/tokens.
-- [ ] Theme preference (system/light/dark) persisted in MMKV.
-- [ ] Inter loaded via expo-font; tabular numerals for every time.
-- [ ] Primitives: Text (DESIGN.md type scale).
-- [ ] Primitives: Button (primary, secondary, ghost, destructive; 44px min height).
-- [ ] Primitives: IconButton, TextField, Switch, SegmentedControl, ListRow, Chip.
-- [ ] Primitives: Toast with an Undo action.
-- [ ] Primitives: ColorSwatch, EmptyState, Skeleton.
-- [ ] Sheets use Expo Router form-sheet presentation with detents.
-- [ ] Menus and date/time pickers use native controls (Expo UI or platform pickers).
-- [ ] Every primitive: accessibility roles/labels, respects reduce-motion, large text sizes.
+- [x] Uniwind wired to @klndr/tokens. `packages/tokens` now generates a second artefact,
+      `generated/uniwind.css`, from the same theme and scale data (Uniwind picks a theme by `@variant`,
+      not by a `.dark` class), and `apps/mobile/src/global.css` imports Tailwind, Uniwind and that file.
+      `metro.config.js` wraps the config with `withUniwindConfig`.
+- [x] Theme preference (system/light/dark) persisted in MMKV, applied before the first frame.
+- [x] Inter loaded via expo-font (the four weights the scale uses); tabular numerals through `Text`.
+- [x] Primitives: Text (DESIGN.md type scale).
+- [x] Primitives: Button (primary, secondary, ghost, destructive; 44px min height).
+- [x] Primitives: IconButton, TextField, Switch, SegmentedControl, ListRow, Chip.
+- [x] Primitives: Toast with an Undo action.
+- [x] Primitives: ColorSwatch, EmptyState, Skeleton.
+- [x] Sheets use Expo Router form-sheet presentation with detents (`formSheet()` in
+      `components/ui/sheet.ts`, demonstrated by `app/sheet.tsx`).
+- [x] Menus and date/time pickers use native controls: Expo UI's `Picker` (a SwiftUI menu / Material
+      dropdown) inside its `Host`, and the community date/time picker handed the app's accent colour
+      and the current scheme.
+- [x] Every primitive: accessibility role and label (an icon-only button cannot exist without one),
+      reduce-motion respected (Skeleton holds still), and large text left to work: no fixed heights,
+      only `minHeight`.
+- [x] Verified: the app bundles (`npx expo export --platform android`, 2148 modules); the stylesheet
+      the tokens generate really does produce the utilities used (`bg-card`, `text-body`,
+      `rounded-md`, `p-md`, `gap-sm`, semantic colours) with the values in both the class-based and the
+      system-scheme paths; root typecheck, 294 tests and the web build all pass.
+- [ ] HUMAN_TODO: try the design system on a device or simulator — theme switch and its persistence
+      across a relaunch, sheet detents, the native menu and picker, dark mode, and the largest text
+      size.
 
 ### 1.3 Auth
 - [ ] React Native Firebase auth with email/password and password reset.
