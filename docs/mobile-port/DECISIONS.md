@@ -59,3 +59,59 @@ Review notes:
 - The cleanest fix is to turn Smart App Control off, but it cannot be re-enabled without
   resetting Windows, so that is the owner's decision (see HUMAN_TODO.md).
 
+## 2026-10-03 — 0.2: what @klndr/core is, and what stayed in the web app
+
+`packages/core` ships TypeScript source and has no build step: Vite compiles it for the web app,
+Vitest compiles it for its own tests, and Metro will compile it for the mobile app.
+`apps/web/nuxt.config.ts` adds it to `build.transpile`, which Nuxt passes on to Nitro's
+`externals.inline` (`@nuxt/nitro-server` builds that list from it). Without it Nitro would treat the
+package as an external and try to `require` a `.ts` file at runtime. Verified on the build: no file
+in `.output/server` mentions `@klndr/core`, and all twelve core modules appear in its source maps.
+
+What did not move, because it belongs to the framework or to the bundler:
+- `apps/web/lib/colors.ts` keeps the Tailwind classes (`PALETTE`, `paletteOf`); the keys, the labels
+  and `canonicalColor` come from core.
+- `apps/web/lib/emojis.ts` keeps the two `emojibase-data` dynamic imports and passes `localStorage`
+  in as core's `KeyValueStorage`; grouping, search and the recent list are core's.
+- `apps/web/lib/api.ts` is three lines now: `createApiClient({ getToken: getIdToken })`.
+- `server/utils/validation.ts` keeps the two helpers that need the request (`parseId`,
+  `readJsonObject`) and re-exports the pure ones, so nitro's auto-imports still find them under
+  `server/utils`. Checked in the regenerated `.nuxt/types/nitro-imports.d.ts`.
+- `useCategories` keeps the shared Vue state; the pure helpers (`withImplicitCategories`,
+  `sortCategoriesByName`, `colorOfCategory`, `nextCategoryColor`, `CategoryEntry`) are core's.
+- `useTimelineHistory` keeps only the Vue wiring around core's `TimelineHistory`.
+- The `Store` interface moved; its two implementations stayed (they become `createStore(db)` in 3.1).
+
+## 2026-10-03 — 0.2: the markdown split, and why the AST is by block
+
+The plan asks for a parser with a small AST and a byte-identical HTML renderer. Here the split is by
+block: `parseMarkdown(source)` returns paragraphs, headings, rules, quotes, fenced code and lists
+(each item keeping its source line, its indentation and its checkbox), and `renderMarkdownHtml(blocks)`
+turns that back into HTML.
+
+Inline markup is deliberately not a tree. The inline passes (code spans, links, strong, em, del) are
+global and ordered, and they are allowed to span a code span or wrap a link label — `**`code`**` has
+to come out as `<strong><code>code</code></strong>`, and `[*x*](url)` emphasises inside the link — so
+a tree built by a left-to-right tokeniser would produce different HTML in those cases. `renderInlineHtml`
+is exported for the renderer to use, and the whole output is pinned by 53 fixtures generated from the
+implementation *before* it moved (`packages/core/test/fixtures/markdown-cases.ts`; regenerate on
+purpose, never to make a test pass). If 2.3 wants inline nodes for the native preview, those fixtures
+are the contract to keep.
+
+## 2026-10-03 — 0.2: Vitest 5.0.3, and a lockfile that only grew
+
+Vitest 5.0.3 accepts Vite 6, 7 or 8, and the repo already had Vite 8.3.1, so nothing was duplicated
+and no new native binary was pulled in — the Smart App Control problem only ever hit
+`oxc-parser@0.143.0`. The install added 14 packages and 260 lockfile lines, all additions: the
+`oxc-parser` pin and every other pinned version are untouched, so the fragile part of the 0.1
+workaround is intact.
+
+## 2026-10-03 — 0.2: tooling used for the move itself
+
+The import rewrite (37 files importing the four moved modules) was done with a one-shot codemod that
+merges each file's moved imports into a single `@klndr/core` statement and wraps the long ones. Its
+first version was wrong — its statement regex matched across import statements and mangled the
+formatting — so the affected files were reverted from git and the codemod fixed to match whole
+statements by line before being re-run. The markdown fixtures were generated the same way: a one-shot
+script run against the old implementation, then deleted. Neither script is part of the repo.
+

@@ -34,3 +34,53 @@ Environment issue found and worked around (see DECISIONS.md and HUMAN_TODO.md):
 
 Next step:
 - Task 0.2: create `packages/core`, move the shared pure logic, add Vitest.
+
+## 2026-10-03 — session 2: task 0.2 packages/core (@klndr/core)
+
+Done:
+- Added `packages/core` (`@klndr/core`): TypeScript source, no build step, so Vite compiles it for
+  the web app (client and server), Vitest compiles it for its own tests, and Metro will compile it
+  for the mobile app. It holds the types and constants, time, layout, the pure validation helpers,
+  the profile model, the colour keys/labels/canonicalisation, the pure category helpers, emoji
+  search and recents (behind an injected `KeyValueStorage`), markdown, the API client
+  (`createApiClient({ baseUrl, getToken })`), the `Store` interface with its limits, and the timeline
+  undo engine (`TimelineHistory`, a plain class with `subscribe`).
+- `apps/web` imports from `@klndr/core` now. The four moved modules (`lib/types.ts`, `lib/time.ts`,
+  `lib/layout.ts`, `lib/markdown.ts`) are gone; everything bound to the framework or the bundler
+  stayed behind as a thin adapter: `lib/colors.ts` (Tailwind classes), `lib/emojis.ts` (the dataset
+  imports plus `localStorage` as the injected storage), `lib/api.ts` (origin plus Firebase token),
+  `server/utils/validation.ts` (the two h3 helpers, re-exporting the pure ones for auto-imports),
+  `useCategories` (shared Vue state), `useTimelineHistory` (a wrapper over the engine), and `useAuth`
+  (re-exports the profile model).
+- `build.transpile: ["@klndr/core"]` in nuxt.config.ts, which Nuxt also passes to Nitro's
+  `externals.inline`.
+- Vitest 5.0.3 in `packages/core`, with 10 suites and 251 tests, including 53 markdown fixtures
+  generated from the implementation before it moved.
+
+Verification (all green):
+- `npm install` at the root — exit 0, +14 packages. `package-lock.json` grew by 260 lines of
+  additions only: the `oxc-parser` pin and every other pinned version are untouched.
+- `npm run typecheck -w packages/core` — exit 0. `npm test -w packages/core` — 251 passed (10 files).
+- `npm run typecheck -w apps/web` — exit 0 with vue-tsc, both before and after `nuxt prepare`
+  regenerated the types.
+- Auto-imports survive the move: the regenerated `.nuxt/types/nitro-imports.d.ts` still exports
+  MAX_TITLE, clampStart, cleanText, isDocId, … from `server/utils/validation`, and `imports.d.ts`
+  still offers PROFILE_LIMITS, UserProfile, useCategories from the composables (re-exports are read).
+- `npm run build -w apps/web` — exit 0, 10 MB / 2.43 MB gzip (unchanged). No file in `.output/server`
+  references `@klndr/core`, and all twelve core modules appear in its source maps, so Nitro inlined
+  and compiled the TypeScript.
+- Dev server (`nuxt dev`, port 3211): health, notes get/put, day checklist, activities, categories and
+  tasks get/post/patch/delete all behave, including core's behaviour end to end — a task created with
+  startMinutes 537, duration 37, colour "chartreuse", empty emoji and category came back as
+  540 / 30 / indigo / 📌 / General; an unusable `?day=` is a 400; notes over 20,000 characters are a
+  413. `/`, `/day/2026-10-03`, `/login` and `/calendar` all render (200).
+- Built server (`.output/server/index.mjs`, port 3212): `/api/health` → 200 `{"ok":true}`,
+  `/` → 200 with 342 KB of SSR markup (the landing page calls core's formatTimeRange/gutterLabel),
+  `/day/2026-10-03` → 200. `/api/notes` is a 503 without Firebase config, which is the existing
+  fail-closed behaviour of a production build, so the credential-free endpoint checks above ran
+  against the dev server.
+- Stopped every server this session started, and also a stale `.output/server/index.mjs` process left
+  over from session 1's verification (it held no port; nothing else was running).
+
+Next step:
+- Task 0.3: `packages/tokens` (@klndr/tokens) with `culori`.

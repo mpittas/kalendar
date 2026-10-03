@@ -25,23 +25,27 @@ Legend: `[ ]` todo, `[x]` done, `[~]` in progress / blocked.
 - [ ] HUMAN_TODO: if the web app is served by Firebase Hosting, point it at `apps/web`.
 
 ### 0.2 packages/core (@klndr/core)
-- [ ] Move: types and constants, time, layout.
-- [ ] Move: pure validation helpers and the profile model.
-- [ ] Move: color keys, labels and canonicalization (Tailwind classes stay in web).
-- [ ] Move: category helpers.
-- [ ] Move: emoji search and recents, behind an injected key-value storage interface.
-- [ ] Move: markdown, split into a parser (small AST) and an HTML renderer (byte-identical).
-- [ ] Move: API client as `createApiClient({ baseUrl, getToken })`.
-- [ ] Move: the `Store` interface and its types.
-- [ ] Move: undo/redo engine from useTimelineHistory as a plain class with `subscribe`
+- [x] Move: types and constants, time, layout.
+- [x] Move: pure validation helpers and the profile model.
+- [x] Move: color keys, labels and canonicalization (Tailwind classes stay in web).
+- [x] Move: category helpers.
+- [x] Move: emoji search and recents, behind an injected key-value storage interface.
+- [x] Move: markdown, split into a parser (small AST) and an HTML renderer (byte-identical).
+- [x] Move: API client as `createApiClient({ baseUrl, getToken })`.
+- [x] Move: the `Store` interface and its types.
+- [x] Move: undo/redo engine from useTimelineHistory as a plain class with `subscribe`
       (the Vue composable becomes a thin wrapper).
-- [ ] Nuxt (incl. the Nitro server build) compiles the TypeScript source; Metro must too.
-- [ ] Acceptance: web imports from `@klndr/core` and behaves the same.
-- [ ] Vitest: time, layout (layoutDay, columnsBeside, lanesFor, withLanes).
-- [ ] Vitest: markdown parity on fixtures, toggleTaskLine.
-- [ ] Vitest: validation.
-- [ ] Vitest: profile cleanPatch.
-- [ ] Vitest: the undo engine.
+- [x] Nuxt (incl. the Nitro server build) compiles the TypeScript source; Metro must too.
+- [x] Acceptance: web imports from `@klndr/core` and behaves the same.
+- [x] Vitest: time, layout (layoutDay, columnsBeside, lanesFor, withLanes).
+- [x] Vitest: markdown parity on fixtures, toggleTaskLine.
+- [x] Vitest: validation.
+- [x] Vitest: profile cleanPatch.
+- [x] Vitest: the undo engine.
+- [x] Also covered: colour canonicalization, the category helpers, emoji search and recents, and the
+      API client (URL building, token, error mapping) — 10 suites, 251 tests.
+- [x] Logged in DECISIONS.md: the markdown AST is by block and inline markup stays one ordered pass
+      (so the HTML stays byte-identical), and what stayed in the web app as a thin adapter.
 
 ### 0.3 packages/tokens (@klndr/tokens)
 - [ ] Light and dark theme colors (exact values from apps/web/assets/css/main.css).
