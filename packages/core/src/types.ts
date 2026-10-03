@@ -72,4 +72,3 @@ export const DAY_END_MINUTES = 24 * 60;
 export const SLOT_MINUTES = 30;
 export const SNAP_MINUTES = 15; // blocks move and resize in quarter-hour steps
 export const SLOT_HEIGHT = 48; // px per half hour row
-

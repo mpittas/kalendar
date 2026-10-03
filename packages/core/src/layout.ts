@@ -1,4 +1,4 @@
-import type { ScheduledTask } from "~/lib/types";
+import type { ScheduledTask } from "./types";
 
 /** What laying blocks out side by side needs to know about each one. */
 type Block = Pick<ScheduledTask, "id" | "startMinutes" | "durationMinutes" | "lane">;
