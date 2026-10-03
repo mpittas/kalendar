@@ -48,15 +48,21 @@ Legend: `[ ]` todo, `[x]` done, `[~]` in progress / blocked.
       (so the HTML stays byte-identical), and what stayed in the web app as a thin adapter.
 
 ### 0.3 packages/tokens (@klndr/tokens)
-- [ ] Light and dark theme colors (exact values from apps/web/assets/css/main.css).
-- [ ] Radii, spacing and the type scale.
-- [ ] Every palette role in lib/colors.ts for all 12 colors (block, blockDone, chip, dot,
+- [x] Light and dark theme colors (exact values from apps/web/assets/css/main.css).
+- [x] Radii, spacing and the type scale.
+- [x] Every palette role in lib/colors.ts for all 12 colors (block, blockDone, chip, dot,
       accent, selected, ghost, icon, meta, check: background, border, text) as concrete sRGB
       for light and dark.
-- [ ] Resolve the palette: read Tailwind v4 oklch from tailwindcss/theme.css, apply alpha
+- [x] Resolve the palette: read Tailwind v4 oklch from tailwindcss/theme.css, apply alpha
       modifiers, compute `color-mix(in oklab, …)` exactly with culori.
-- [ ] Generate the CSS-variable blocks main.css imports, without changing any computed value.
-- [ ] Acceptance: tests pin a sample of resolved colors; the web's CSS variables are unchanged.
+- [x] Generate the CSS-variable blocks main.css imports, without changing any computed value.
+- [x] Acceptance: tests pin a sample of resolved colors; the web's CSS variables are unchanged.
+- [x] The theme data is the source of truth in `src/theme.ts`; `npm run generate -w packages/tokens`
+      writes `generated/theme.css` (which main.css imports) and `generated/palette.ts` (the palette as
+      data). Tests fail if either drifts, and `culori` is a devDependency only, so no app computes
+      colours at runtime.
+- [x] Logged in DECISIONS.md: Tailwind v4's oklch palette resolves to values that differ from the v3
+      hexes (indigo-500 is #615fff, not #6366f1), and how a plain versus a `dark:` utility resolves.
 
 ### 0.4 Store compliance in the web app and server
 - [ ] Account deletion: "Delete account" section on the profile page (typed confirmation +

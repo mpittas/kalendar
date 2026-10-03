@@ -84,3 +84,33 @@ Verification (all green):
 
 Next step:
 - Task 0.3: `packages/tokens` (@klndr/tokens) with `culori`.
+
+## 2026-10-03 — session 3: task 0.3 packages/tokens (@klndr/tokens)
+
+Done:
+- Added `packages/tokens` (`@klndr/tokens`): the light and dark theme (the exact values main.css
+  used), the radii, the spacing steps and the type scale from DESIGN.md, and every palette role of
+  all twelve colours resolved to concrete sRGB for both themes.
+- `src/theme.ts` is the source of truth for the theme; `scripts/generate.mts` writes
+  `generated/theme.css` (the `:root`, `.dark` and `@theme inline` blocks the web app now imports) and
+  `generated/palette.ts` (the palette as plain data, so no app does colour maths at runtime).
+- The generator reads the palette *classes* from `apps/web/lib/colors.ts` and the oklch *values* from
+  Tailwind's own `theme.css`, resolves `color-mix(in oklab, …)` and the `/NN` alpha modifiers with
+  culori (devDependency only; `@types/culori` was needed because culori ships no types), and applies
+  CSS Color 4's sRGB gamut mapping. Anything it cannot read makes it throw, so a new class cannot
+  slip through silently.
+- `apps/web/assets/css/main.css` lost 83 lines and now has `@import "@klndr/tokens/theme.css";`.
+
+Verification (all green):
+- `npm run typecheck` (web + core + tokens) — exit 0. `npm test` — core 251 + tokens 37 = 288 tests.
+- The generated CSS is byte-identical to the blocks that were in main.css (2165 chars, 83 lines),
+  and pinned as a fixture in `packages/tokens/test/fixtures/theme-css.css`.
+- Build: `npm run build -w apps/web` — exit 0. Comparing the build before the move with the build
+  after it, the **whole inlined stylesheet of `/` is byte-identical** (182 587 bytes, same SHA-256),
+  and every asset URL in the HTML is the same; only Nuxt's per-build `buildId` differs. So the web
+  app renders exactly as before, in both the production build and the dev server (checked the dev
+  stylesheet separately: both themes' variables are served there too).
+- Dev server `/api/health` → 200 with the tokens import in place.
+
+Next step:
+- Task 0.4: store compliance (account deletion, the `DELETE /api/account` path, Sign in with Apple).

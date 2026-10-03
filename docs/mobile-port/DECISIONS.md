@@ -115,3 +115,55 @@ formatting — so the affected files were reverted from git and the codemod fixe
 statements by line before being re-run. The markdown fixtures were generated the same way: a one-shot
 script run against the old implementation, then deleted. Neither script is part of the repo.
 
+## 2026-10-03 — 0.3: how @klndr/tokens is built
+
+`packages/tokens` has three inputs and two generated outputs. `src/theme.ts` is the theme's single
+source of truth; `apps/web/lib/colors.ts` stays the place the palette classes live (the generator
+reads the file and parses the object literal, so there is no second copy to keep in sync); and
+Tailwind's own `theme.css` is what those classes name, because that is what a browser resolves them
+to at runtime.
+
+`npm run generate -w packages/tokens` writes two committed files: `generated/theme.css` (which
+`main.css` imports as `@klndr/tokens/theme.css`) and `generated/palette.ts` (the palette as data).
+Both are in git, so the web build needs no pre-step and a reviewer can read the diff; tests re-run the
+generator's pure functions and fail if either file drifts. `culori` (and `@types/culori`, because
+culori ships no types) is a devDependency — the apps read plain numbers and never do colour maths.
+
+Moving `@theme inline` into an imported file was the one real risk in this, because Tailwind builds
+its utilities from it. It is fine: the built stylesheet is byte-identical (see PROGRESS.md).
+
+## 2026-10-03 — 0.3: Tailwind v4's palette resolves to different sRGB than the v3 hexes
+
+Tailwind v4 defines its palette in oklch, and converting those values to sRGB does **not** return the
+hexes the v3 palette is remembered by: `indigo-500` is `oklch(58.5% 0.233 277.117)`, which resolves to
+`#615fff`, not `#6366f1`, and `rose-500` resolves to `#ff2056`, not `#f43f5e`. The low-chroma steps
+(`indigo-50`, `slate-200`) do match their published hexes; the saturated mid-tones do not, because v4
+re-derived them in oklch.
+
+These tokens therefore describe what the web app actually paints: a browser resolves
+`--color-indigo-500` to that oklch value and gamut-maps it to sRGB, which is what the generator does
+with culori's `toGamut("rgb", "oklch")` (CSS Color 4's algorithm, the default `toGamut` arguments).
+
+Two things follow. The values are sRGB, so on a P3 display the rendered colour is more saturated than
+what the tokens say — if the phone should use the wide-gamut colour, that is a Phase 2 decision. And
+the pinned tests use resolved values, not the remembered hexes.
+
+## 2026-10-03 — 0.3: how a palette class becomes a value
+
+- A plain utility (`bg-indigo-50`) applies in **both** themes; only a `dark:` one applies in the dark
+  theme alone. Resolving dark therefore starts from the plain utilities and lets the `dark:` ones
+  override them, and because the class lists keep their `dark:` utilities last, applying them in order
+  lands where the cascade does. (Reading plain utilities as light-only would have left `dot`,
+  `swatch`, `accent` and half of `selected` empty in dark mode.)
+- An `/NN` alpha modifier becomes an 8-digit hex (`border-indigo-200/80` → `#c6d2ffcc`), which is what
+  a phone paints without extra work. Every role also resolves its `hover:` variants so the data is
+  complete; the mobile app has no pointer, so it simply will not use them.
+- `color-mix(in oklab, var(--color-x-500) 16%, var(--background))` is computed in oklab with exactly
+  those weights: 0% returns the colour it is mixed over, 100% returns the colour itself, and both are
+  asserted (a check that needs no external oracle).
+- The generator throws on anything it cannot read — an unknown Tailwind colour, a utility that is not
+  `bg-`/`border-`/`text-`, a `color-mix` in another colour space — so adding a class the resolver does
+  not understand fails loudly instead of quietly emitting a wrong colour.
+- `swatch` is resolved too, even though it only repeats `dot`'s colour, because it is a role in the
+  web palette and leaving a hole would invite a second source of truth.
+
