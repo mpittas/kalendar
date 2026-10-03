@@ -91,18 +91,34 @@ Legend: `[ ]` todo, `[x]` done, `[~]` in progress / blocked.
 ## Phase 1 — mobile foundation
 
 ### 1.1 Create apps/mobile
-- [ ] `create-expo-app` (latest stable SDK, TypeScript, Expo Router).
-- [ ] app.config.ts: name "klndr", scheme "klndr", portrait, automatic light/dark.
-- [ ] app.config.ts: iOS bundle id + Android package from one constant, placeholder
+- [x] `create-expo-app` (SDK 57, TypeScript, Expo Router). The template's demo screens, components
+      and images were removed, and the package is `@klndr/mobile` inside the workspace.
+- [x] app.config.ts: name "klndr", scheme "klndr", portrait, automatic light/dark.
+- [x] app.config.ts: iOS bundle id + Android package from one constant (`BUNDLE_ID`), placeholder
       "com.klndr.app".
-- [ ] app.config.ts: Apple sign-in capability, Android edge-to-edge.
-- [ ] app.config.ts: typed env vars EXPO_PUBLIC_API_BASE_URL, EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-      EXPO_PUBLIC_DEMO_MODE, EXPO_PUBLIC_DATA_MODE.
-- [ ] app.config.ts: Firebase native config file paths from env vars.
-- [ ] eas.json: development (dev client, internal distribution), preview, production.
-- [ ] Acceptance: web typecheck still passes (scope apps/web compilerOptions.types if
-      @types/react leaks in).
+- [x] app.config.ts: Apple sign-in capability (`ios.usesAppleSignIn`), Android edge-to-edge — which
+      SDK 57 turns on unconditionally, so the key no longer exists and the reason is a comment.
+- [x] app.config.ts: typed env vars EXPO_PUBLIC_API_BASE_URL, EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      EXPO_PUBLIC_DEMO_MODE, EXPO_PUBLIC_DATA_MODE, read once through `src/env.ts` and listed in
+      `.env.example` (`.env` is gitignored).
+- [x] app.config.ts: Firebase native config file paths from env vars (GOOGLE_SERVICES_JSON,
+      GOOGLE_SERVICES_INFO_PLIST). Both files are gitignored and are left out of the config when
+      absent, so a checkout without them still starts (in demo mode).
+- [x] eas.json: development (dev client, internal distribution), preview, production. Every profile
+      pins `EXPO_PUBLIC_DATA_MODE=api`, so "api" stays the default (PLAN 3.4).
+- [x] metro.config.js: the workspace root is watched and both `node_modules` trees form the
+      resolution path, so Metro compiles `@klndr/core` and `@klndr/tokens` from TypeScript source —
+      the acceptance task 0.2 left open. Proven below.
+- [x] Acceptance: web typecheck still passes, unchanged; `@types/react` does not leak from the
+      hoisted mobile dependencies.
+- [x] Verified `npx expo export --platform android`: 1260 modules, 2.7 MB Hermes bytecode, and the
+      source map lists all 12 `@klndr/core` and all 5 `@klndr/tokens` modules.
+- [x] Deviation logged: the mobile tsconfig names its `types` explicitly ("expo/types" for the CSS
+      and asset imports, "node" for app.config.ts), because the generated `expo-env.d.ts` is
+      gitignored — see DECISIONS.md.
 - [ ] HUMAN_TODO: confirm the bundle id before the first store build.
+- [ ] HUMAN_TODO: `eas init` (needs an Expo account) before the first EAS build, and the Firebase
+      native config files (`google-services.json`, `GoogleService-Info.plist`) for store builds.
 
 ### 1.2 Design system
 - [ ] Uniwind wired to @klndr/tokens.

@@ -36,6 +36,13 @@ Things only the owner can do, grouped by what each item unblocks. Exact steps gi
 ## Task 1.1 — mobile app identity
 - [ ] Confirm the iOS bundle id / Android package (placeholder `com.klndr.app`). It cannot
       change after the first store release.
+- [ ] `eas init` once you have an Expo account (it writes the EAS project id). `eas.json` currently
+      uses `"appVersionSource": "local"` so builds work without a project; switch it to `remote` if
+      you would rather EAS own the build numbers.
+- [ ] Put the Firebase native config files in `apps/mobile/` (`google-services.json`,
+      `GoogleService-Info.plist`) for store builds, or point `GOOGLE_SERVICES_JSON` /
+      `GOOGLE_SERVICES_INFO_PLIST` at them. They are gitignored, so EAS needs them as file
+      environment variables.
 
 ## Task 3.2 — rules tests
 - [ ] Run the Firestore rules tests (the emulator needs Java installed).

@@ -21,6 +21,12 @@
       },
       "port": 3100,
       "autoPort": true
+    },
+    {
+      "name": "mobile",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "-w", "apps/mobile"],
+      "port": 8081
     }
   ]
 }

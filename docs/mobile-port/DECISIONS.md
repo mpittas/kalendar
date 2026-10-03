@@ -204,3 +204,73 @@ emojis. The deletion page gives the in-app steps and an email route for someone 
 in. The policy is marked DRAFT and carries `[COMPANY LEGAL NAME]`, `[CONTACT EMAIL]` and `[DATE]`
 placeholders — HUMAN_TODO, for the owner to fill in before the app is published.
 
+## 2026-10-03 — 1.1: keep the template's shape, throw away its content
+
+`create-expo-app`'s `default` template (SDK 57, TypeScript, Expo Router) is worth keeping for its
+skeleton: the `src/app` router root, the tsconfig that extends `expo/tsconfig.base`, the Metro and
+Babel setup, `.gitignore`, and the placeholder icons the stores require. Its *content* is a demo:
+tabs, an explore screen, themed-text/themed-view, an animated splash, Expo's own colours and a
+`reset-project` script. All of it was deleted here rather than left to rot, because every part of it
+would be replaced by the design system in 1.2 and the screens in Phase 2, and a demo tab bar in the
+repo makes the real structure harder to see.
+
+Two things also went that a template includes by default: the Expo *web* target (`react-native-web`,
+`react-dom`, the `web` script) — the plan keeps the Nuxt app as the only web app — and the demo-only
+packages (`expo-device`, `expo-symbols`, `expo-glass-effect`).
+
+## 2026-10-03 — 1.1: app.config.ts, typed, with the identity in one constant
+
+`app.json` was replaced by `app.config.ts` for three reasons:
+
+- **Type checking.** `export default (): ExpoConfig => …` means a misspelled key is a compile error,
+  which is how `android.edgeToEdgeEnabled` was caught: SDK 57 turns edge-to-edge on unconditionally
+  and the key no longer exists in the config types, so it is a comment now instead of a dead setting.
+- **One identity.** The iOS bundle id and the Android package must agree, and neither can change
+  after the first store release, so both read `BUNDLE_ID`.
+- **Conditional bits.** The two Firebase native config files are only added to the config when the
+  file is actually on disk. That keeps the app startable on a machine without them (it runs in demo
+  mode), while the path still comes from `GOOGLE_SERVICES_JSON` / `GOOGLE_SERVICES_INFO_PLIST` for
+  builds. `npx expo config --type public` is the way to see what a build would actually use.
+
+Both files are gitignored: they are per-environment project configuration, EAS supplies them per
+build profile, and `app.config.ts` is where the names are documented.
+
+The `EXPO_PUBLIC_*` values are a different kind of setting: Expo inlines them into the bundle, so
+they are read once in `src/env.ts` (typed, with the defaults made explicit) rather than looked up at
+the point of use.
+
+## 2026-10-03 — 1.1: Metro has to be told about the workspace
+
+`@klndr/core` and `@klndr/tokens` ship TypeScript source and no build step (DECISIONS, 0.2), which
+is exactly what the web app wants — Vite compiles them. Metro, by default, only watches its own
+project directory, so it would find neither package. `metro.config.js` therefore adds the workspace
+root to `watchFolders`, lists both `node_modules` directories in `resolver.nodeModulesPaths`, and
+sets `disableHierarchicalLookup` so a dependency can only ever resolve from those two places.
+
+That is Metro *compiling* the shared source, not reading a build artifact, and the proof is the
+export: `npx expo export --platform android` bundles 1260 modules and its source map lists all 12
+core and all 5 tokens modules. This closes the acceptance task 0.2 left open.
+
+## 2026-10-03 — 1.1: why the mobile tsconfig names its types
+
+`expo/tsconfig.base` includes DOM and ESNext but no `types`, and Expo's own type package is meant to
+arrive through the generated `expo-env.d.ts`. That file is gitignored (Expo regenerates it), so a
+fresh checkout cannot rely on it: the app's CSS import failed to typecheck and `app.config.ts` had no
+`node:fs`. The tsconfig now says `"types": ["expo/types", "node"]` — `expo/types` declares the CSS
+and asset imports the bundler handles, `node` covers `app.config.ts` (which runs under Node, not in
+the app) — and `@types/node` is a devDependency of the mobile package.
+
+The web app needed no change: `@types/react`, hoisted for React Native, does not leak into it, and
+`npm run typecheck` (all four workspaces) passes.
+
+## 2026-10-03 — 1.1: eas.json before there is an EAS project
+
+`eas.json` describes three profiles — development (a dev client, internal distribution), preview
+(internal distribution) and production — and `appVersionSource` is `local` because there is no Expo
+account behind this repository yet, so a project id would be a lie. `eas init` is in HUMAN_TODO;
+switching to `remote` versioning is then a one-line change.
+
+Every profile pins `EXPO_PUBLIC_DATA_MODE=api`, which makes the Phase 3 rule explicit at the level
+where it can actually be enforced: Firestore mode is opt-in per run, never a build default.
+
+

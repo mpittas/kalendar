@@ -150,3 +150,43 @@ Verification (all green):
 
 Next step:
 - CHECKPOINT A: stop and report. Then Phase 1 (`apps/mobile`).
+
+## 2026-10-03 — session 5: task 1.1, `apps/mobile` exists
+
+Done:
+- `apps/mobile`: Expo SDK 57 with Expo Router and TypeScript, from `create-expo-app`'s default
+  template, with the demo content removed and the package renamed `@klndr/mobile` so it sits in the
+  workspace beside `@klndr/web`, `@klndr/core` and `@klndr/tokens`. The template's Expo *web* target
+  and its demo-only dependencies went too: this app is iOS and Android.
+- `app.config.ts` replaces the template's `app.json`: the identity (name, slug, scheme "klndr",
+  portrait, automatic light/dark), the bundle id and the Android package from one `BUNDLE_ID`
+  constant, the Apple sign-in capability, and the two Firebase native config files, read from
+  `GOOGLE_SERVICES_JSON` / `GOOGLE_SERVICES_INFO_PLIST` and left out entirely when they are not
+  there, so a checkout without them still starts.
+- `src/env.ts` reads the four `EXPO_PUBLIC_*` values once and types them; `.env.example` lists them
+  and `.env` is gitignored.
+- `eas.json` has the three profiles — development (dev client, internal distribution), preview,
+  production — and all of them pin `EXPO_PUBLIC_DATA_MODE=api`.
+- `metro.config.js` tells Metro about the monorepo: the workspace root is watched and both
+  `node_modules` trees are the resolution path, with hierarchical lookup off.
+- `src/app/index.tsx` is a placeholder that uses `@klndr/core` (the date, the clock, the slot
+  length) and `@klndr/tokens` (the theme, radii, spacing, type scale), which is what makes the
+  bundle a real test of both packages. Task 1.2 replaces it.
+- `.claude/launch.json` gained a "mobile" configuration (`npm run start -w apps/mobile`, port 8081)
+  and the mobile README describes the commands and the environment.
+
+Verification (all green):
+- `npm run typecheck` (web + mobile + core + tokens) — exit 0. Mobile's tsconfig had to name its
+  `types` explicitly and take `@types/node` for `app.config.ts` (see DECISIONS.md).
+- `npm test` — 289 tests. `npm run build` (web) — exit 0, unchanged after the new dependencies were
+  hoisted; no `@types/react` leak into `apps/web`.
+- `npx expo config --type public` — the resolved config shows name/slug/scheme/portrait/automatic,
+  both identifiers, `usesAppleSignIn`, the splash plugin and the experiments.
+- `npx expo export --platform android` — 1260 modules, 2.7 MB Hermes bytecode, and the source map
+  lists all 12 `@klndr/core` and all 5 `@klndr/tokens` modules. Metro compiles the shared TypeScript:
+  the acceptance task 0.2 was holding open.
+- The export's `dist/` was deleted afterwards; nothing else was left behind.
+
+Next step:
+- Task 1.2: the design system (Uniwind wired to the tokens, the theme preference in MMKV, Inter, the
+  primitives).

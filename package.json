@@ -10,7 +10,9 @@
   "scripts": {
     "dev": "npm run dev -w apps/web",
     "build": "npm run build -w apps/web",
-    "typecheck": "npm run typecheck -w apps/web && npm run typecheck -w packages/core && npm run typecheck -w packages/tokens",
+    "typecheck": "npm run typecheck -w apps/web && npm run typecheck -w apps/mobile && npm run typecheck -w packages/core && npm run typecheck -w packages/tokens",
+    "typecheck:web": "npm run typecheck -w apps/web",
+    "typecheck:mobile": "npm run typecheck -w apps/mobile",
     "test": "npm run test -w packages/core && npm run test -w packages/tokens",
     "generate": "npm run generate -w packages/tokens"
   },
