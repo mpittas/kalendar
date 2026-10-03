@@ -457,6 +457,16 @@ class MemoryStore implements Store {
     this.notes.set(day, next);
     return next;
   }
+
+  /** Forget everything this user had: in memory there are no documents to delete one by one. */
+  async deleteAccount() {
+    this.templates = [];
+    this.categories = [];
+    this.tasks = [];
+    this.checklistItems = [];
+    this.checklistDays.clear();
+    this.notes.clear();
+  }
 }
 
 // One in-memory store per user, so the dev fallback keeps the same isolation.
@@ -526,6 +536,17 @@ const checklistSeededUsers = new Set<string>();
 const categorySeededUsers = new Set<string>();
 
 class FirestoreStore implements Store {
+  /** Every collection under `users/{uid}`; the profile document itself is not one of them. */
+  private static readonly COLLECTIONS = [
+    "templates",
+    "categories",
+    "tasks",
+    "checklist_items",
+    "checklist_days",
+    "day_notes",
+    "meta",
+  ] as const;
+
   private readonly base: string;
 
   constructor(
@@ -1050,6 +1071,40 @@ class FirestoreStore implements Store {
     } catch (err) {
       rethrow(err);
     }
+  }
+
+  /**
+   * Delete everything this user owns, and the profile document last: if that fails half way, the
+   * leftovers still belong to a profile that says who owns them. Each collection is emptied in
+   * batches, so an account of any size goes, and the in-memory seed markers are forgotten so a new
+   * account starts afresh.
+   */
+  async deleteAccount() {
+    try {
+      for (const collection of FirestoreStore.COLLECTIONS) await this.empty(collection);
+      await this.fs.commit([{ op: "delete", path: this.base, mustExist: false }]);
+      seededUsers.delete(this.userId);
+      checklistSeededUsers.delete(this.userId);
+      categorySeededUsers.delete(this.userId);
+    } catch (err) {
+      rethrow(err);
+    }
+  }
+
+  /** Delete one collection's documents, a batch at a time, until none is left. */
+  private async empty(collectionId: string) {
+    for (let round = 0; round < 50; round += 1) {
+      const docs = await this.fs.query(this.base, collectionId, [], 300);
+      if (!docs.length) return;
+      await this.fs.commit(
+        docs.map(({ id }) => ({
+          op: "delete" as const,
+          path: `${this.base}/${collectionId}/${id}`,
+          mustExist: false,
+        })),
+      );
+    }
+    console.warn(`Stopped emptying ${this.base}/${collectionId}: still not empty after 50 rounds`);
   }
 }
 

@@ -68,7 +68,8 @@ function decodeDoc(raw: RawDoc): FsDoc {
 export type Write =
   | { op: "create"; path: string; data: Record<string, unknown>; serverTimes?: string[] }
   | { op: "update"; path: string; data: Record<string, unknown>; serverTimes?: string[] }
-  | { op: "delete"; path: string };
+  /** `mustExist: false` deletes unconditionally, which is what emptying a collection needs. */
+  | { op: "delete"; path: string; mustExist?: boolean };
 
 export type Filter = { field: string; op: "EQUAL" | "GREATER_THAN_OR_EQUAL" | "LESS_THAN_OR_EQUAL"; value: string };
 
@@ -139,7 +140,10 @@ export class Firestore {
       writes: writes.map((write) => {
         const name = `${this.root}/${write.path}`;
         if (write.op === "delete") {
-          return { delete: name, currentDocument: { exists: true } };
+          return {
+            delete: name,
+            ...(write.mustExist === false ? {} : { currentDocument: { exists: true } }),
+          };
         }
         const fields = Object.fromEntries(Object.entries(write.data).map(([k, v]) => [k, encode(v)]));
         return {
