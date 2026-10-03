@@ -14,21 +14,6 @@ export const MONTH_LABELS = [
   "December",
 ];
 
-export const MONTH_SHORT_LABELS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
 /** Format a Date as a local `YYYY-MM-DD` string. */
 export function toISODate(date: Date): string {
   const y = date.getFullYear();
@@ -66,16 +51,6 @@ export function getMonthIndex(iso: string): number {
   return parseISODate(iso).getMonth();
 }
 
-export function generateYearOptions(centerYear: number, span = 10): number[] {
-  const start = centerYear - span;
-  const end = centerYear + span;
-  const years: number[] = [];
-  for (let y = start; y <= end; y++) {
-    years.push(y);
-  }
-  return years;
-}
-
 export function addDaysISO(iso: string, days: number): string {
   const date = parseISODate(iso);
   date.setDate(date.getDate() + days);
@@ -86,16 +61,6 @@ export function addMonths(iso: string, months: number): string {
   const date = parseISODate(iso);
   date.setDate(1);
   date.setMonth(date.getMonth() + months);
-  return toISODate(date);
-}
-
-export function addYears(iso: string, years: number): string {
-  const date = parseISODate(iso);
-  const day = date.getDate();
-  date.setDate(1);
-  date.setFullYear(date.getFullYear() + years);
-  const maxDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  date.setDate(Math.min(day, maxDay));
   return toISODate(date);
 }
 

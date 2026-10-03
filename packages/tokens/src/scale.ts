@@ -42,9 +42,3 @@ export const TYPE_SCALE = {
 } as const satisfies Record<string, TypeStyle>;
 
 export type TypeScaleName = keyof typeof TYPE_SCALE;
-
-/**
- * DESIGN.md asks for tabular numerals wherever a clock time or a duration is shown, so digits
- * don't shuffle as the clock ticks. React Native wants it as a font variant.
- */
-export const TABULAR_NUMBERS = "tabular-nums";

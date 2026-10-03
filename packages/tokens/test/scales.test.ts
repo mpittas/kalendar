@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { RADII, SPACING, TABULAR_NUMBERS, TYPE_SCALE } from "../src/index";
+import { RADII, SPACING, TYPE_SCALE } from "../src/index";
 
 describe("radii", () => {
   it("pins DESIGN.md's shapes scale", () => {
@@ -30,9 +30,5 @@ describe("the type scale", () => {
     for (const [name, value] of Object.entries(rem)) {
       expect(TYPE_SCALE[name as keyof typeof rem].size).toBe(value * 16);
     }
-  });
-
-  it("asks for tabular figures, as DESIGN.md does for clock times", () => {
-    expect(TABULAR_NUMBERS).toBe("tabular-nums");
   });
 });

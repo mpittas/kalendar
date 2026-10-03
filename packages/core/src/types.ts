@@ -67,8 +67,6 @@ export type DayNotes = { day: string; text: string };
 /** An item as shown on one day: a default item (every day) or a one-off (this day only). */
 export type DayChecklistItem = ChecklistItem & { scope: "default" | "day" };
 
-export const DAY_START_MINUTES = 0;
-export const DAY_END_MINUTES = 24 * 60;
 export const SLOT_MINUTES = 30;
 export const SNAP_MINUTES = 15; // blocks move and resize in quarter-hour steps
 export const SLOT_HEIGHT = 48; // px per half hour row

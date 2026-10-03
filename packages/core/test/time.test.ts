@@ -6,13 +6,11 @@ import {
   WEEKDAY_LABELS,
   addDaysISO,
   addMonths,
-  addYears,
   floorMinutes,
   formatDuration,
   formatTime,
   formatTimeRange,
   fromTimeInput,
-  generateYearOptions,
   getMonthIndex,
   getYear,
   gutterLabel,
@@ -58,19 +56,12 @@ describe("ISO dates", () => {
     expect(getMonthIndex("2026-10-03")).toBe(9);
   });
 
-  it("offers years around a centre", () => {
-    expect(generateYearOptions(2026, 1)).toEqual([2025, 2026, 2027]);
-    expect(generateYearOptions(2026, 10)).toHaveLength(21);
-  });
-
-  it("adds days, months and years", () => {
+  it("adds days and months", () => {
     expect(addDaysISO("2026-10-03", 1)).toBe("2026-10-04");
     expect(addDaysISO("2026-10-31", 1)).toBe("2026-11-01");
     expect(addDaysISO("2026-10-01", -1)).toBe("2026-09-30");
     expect(addMonths("2026-01-31", 1)).toBe("2026-02-01"); // the day resets to the first
     expect(addMonths("2026-10-03", -1)).toBe("2026-09-01");
-    expect(addYears("2024-02-29", 1)).toBe("2025-02-28"); // clamped to the shorter month
-    expect(addYears("2026-10-03", -1)).toBe("2025-10-03");
   });
 
   it("keeps the day in range when setting the year and month", () => {

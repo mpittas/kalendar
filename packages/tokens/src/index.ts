@@ -8,7 +8,7 @@
 export { FONT_SANS, THEME_COLOR_GROUPS, THEMES, THEME_VARIABLES } from "./theme";
 export type { Theme, ThemeName, ThemeValues, ThemeVariable } from "./theme";
 
-export { RADII, SPACING, TABULAR_NUMBERS, TYPE_SCALE } from "./scale";
+export { RADII, SPACING, TYPE_SCALE } from "./scale";
 export type { TypeScaleName, TypeStyle } from "./scale";
 
 export { PALETTE_ROLES } from "./palette-types";
